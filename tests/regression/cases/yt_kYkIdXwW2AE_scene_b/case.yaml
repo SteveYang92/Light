@@ -1,0 +1,21 @@
+name: "yt_kYkIdXwW2AE_scene_b"
+description: "YouTube 科技视频，英文原声 → 中文字幕，翻译场景"
+
+input:
+  audio: "../../../../audio/yt_kYkIdXwW2AE.mp3"
+
+light_subtitle:
+  source_lang: "en"
+  target_lang: "zh"
+
+qc:
+  source_lang: "en"
+  target_lang: "zh"
+
+thresholds:
+  max_errors: 10
+  max_new_errors: 0
+  strict_rules:
+    - "Overlap"
+    - "EmptyText"
+    - "TranslationCompleteness"

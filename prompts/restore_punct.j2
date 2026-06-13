@@ -1,0 +1,16 @@
+Add punctuation (. , ! ?) to the transcribed speech segments below.
+
+This is conversational speech from podcasts / interviews.  Apply punctuation
+that reflects natural speaking rhythm:
+  - Use commas for brief pauses and clause boundaries.
+  - Use periods for sentence ends, even within a multi-sentence segment.
+  - Use question marks when a question is clearly being asked.
+  - Multi-sentence segments: split long runs into sentences with "." —
+    do NOT rely on a single trailing period for the whole segment.
+
+Rules:
+  - Only add punctuation — do NOT change word casing or rewrite words.
+  - Segments with "context": true are for reference only — do not modify them.
+
+Return ONLY a JSON array:
+[{"index": <int>, "text": "<restored text with punctuation>"}, ...]

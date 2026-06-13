@@ -1,0 +1,19 @@
+name: "yt_kYkIdXwW2AE"
+description: "YouTube 科技视频，英文原声，约5分钟，用于验证 light-subtitle 管线质量"
+
+input:
+  audio: "../../../../audio/yt_kYkIdXwW2AE.mp3"
+
+light_subtitle:
+  source_lang: "en"
+
+qc:
+  source_lang: "en"
+
+thresholds:
+  max_errors: 5
+  max_new_errors: 0
+  strict_rules:
+    - "Overlap"
+    - "EmptyText"
+    - "ReadingSpeed"

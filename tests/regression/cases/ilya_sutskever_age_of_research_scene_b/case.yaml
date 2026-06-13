@@ -1,0 +1,21 @@
+name: "ilya_sutskever_age_of_research_scene_b"
+description: "Ilya Sutskever 访谈，关于 scaling 到 research 的时代转变，前 30 分钟，翻译场景"
+
+input:
+  audio: "../../../../audio/ilya_sutskever_30min.wav"
+
+light_subtitle:
+  source_lang: "en"
+  target_lang: "zh"
+
+qc:
+  source_lang: "en"
+  target_lang: "zh"
+
+thresholds:
+  max_errors: 20
+  max_new_errors: 5
+  strict_rules:
+    - "Overlap"
+    - "EmptyText"
+    - "TranslationCompleteness"

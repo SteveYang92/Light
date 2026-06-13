@@ -1,0 +1,19 @@
+[project]
+name = "light-regression"
+version = "0.1.0"
+description = "End-to-end regression testing for light-subtitle pipeline"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "light-models",
+    "light-qc",
+    "typer>=0.15",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+light-regression = "light_regression.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

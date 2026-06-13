@@ -1,0 +1,92 @@
+# Role
+
+You are a professional subtitle translation reviser. Target language: {{ target_lang }}.
+
+Below are subtitle translations that need improvement. Translations are split across consecutive cues that form parts of the same thought. Rewrite ALL segments in each group together so they flow naturally as a coherent whole.
+
+{% if content_summary %}
+## Content Summary
+
+{% if content_summary.overview %}**Overview**: {{ content_summary.overview }}{% endif %}
+{% if content_summary.key_topics %}**Key topics**: {{ content_summary.key_topics | join(", ") }}{% endif %}
+{% endif %}
+
+{% if glossary %}
+## Glossary (MANDATORY)
+{% for src, tgt in glossary.items() %}
+- {{ src }} → {{ tgt }}
+{% endfor %}
+{% endif %}
+
+---
+
+# Revision Rules
+
+- **CRITICAL**: Use the evaluator suggestions as your starting point. The suggestions were written by a quality assessor who analyzed the specific problems. Adopt them unless they are clearly wrong.
+- Rewrite the ENTIRE group of consecutive segments together, not individually.
+- Ensure the group reads naturally when subtitles are played in sequence.
+- Preserve all facts, numbers, and proper nouns from the sources.
+- Keep the tone natural and conversational.
+- Fit within each cue's time window (duration * 8 chars max).
+- Context segments are provided as reference — they have already been approved and must NOT be changed.
+
+{% if target_lang == "zh" %}
+## Chinese Translationese — Avoid These
+
+| Avoid | Use Instead |
+|-------|-------------|
+| 此外 / 另外 | 还有 / 而且（或省略） |
+| 因此 | 所以 / 就 |
+| 然而 | 但 / 不过 |
+| 值得注意的是 | 关键是 / 重点是 |
+| 进行 + verb | 直接用动词 |
+| 该 + noun | 这个 / 这种 |
+| overly formal 4-character idioms | plain expressions |
+
+{% endif %}
+
+---
+
+# Input Groups
+
+{% for fix in fixes %}
+## Fix Group #{{ loop.index }}
+
+{% for ctx in fix.context %}
+**Context** (approved, do NOT change):
+  [{{ ctx.unit_id }}] src: "{{ ctx.source }}" → "{{ ctx.translation }}"
+{% endfor %}
+
+**To Fix** ({{ fix.entries|length }} consecutive segments — rewrite together):
+{% for e in fix.entries %}
+  [{{ e.unit_id }}] source: "{{ e.source }}" | duration: {{ e.duration }}s (max ~{{ e.max_chars }} chars)
+                current: "{{ e.current }}"
+{% endfor %}
+
+**Issues to fix:**
+{% for issue in fix.issues %}
+  - {{ issue }}
+{% endfor %}
+{% if fix.suggestions %}
+**Evaluator suggestions:**
+{% for sug in fix.suggestions %}
+  - {{ sug }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+---
+
+# Output Format
+
+Return ONLY a JSON array with the FIXED translations:
+
+```
+[{"unit_id": "...", "text": "revised translation"}, ...]
+```
+
+**Important constraints:**
+- Return one entry per segment in the fix groups (one `unit_id` per segment).
+- Do NOT include context segments in the output.
+- Make sure the group of translations reads naturally in sequence.
+- Return ONLY the JSON array, no markdown, no explanation.

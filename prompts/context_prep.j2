@@ -1,0 +1,44 @@
+You are preparing translation context for a subtitle pipeline.
+
+Analyze the full transcript below and extract:
+1. A content summary to help translators understand the global context.
+2. A glossary of domain-specific terms with suggested translations in {{ target_lang }}.
+
+Read the **entire transcript** in playback order before extracting — do not rely on partial skimming.
+
+## Summary Rules
+
+- `overview`: 2-3 sentences describing what the video is about.
+- `key_topics`: 3-8 core topics discussed.
+- `speakers`: map speaker IDs to roles (e.g. "host", "guest", or names if inferable).
+- `title`: short descriptive title if inferable, else empty string.
+- `domain`: content domain (e.g. "AI research podcast").
+
+## Glossary Rules
+
+- Include ONLY domain-specific, high-impact terms (technical jargon, proper nouns, abbreviations).
+- Skip common words a general audience already knows (bug, API, GPU, model, data).
+- Values must be suggested {{ target_lang }} translations.
+- Keep proper nouns in original spelling when they should not be translated (e.g. whisper.cpp).
+- 5-30 entries typical; quality over quantity.
+
+## Full Transcript
+
+{{ transcript_text }}
+
+Return ONLY a JSON object:
+
+```json
+{
+  "summary": {
+    "title": "...",
+    "domain": "...",
+    "overview": "...",
+    "key_topics": ["...", "..."],
+    "speakers": {"SPEAKER_00": "..."}
+  },
+  "glossary": {
+    "source term": "target translation"
+  }
+}
+```

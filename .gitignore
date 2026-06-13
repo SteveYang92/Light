@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# uv
+uv.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# output directories
+output/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Backend runtime data
+data/
+videos/
+
+# Environment
+.env
+.env.*
+
+# Logs
+*.log
+
+# Frontend
+packages/light-frontend/node_modules/
+packages/light-frontend/dist/
+packages/light-frontend/tsconfig.*.tsbuildinfo
+
+# Test
+.pytest_cache/
+regression_dashboard.html
+.cache/
+tests/regression/snapshots/

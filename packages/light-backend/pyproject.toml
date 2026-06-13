@@ -1,0 +1,24 @@
+[project]
+name = "light-backend"
+version = "0.1.0"
+description = "Light subtitle pipeline web backend"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "light-models",
+    "light-subtitle",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pyyaml>=6.0",
+]
+
+[tool.uv.sources]
+light-models = { workspace = true }
+light-subtitle = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+light-backend = "light_backend.main:main"

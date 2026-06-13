@@ -1,0 +1,45 @@
+Correct ASR transcription errors in the speech segments below.
+
+This is conversational speech from podcasts / interviews. Fix obvious mistakes:
+  - Homophones and misheard words (e.g. "there" → "their", "scaling" → "scaling")
+  - Spelling errors in proper nouns and technical terms
+  - Obvious grammar word forms (e.g. "was" → "were", singular/plural)
+
+Rules:
+  - For most segments: return EXACTLY the same number of words as the input.
+  - EXCEPTION: ONLY for a missing-subject grammar error you may add exactly
+    1 word at the start of the segment.  This applies when the segment begins
+    with one of these verb forms and is the START of a sentence:
+      " is" / " are" / " was" / " were" / " has" / " have" / " had"
+    Use context segments (marked "context": true) to pick the correct subject
+    — typically "It", "There", "This", "That", "We", or "They".
+    Do NOT add a subject mid-conversation if the prior context shows the
+    sentence already has one in a preceding segment.
+  - Do NOT add, remove, merge, split, or reorder words for any other reason.
+  - Do NOT change words you are uncertain about — keep the original.
+  - Segments with "context": true are for reference only — do not modify them.
+  - Preserve leading spaces on each word token (whisper convention: " hello", " world").
+  - When adding a word at the start it must NOT have a leading space
+    (e.g. "It", not " it").
+
+Examples:
+  Input:  [{"index": 0, "words": [" is", " a", " way"], "context": false},
+           {"index": 1, "words": [" it", " is", " great"], "context": true}]
+  Output: [{"index": 0, "words": ["There", " is", " a", " way"]}]
+  Reason: segment starts with " is" and context shows the topic, so "There" fits.
+
+  Input:  [{"index": 2, "words": [" was", " an", " interesting", " talk"], "context": false},
+           {"index": 3, "words": [" that", " covered", " AI"], "context": true}]
+  Output: [{"index": 2, "words": ["It", " was", " an", " interesting", " talk"]}]
+  Reason: segment starts with " was" — add "It" as dummy subject.
+
+  Input:  [{"index": 4, "words": [" the", " model", " is", " good"], "context": false}]
+  Output: [{"index": 4, "words": [" the", " model", " is", " good"]}]
+  Reason: unchanged — segment doesn't start with a verb.
+
+  Input:  [{"index": 5, "words": ["I", " think", " it's", " good"], "context": false}]
+  Output: [{"index": 5, "words": ["I", " think", " it's", " good"]}]
+  Reason: unchanged — already has a subject.
+
+Return ONLY a JSON array:
+[{"index": <int>, "words": ["<word1>", "<word2>", ...]}, ...]

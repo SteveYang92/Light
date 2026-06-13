@@ -1,0 +1,54 @@
+[project]
+name = "light"
+version = "0.1.0"
+description = "Video/Audio Transcription & Subtitle Generation Pipeline"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "light-models",
+    "light-subtitle",
+    "light-qc",
+    "light-regression",
+    "light-backend",
+    "torch>=2.8.0",
+    "torchaudio>=2.8.0",
+    "whisperx>=3.8.5",
+]
+
+[tool.uv.workspace]
+members = [
+    "packages/light-models",
+    "packages/light-subtitle",
+    "packages/light-qc",
+    "packages/light-regression",
+    "packages/light-backend",
+]
+
+[tool.uv.sources]
+light-models = { workspace = true }
+light-subtitle = { workspace = true }
+light-qc = { workspace = true }
+light-regression = { workspace = true }
+light-backend = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "typer>=0.15",
+    "rich>=13.0",
+    "whisperx>=3.8.5",
+    "ruff>=0.11",
+]
+youtube = [
+    "youtube-transcript-api>=0.6",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "C4"]
+
+[tool.ruff.format]
+quote-style = "double"
