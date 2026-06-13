@@ -2,7 +2,7 @@ name: "yt_kYkIdXwW2AE_scene_b"
 description: "YouTube 科技视频，英文原声 → 中文字幕，翻译场景"
 
 input:
-  audio: "../../../../audio/yt_kYkIdXwW2AE.mp3"
+  audio: "../../../../resources/audio/yt_kYkIdXwW2AE.mp3"
 
 light_subtitle:
   source_lang: "en"
