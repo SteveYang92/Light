@@ -107,7 +107,17 @@ uv run light-subtitle -i input.mp4 --asr whisper-cpp
 
 # 说话人分离 + LLM 注释副字幕
 uv run light-subtitle -i input.mp4 --target-lang zh --diarize --annotate
+
+# 通过 URL 下载并生成字幕
+uv run light-subtitle --url https://www.youtube.com/watch?v=VIDEO_ID --target-lang zh
+
+# URL 输入 + 评估循环
+uv run light-subtitle --url https://youtu.be/VIDEO_ID --target-lang zh --evaluate
 ```
+
+`--url` 支持所有 yt-dlp 兼容平台：YouTube、Bilibili、X/Twitter、YouTube Music 等。下载的视频按标题自动命名，输出到 `output/<slug>/`。长视频（>45分钟）自动按静音点切片、逐段处理、合并输出。
+
+> **注意**：`--input` 和 `--url` 互斥，一次只能指定一个。
 
 **断点续跑**（依赖 `output/pipeline_run.json` 与各步骤 artifact）：
 
