@@ -56,7 +56,7 @@ def _compose_and_split(
             "end": round(s.end, 3),
             "duration": round(s.end - s.start, 1),
             "speaker": s.speaker,
-            "text": s.source_text[:100],
+            "text": s.source_text,
         }
         for s in translation_segments
     ]
@@ -255,15 +255,26 @@ def load_compose_segments(tx_dir: Path, segments: list[Segment], config: Subtitl
     compose_path = tx_dir / "compose.json"
     if not compose_path.exists():
         return _compose_and_split(segments, config, tx_dir)
+
     with open(compose_path, encoding="utf-8") as f:
         compose_data = json.load(f)
-    unit_ids = [item["unit_id"] for item in compose_data]
-    composed = compose_segments(segments)
-    composed = split_overlong_units(composed, config)
-    composed_ids = {s.unit_id for s in composed}
-    if set(unit_ids) <= composed_ids:
-        return [s for s in composed if s.unit_id in unit_ids]
-    return composed
+
+    # Directly reconstruct Segment objects from compose.json.
+    # No need to re-run compose/split (which makes LLM calls) when
+    # the persisted data already contains the correct unit IDs.
+    rebuilt: list[Segment] = []
+    for item in compose_data:
+        rebuilt.append(
+            Segment(
+                unit_id=item["unit_id"],
+                start=item.get("start", 0.0),
+                end=item.get("end", 0.0),
+                speaker=item.get("speaker", ""),
+                source_text=item.get("text", ""),
+                words=[],
+            )
+        )
+    return rebuilt
 
 
 # ── Main entry point ──────────────────────────────────────────────────────────
