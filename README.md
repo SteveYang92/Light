@@ -44,6 +44,16 @@
 | ASS | 双语样式、注解副字幕 |
 | JSON | `cues.json`、`transcript.json`，便于二次开发或 QC |
 
+## 效果预览
+
+> 示例资源位于 `resources/` 目录（图片、小视频）。
+
+| 来源 | 截图 |
+|---|---|
+| Joscha Bach — Life, Intelligence & AI | ![](resources/images/joscha_bach_01.png) |
+| John Carmack — Lex Fridman #309 | ![](resources/images/john_carmack_02.png) |
+| Jeff Kaplan — World of Warcraft & Overwatch | ![](resources/images/jeff_kaplan_01.png) |
+
 ## 安装
 
 ```bash
