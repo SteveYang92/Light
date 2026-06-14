@@ -259,8 +259,9 @@ def _merge_videos(
 
     # Probe keyframes for middle/last segments to find safe inpoints.
     # A safe inpoint lands on a keyframe, avoiding undecodable P/B-frames
-    # that reference a dropped reference frame.  We pick the keyframe
-    # closest to *overlap* (either before or after) to minimise deviation.
+    # that reference a dropped reference frame.  We pick the first keyframe
+    # at or after *overlap* so that no content from before the split point
+    # (already covered by the previous segment) leaks into this segment.
     for k in range(1, N):
         video_file = _find_video_file(seg_dirs[k])
         if not video_file:
@@ -270,9 +271,15 @@ def _merge_videos(
         if not kfs:
             actual_inpoints[k] = overlap
             continue
-        # Find the keyframe closest to *overlap*.
-        closest = min(kfs, key=lambda x: abs(x - overlap))
-        actual_inpoints[k] = closest
+        # Find the first keyframe at or after *overlap*.
+        found = False
+        for kf in kfs:
+            if kf >= overlap - 0.001:
+                actual_inpoints[k] = kf
+                found = True
+                break
+        if not found:
+            actual_inpoints[k] = overlap
 
     if any(p != overlap for p in actual_inpoints[1:]):
         print(
