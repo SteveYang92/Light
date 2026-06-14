@@ -12,6 +12,9 @@ directly (backward-compatible with the legacy ``--input``-only path).
 from __future__ import annotations
 
 import os
+import signal
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import typer
@@ -173,7 +176,7 @@ def run(
 
     if has_url:
         video_path, slug = download_video(url, output_base)
-        is_long = should_split(video_path)
+        is_long = should_split(video_path, threshold=_DEFAULT_SPLIT_THRESHOLD)
     else:
         video_path = Path(input_path).resolve()
         # Use parent directory name as slug only when the file is our generic
@@ -185,7 +188,7 @@ def run(
             slug = derive_slug_from_path(video_path.parent)
         else:
             slug = derive_slug_from_path(video_path)
-        is_long = should_split(video_path)
+        is_long = should_split(video_path, threshold=_DEFAULT_SPLIT_THRESHOLD)
 
     # ═══════════════════════════════════════════════════════
     #  3. Build config (shared across all paths)
@@ -283,7 +286,12 @@ def _process_short_video(config: SubtitleConfig, video_path: Path, slug: str) ->
 
 
 def _process_long_video(config: SubtitleConfig, video_path: Path, slug: str) -> None:
-    """Split a long video at silence points, process each segment, and merge."""
+    """Split a long video at silence points, process each segment, and merge.
+
+    Runs ASR for segment *N+1* concurrently with post-ASR (correct, translate,
+    etc.) of segment *N*.  Only one ASR process runs at any time, gated by a
+    threading.Event.
+    """
     work_dir = _ensure_work_dir(config, video_path, slug)
 
     # ── Split ─────────────────────────────────────────
@@ -293,22 +301,72 @@ def _process_long_video(config: SubtitleConfig, video_path: Path, slug: str) -> 
 
     print(f"Split into {len(seg_dirs)} segments: {[d.name for d in seg_dirs]}")
 
-    # ── Process each segment in-process ───────────────
+    # ── Build segment configs ──────────────────────────
+    seg_configs: list[SubtitleConfig] = []
     for seg_dir in seg_dirs:
         seg_video = next(seg_dir.glob("video.*"), None)
         if seg_video is None:
             print(f"  Skipping {seg_dir.name}: no video file found")
             continue
-
-        seg_config = config.clone_for_segment(
-            input_path=str(seg_video),
-            output_dir=str(seg_dir),
+        seg_configs.append(
+            config.clone_for_segment(
+                input_path=str(seg_video),
+                output_dir=str(seg_dir),
+            )
         )
-        print(f"  Processing {seg_dir.name} …")
-        Orchestrator(seg_config).run()
+
+    if not seg_configs:
+        print("  No segments to process")
+        return
+
+    # ── Process segments with pipelined concurrency ────
+    # asr_ready gate ensures only one ASR runs at a time.
+    # The first segment starts immediately; subsequent segments
+    # wait for the previous segment's ASR to complete before
+    # their own ASR begins, while post-ASR work overlaps.
+    shutdown = threading.Event()
+    asr_ready = threading.Event()
+
+    def _on_sigint(_signum: int, _frame: object) -> None:
+        print("\n  Shutting down...", flush=True)
+        shutdown.set()
+        asr_ready.set()  # unblock the submission loop
+
+    signal.signal(signal.SIGINT, _on_sigint)
+    signal.signal(signal.SIGTERM, _on_sigint)
+
+    asr_ready.set()  # first segment can start ASR right away
+
+    futures: list = []
+    segment_failed = False
+    with ThreadPoolExecutor(max_workers=len(seg_configs) + 1) as executor:
+        for _i, cfg in enumerate(seg_configs):
+            asr_ready.wait()
+            if shutdown.is_set():
+                break
+            asr_ready.clear()
+
+            orch = Orchestrator(cfg, on_asr_complete=asr_ready.set, shutdown_event=shutdown)
+            futures.append(executor.submit(orch.run))
+
+    # Wait for all submitted segments to complete
+    for f in futures:
+        try:
+            f.result()
+        except Exception as exc:
+            segment_failed = True
+            print(f"  Segment failed: {exc}", flush=True)
+
+    if shutdown.is_set():
+        print("  Interrupted — resume with: light-subtitle --resume ...")
+        return
+
+    if segment_failed:
+        print("  Not all segments completed — resume with: light-subtitle --resume ...")
+        return
 
     # ── Merge ─────────────────────────────────────────
-    merge_all(work_dir, slug, overlap=overlap)
+    merge_all(seg_dirs[0].parent, slug, overlap=overlap)
     _cleanup_temp(work_dir)
 
 

@@ -56,6 +56,7 @@ def resolve_start_index(
         for i, step in enumerate(plan):
             if step.id not in completed:
                 return i
+        return len(plan)  # all steps completed — nothing to do
 
     if config.resume and run_state is None:
         raise FileNotFoundError("No pipeline_run.json found. Use --resume-from STEP to resume from artifacts.")

@@ -7,43 +7,45 @@ the standard ``typer.echo`` console output.
 from __future__ import annotations
 
 import logging
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
 import typer
 
-_log: logging.Logger | None = None
+_log = threading.local()
 
 
 def init(output_dir: str | Path) -> None:
     """Initialize logging for a pipeline run.
 
     Creates a timestamped log file at ``{output_dir}/pipeline_{ts}.log``.
-    Call once at pipeline startup, before any log calls.
+    Thread-safe: each thread gets its own file handler keyed by output_dir.
     """
-    global _log
-
     ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
     log_path = Path(output_dir) / f"pipeline_{ts}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    _log = logging.getLogger("light-subtitle")
-    _log.setLevel(logging.DEBUG)
+    logger = logging.getLogger(f"light-subtitle-{Path(output_dir).name}")
+    logger.setLevel(logging.DEBUG)
+    logger.handlers.clear()
     handler = logging.FileHandler(log_path, encoding="utf-8")
     handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s %(message)s"))
-    _log.handlers.clear()
-    _log.addHandler(handler)
+    logger.addHandler(handler)
+    _log.logger = logger
 
 
 def info(msg: str) -> None:
     """Echo to console AND append to the run log file."""
     typer.echo(msg)
-    if _log is not None:
-        _log.info(msg)
+    logger = getattr(_log, "logger", None)
+    if logger is not None:
+        logger.info(msg)
 
 
 def warning(msg: str) -> None:
     """Echo to console AND append to the run log file at WARNING level."""
     typer.echo(msg)
-    if _log is not None:
-        _log.warning(msg)
+    logger = getattr(_log, "logger", None)
+    if logger is not None:
+        logger.warning(msg)

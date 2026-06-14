@@ -635,3 +635,15 @@ def build_step_definitions(config: SubtitleConfig) -> list[StepDefinition]:
 def build_enabled_definitions(config: SubtitleConfig) -> list[StepDefinition]:
     """Return enabled steps in pipeline order."""
     return [d for d in build_step_definitions(config) if d.enabled(config)]
+
+
+# ── ASR phase boundary ─────────────────────────────────────────────────────────
+
+ASR_STEP_IDS: frozenset[StepId] = frozenset(
+    {
+        StepId.ASR_EXTRACT,
+        StepId.ASR_TRANSCRIBE,
+        StepId.ASR_ALIGN,
+        StepId.ASR_DIARIZE,
+    }
+)

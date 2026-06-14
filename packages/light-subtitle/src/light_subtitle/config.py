@@ -97,7 +97,6 @@ class SubtitleConfig:
         cloned.shot_changes = list(self.shot_changes)
         cloned.transcript_words = None
         cloned.content_summary = None
-        cloned.resume_from = None
         # Auto-resume: if a previous run left pipeline_run.json, pick up where it left off.
         cloned.resume = (Path(output_dir) / "pipeline_run.json").exists()
         return cloned

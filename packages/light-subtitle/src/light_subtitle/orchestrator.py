@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import signal
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from light_models import Segment, SubtitleCue, Word
 
@@ -15,6 +17,7 @@ from .pipeline.translate.context import TranslateContext
 from .run_state import RunStateManager
 from .state_hydrate import hydrate_state
 from .step_plan import build_step_plan, resolve_start_index, validate_artifacts
+from .step_registry import ASR_STEP_IDS
 
 # ── Progress callback type ─────────────────────────────
 
@@ -45,7 +48,13 @@ class PipelineState:
 class Orchestrator:
     """Orchestrate the full subtitle pipeline from ASR to export."""
 
-    def __init__(self, config: SubtitleConfig, progress_callback: ProgressCallback = None):
+    def __init__(
+        self,
+        config: SubtitleConfig,
+        progress_callback: ProgressCallback = None,
+        on_asr_complete: Callable[[], None] | None = None,
+        shutdown_event: threading.Event | None = None,
+    ):
         self.config = config
         self.state = PipelineState()
         self.asr_ctx = AsrContext()
@@ -54,9 +63,23 @@ class Orchestrator:
         self._formatted_source: list[SubtitleCue] | None = None
         self._formatted_target: list[SubtitleCue] | None = None
         self._state_mgr: RunStateManager | None = None
+        self._on_asr_complete = on_asr_complete or (lambda: None)
+        self._shutdown = shutdown_event or threading.Event()  # never-set sentinel
+
+    @property
+    def _seg_tag(self) -> str:
+        """Segment label extracted from output_dir (e.g. 'seg1', 'chunk_2')."""
+        name = Path(self.config.output_dir).name
+        if name.startswith(".seg"):
+            return name[1:]
+        if name.startswith("chunk_"):
+            return name
+        return ""
 
     def run(self) -> None:
         logger.init(self.config.output_dir)
+
+        tag = f"[{self._seg_tag}] " if self._seg_tag else ""
 
         mode = (
             "bilingual"
@@ -65,7 +88,7 @@ class Orchestrator:
             if self.config.target_lang
             else "source-only"
         )
-        logger.info(f"[{mode}] Processing {self.config.input_path}")
+        logger.info(f"{tag}[{mode}] Processing {self.config.input_path}")
 
         self._state_mgr = RunStateManager(self.config.output_dir)
         plan = build_step_plan(self.config)
@@ -75,20 +98,38 @@ class Orchestrator:
         if not self.config.resume and not self.config.resume_from:
             self._state_mgr.begin(self.config.input_path, self.config.output_dir)
         elif start_idx > 0:
-            validate_artifacts(plan[start_idx])
+            if start_idx < len(plan):
+                validate_artifacts(plan[start_idx])
             hydrate_state(self, plan, start_idx)
             if run_state is None:
                 self._state_mgr.begin(self.config.input_path, self.config.output_dir)
 
         self._install_interrupt_handler()
 
+        asr_values = {e.value for e in ASR_STEP_IDS}
         remaining = plan[start_idx:]
-        logger.info(f"── Steps ({len(remaining)} to run) ──")
 
-        for step in remaining:
+        # Pre-fire: if ASR is already done (resume from post-ASR, or all
+        # steps complete), signal immediately so the next segment can start
+        # its ASR without waiting for an ASR→post-ASR boundary transition
+        # that will never happen.
+        if not remaining or remaining[0].id not in asr_values:
+            self._on_asr_complete()
+            if not remaining:
+                logger.info(f"{tag}Done (already complete).")
+                return
+
+        logger.info(f"{tag}── Steps ({len(remaining)} to run) ──")
+
+        for i, step in enumerate(remaining):
+            if self._shutdown.is_set():
+                self._state_mgr.mark_interrupted(self._state_mgr.current_step)
+                logger.info(f"{tag}  Interrupted.")
+                return
+
             self._state_mgr.mark_running(step.id)
             definition = step.definition
-            logger.info(f"▶ {step.id}...")
+            logger.info(f"{tag}▶ {step.id}...")
             try:
                 if definition.progress_start is not None:
                     definition.progress_start(self)
@@ -99,12 +140,22 @@ class Orchestrator:
                 self._state_mgr.mark_failed(step.id, exc)
                 raise
             self._state_mgr.mark_completed(step.id)
-            logger.info(f"  ✓ {step.id} done")
+            logger.info(f"{tag}  ✓ {step.id} done")
+
+            # Fire callback at the ASR → post-ASR boundary
+            if step.id in asr_values:
+                next_step = remaining[i + 1] if i + 1 < len(remaining) else None
+                if next_step is None or next_step.id not in asr_values:
+                    self._on_asr_complete()
 
         self._state_mgr.mark_run_completed()
-        logger.info("Done.")
+        logger.info(f"{tag}Done.")
 
     def _install_interrupt_handler(self) -> None:
+        """Install SIGINT/SIGTERM handlers (main thread only)."""
+        if threading.current_thread() is not threading.main_thread():
+            return
+
         def _handler(_signum: int, _frame: object) -> None:
             if self._state_mgr is not None:
                 self._state_mgr.mark_interrupted(self._state_mgr.current_step)
