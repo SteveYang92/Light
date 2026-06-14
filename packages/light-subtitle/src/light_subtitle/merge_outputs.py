@@ -4,7 +4,9 @@ Reads ``.seg1/``, ``.seg2/``, … directories under ``output_dir``, writes merge
 files named ``{slug}.mp4`` / ``.zh.srt`` / ``.zh.vtt`` / ``.cues.json`` /
 ``.transcript.json`` (+ ``.annotations.ass`` / ``.annotations.vtt`` if present).
 
-Ports the logic from ``x-subtitle/scripts/merge_segments.py``.
+The original video is reused directly — segments are only processed for ASR.
+Subtitle offsets are computed from ``split_points.json`` (saved by the split
+step) so that segment-local timestamps map to the original video timeline.
 """
 
 from __future__ import annotations
@@ -133,45 +135,105 @@ def merge_all(output_dir: Path, slug: str, overlap: float = 10) -> None:
 # ── Multi-segment merge ─────────────────────────────────
 
 
+def _probe_keyframes(video_path: Path) -> list[float]:
+    """Return sorted keyframe PTS values for *video_path* using ffprobe."""
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "packet=pts_time,flags",
+            "-of",
+            "csv=p=0",
+            str(video_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    keyframes: list[float] = []
+    for line in result.stdout.strip().splitlines():
+        if not line.strip():
+            continue
+        parts = line.split(",")
+        if len(parts) >= 2 and "K" in parts[1]:
+            try:
+                keyframes.append(float(parts[0]))
+            except ValueError:
+                continue
+    return sorted(keyframes)
+
+
 def _merge_multi(output_dir: Path, seg_dirs: list[Path], slug: str, overlap: float) -> None:
     durations = _get_segment_durations(seg_dirs)
     N = len(seg_dirs)
 
-    # ── Merge video first (returns keyframe-aligned inpoints) ──
-    actual_inpoints = _merge_videos(output_dir, seg_dirs, durations, overlap, slug)
+    # ── Read split points (saved by video_split) ──
+    split_points: list[float] | None = None
+    split_points_path = output_dir / "split_points.json"
+    if split_points_path.exists():
+        data = json.loads(split_points_path.read_text(encoding="utf-8"))
+        split_points = data.get("split_points")
 
-    # ── Compute effective durations and subtitle offsets ──
-    # Effective contribution of each segment after trimming:
-    #   seg 0:     [0,          dur[0] - overlap]
-    #   seg k>0:   [inpoint[k], dur[k] - overlap]   (middle)
-    #   seg N-1:   [inpoint[k], dur[k]]             (last, no outpoint)
-    effective: list[float] = []
-    for k in range(N):
-        if k == 0:
-            effective.append(durations[k] - overlap if N > 1 else durations[k])
-        elif k == N - 1:
-            effective.append(durations[k] - actual_inpoints[k])
-        else:
-            effective.append(durations[k] - actual_inpoints[k] - overlap)
+    # ── Probe original video keyframes for accurate offsets ──
+    # When video_split uses -c copy, each segment starts at a keyframe
+    # BEFORE the requested position.  We find the actual keyframe time
+    # so that subtitle offsets map segment-local timestamps to the real
+    # original video timeline.
+    original_kfs: list[float] | None = None
+    for ext in _VIDEO_EXTENSIONS:
+        candidate = output_dir / f"video{ext}"
+        if candidate.exists():
+            original_kfs = _probe_keyframes(candidate)
+            break
 
-    cum_effective = [0.0]
-    for e in effective[:-1]:
-        cum_effective.append(cum_effective[-1] + e)
-
-    # Subtitle offset for segment k: global time = offset[k] + local_time
+    # ── Compute subtitle offsets corrected for keyframe alignment ──
     offsets = [0.0]
-    for k in range(1, N):
-        offsets.append(cum_effective[k] - actual_inpoints[k])
+    if split_points and len(split_points) == N + 1:
+        for k in range(1, N):
+            requested_start = split_points[k] - overlap
+            actual_start = requested_start  # fallback
+            if original_kfs:
+                # Find the keyframe at or before the requested start.
+                for kf in original_kfs:
+                    if kf <= requested_start + 0.001:
+                        actual_start = kf
+                    else:
+                        break
+            offsets.append(actual_start)
+    else:
+        # Fallback: estimate from cumulative durations
+        cum = [0.0]
+        trimmed: list[float] = []
+        for k, dur in enumerate(durations):
+            if k == 0:
+                trimmed.append(dur - overlap if N > 1 else dur)
+            elif k == N - 1:
+                trimmed.append(dur - overlap)
+            else:
+                trimmed.append(dur - 2 * overlap)
+        for td in trimmed[:-1]:
+            cum.append(cum[-1] + td)
+        for k in range(1, N):
+            offsets.append(cum[k] - overlap)
+
+    if split_points and original_kfs:
+        deltas = [f"{offsets[k] - (split_points[k] - overlap):+.3f}s" for k in range(1, N)]
+        print(f"  Keyframe-corrected offsets: {[f'{o:.3f}' for o in offsets]} (deltas: {deltas})", file=sys.stderr)
+
+    # ── Copy the original video ──
+    _copy_original_video(output_dir, slug)
 
     # ── Merge subtitle / data files ──
-    _merge_srt(output_dir, seg_dirs, offsets, durations, overlap, actual_inpoints, slug)
-    _merge_vtt(output_dir, seg_dirs, offsets, durations, overlap, actual_inpoints, slug)
-    _merge_cues_json(output_dir, seg_dirs, offsets, durations, overlap, actual_inpoints, slug)
-    _merge_transcript(output_dir, seg_dirs, offsets, durations, overlap, actual_inpoints, slug)
-
-    # ── Merge annotations (if present) ──
-    _merge_annotations_ass(output_dir, seg_dirs, offsets, durations, overlap, actual_inpoints, slug)
-    _merge_annotations_vtt(output_dir, seg_dirs, offsets, durations, overlap, actual_inpoints, slug)
+    _merge_srt(output_dir, seg_dirs, offsets, durations, split_points, slug)
+    _merge_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug)
+    _merge_cues_json(output_dir, seg_dirs, offsets, durations, split_points, slug)
+    _merge_transcript(output_dir, seg_dirs, offsets, durations, split_points, slug)
+    _merge_annotations_ass(output_dir, seg_dirs, offsets, durations, split_points, slug)
+    _merge_annotations_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug)
 
     print(f"\nMerge complete → {output_dir / slug}.*", file=sys.stderr)
 
@@ -207,113 +269,32 @@ def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
     print(f"  Single segment: copied from {seg_dir.name}/ → {slug}.*", file=sys.stderr)
 
 
-# ── Video merge ─────────────────────────────────────────
+# ── Video: reuse original ───────────────────────────────
 
 
-def _probe_keyframes(video_path: Path) -> list[float]:
-    """Return sorted keyframe PTS values for *video_path* using ffprobe."""
-    result = subprocess.run(
-        [
-            "ffprobe",
-            "-v",
-            "error",
-            "-select_streams",
-            "v:0",
-            "-show_entries",
-            "packet=pts_time,flags",
-            "-of",
-            "csv=p=0",
-            str(video_path),
-        ],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    keyframes: list[float] = []
-    for line in result.stdout.strip().splitlines():
-        if not line.strip():
-            continue
-        parts = line.split(",")
-        if len(parts) >= 2 and "K" in parts[1]:
-            try:
-                keyframes.append(float(parts[0]))
-            except ValueError:
-                continue
-    return sorted(keyframes)
+def _copy_original_video(output_dir: Path, slug: str) -> None:
+    """Copy the original video to ``{slug}.<ext>``.
 
-
-def _merge_videos(
-    output_dir: Path,
-    seg_dirs: list[Path],
-    durations: list[float],
-    overlap: float,
-    slug: str,
-) -> list[float]:
-    """Merge segment videos using keyframe-aligned inpoints.
-
-    Returns the actual inpoints used (keyframe times closest to *overlap*),
-    so that subtitle offsets can be adjusted to match the real video timeline.
+    The original video (``video.*`` at the work directory root) is reused
+    directly — segment videos are only processed for ASR and discarded.
     """
-    N = len(seg_dirs)
-    actual_inpoints = [0.0] * N
+    import shutil
 
-    # Probe keyframes for middle/last segments to find safe inpoints.
-    # A safe inpoint lands on a keyframe, avoiding undecodable P/B-frames
-    # that reference a dropped reference frame.  We pick the first keyframe
-    # at or after *overlap* so that no content from before the split point
-    # (already covered by the previous segment) leaks into this segment.
-    for k in range(1, N):
-        video_file = _find_video_file(seg_dirs[k])
-        if not video_file:
-            actual_inpoints[k] = overlap
-            continue
-        kfs = _probe_keyframes(video_file)
-        if not kfs:
-            actual_inpoints[k] = overlap
-            continue
-        # Find the first keyframe at or after *overlap*.
-        found = False
-        for kf in kfs:
-            if kf >= overlap - 0.001:
-                actual_inpoints[k] = kf
-                found = True
-                break
-        if not found:
-            actual_inpoints[k] = overlap
+    src: Path | None = None
+    for ext in _VIDEO_EXTENSIONS:
+        candidate = output_dir / f"video{ext}"
+        if candidate.exists():
+            src = candidate
+            break
 
-    if any(p != overlap for p in actual_inpoints[1:]):
-        print(
-            f"  Keyframe-aligned inpoints: {[f'{p:.3f}' for p in actual_inpoints]} (vs nominal {overlap:.1f}s overlap)",
-            file=sys.stderr,
-        )
+    if src is None:
+        print("  ⚠ No original video found to copy", file=sys.stderr)
+        return
 
-    concat_list = output_dir / ".concat_list.txt"
-
-    with open(concat_list, "w") as f:
-        for k, seg in enumerate(seg_dirs):
-            video_file = _find_video_file(seg)
-            if not video_file:
-                continue
-            f.write(f"file '{video_file.absolute()}'\n")
-            if k > 0:
-                f.write(f"inpoint {actual_inpoints[k]:.3f}\n")
-            if k < N - 1:
-                f.write(f"outpoint {durations[k] - overlap:.3f}\n")
-
-    out_path = output_dir / f"{slug}.mp4"
-    result = subprocess.run(
-        ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(concat_list), "-c", "copy", str(out_path)],
-        capture_output=True,
-        timeout=600,
-    )
-    concat_list.unlink()
-
-    if result.returncode != 0:
-        print(f"Video merge failed: {result.stderr.decode()[-500:]}", file=sys.stderr)
-    elif out_path.exists():
-        print(f"  Merged video → {out_path}", file=sys.stderr)
-
-    return actual_inpoints
+    dst = output_dir / f"{slug}{src.suffix}"
+    if not dst.exists():
+        shutil.copy2(src, dst)
+        print(f"  Copied video → {dst.name}", file=sys.stderr)
 
 
 # ── SRT merge ───────────────────────────────────────────
@@ -355,16 +336,56 @@ def _write_srt(cues: list[tuple[float, float, str]], path: Path) -> None:
             f.write(f"{text}\n\n")
 
 
+_EPS = 0.5  # tolerance for split-point boundary filtering (seconds)
+
+
+def _dedup_srt_overlaps(cues: list[tuple[float, float, str]]) -> list[tuple[float, float, str]]:
+    """Remove adjacent overlapping SRT cues, keeping the later one in each pair."""
+    if len(cues) < 2:
+        return cues
+    deduped: list[tuple[float, float, str]] = [cues[0]]
+    for cue in cues[1:]:
+        if deduped[-1][1] > cue[0] + 0.001:
+            deduped[-1] = cue
+        else:
+            deduped.append(cue)
+    return deduped
+
+
+def _dedup_vtt_overlaps(cues: list[tuple[float, float, str, str]]) -> list[tuple[float, float, str, str]]:
+    """Remove adjacent overlapping VTT cues, keeping the later one in each pair."""
+    if len(cues) < 2:
+        return cues
+    deduped: list[tuple[float, float, str, str]] = [cues[0]]
+    for cue in cues[1:]:
+        if deduped[-1][1] > cue[0] + 0.001:
+            deduped[-1] = cue
+        else:
+            deduped.append(cue)
+    return deduped
+
+
+def _dedup_json_overlaps(cues: list[dict]) -> list[dict]:
+    """Remove adjacent overlapping JSON cues, keeping the later one in each pair."""
+    if len(cues) < 2:
+        return cues
+    deduped: list[dict] = [cues[0]]
+    for cue in cues[1:]:
+        if deduped[-1].get("end", 0) > cue.get("start", 0) + 0.001:
+            deduped[-1] = cue
+        else:
+            deduped.append(cue)
+    return deduped
+
+
 def _merge_srt(
     output_dir: Path,
     seg_dirs: list[Path],
     offsets: list[float],
     durations: list[float],
-    overlap: float,
-    actual_inpoints: list[float],
+    split_points: list[float] | None,
     slug: str,
 ) -> None:
-    margin_end = overlap + 2
     all_cues: list[tuple[float, float, str]] = []
     N = len(seg_dirs)
     skipped_invalid = 0
@@ -373,14 +394,21 @@ def _merge_srt(
         cues = _parse_srt(seg / "zh.srt")
         offset = offsets[k]
         seg_dur = durations[k]
-        margin_start = actual_inpoints[k] + 2 if k > 0 else 0
         for start, end, text in cues:
-            if k > 0 and start < margin_start:
-                continue
-            if k < N - 1 and start > seg_dur - margin_end:
-                continue
             global_start = start + offset
             global_end = end + offset
+            # Filter by split-point boundaries (precise, no margin gap).
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and global_start < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and global_start > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                # Fallback: fixed margin around overlap region.
+                if k > 0 and start < 12:
+                    continue
+                if k < N - 1 and start > seg_dur - 12:
+                    continue
             if global_end < global_start:
                 skipped_invalid += 1
                 continue
@@ -390,6 +418,7 @@ def _merge_srt(
         print(f"  ⚠ Skipped {skipped_invalid} cues with backwards timestamps (end < start)", file=sys.stderr)
 
     all_cues.sort(key=lambda c: c[0])
+    all_cues = _dedup_srt_overlaps(all_cues)
     out = output_dir / f"{slug}.zh.srt"
     _write_srt(all_cues, out)
     print(f"  Merged SRT: {len(all_cues)} cues → {out.name}", file=sys.stderr)
@@ -445,11 +474,9 @@ def _merge_vtt(
     seg_dirs: list[Path],
     offsets: list[float],
     durations: list[float],
-    overlap: float,
-    actual_inpoints: list[float],
+    split_points: list[float] | None,
     slug: str,
 ) -> None:
-    margin_end = overlap + 2
     all_cues: list[tuple[float, float, str, str]] = []
     N = len(seg_dirs)
     skipped_invalid = 0
@@ -458,14 +485,19 @@ def _merge_vtt(
         cues = _parse_vtt(seg / "zh.vtt")
         offset = offsets[k]
         seg_dur = durations[k]
-        margin_start = actual_inpoints[k] + 2 if k > 0 else 0
         for start, end, text, settings in cues:
-            if k > 0 and start < margin_start:
-                continue
-            if k < N - 1 and start > seg_dur - margin_end:
-                continue
             global_start = start + offset
             global_end = end + offset
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and global_start < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and global_start > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                if k > 0 and start < 12:
+                    continue
+                if k < N - 1 and start > seg_dur - 12:
+                    continue
             if global_end < global_start:
                 skipped_invalid += 1
                 continue
@@ -475,6 +507,7 @@ def _merge_vtt(
         print(f"  ⚠ Skipped {skipped_invalid} cues with backwards timestamps (end < start)", file=sys.stderr)
 
     all_cues.sort(key=lambda c: c[0])
+    all_cues = _dedup_vtt_overlaps(all_cues)
     out = output_dir / f"{slug}.zh.vtt"
     _write_vtt(all_cues, out)
     print(f"  Merged VTT: {len(all_cues)} cues → {out.name}", file=sys.stderr)
@@ -488,11 +521,9 @@ def _merge_cues_json(
     seg_dirs: list[Path],
     offsets: list[float],
     durations: list[float],
-    overlap: float,
-    actual_inpoints: list[float],
+    split_points: list[float] | None,
     slug: str,
 ) -> None:
-    margin_end = overlap + 2
     all_cues: list[dict] = []
     N = len(seg_dirs)
     cue_counter = 0
@@ -508,15 +539,20 @@ def _merge_cues_json(
             continue
         offset = offsets[k]
         seg_dur = durations[k]
-        margin_start = actual_inpoints[k] + 2 if k > 0 else 0
         for cue in cues:
             start = cue.get("start", 0)
-            if k > 0 and start < margin_start:
-                continue
-            if k < N - 1 and start > seg_dur - margin_end:
-                continue
             global_start = start + offset
             global_end = cue.get("end", 0) + offset
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and global_start < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and global_start > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                if k > 0 and start < 12:
+                    continue
+                if k < N - 1 and start > seg_dur - 12:
+                    continue
             if global_end < global_start:
                 skipped_invalid += 1
                 continue
@@ -530,6 +566,7 @@ def _merge_cues_json(
         print(f"  ⚠ Skipped {skipped_invalid} cues with backwards timestamps (end < start)", file=sys.stderr)
 
     all_cues.sort(key=lambda c: c.get("start", 0))
+    all_cues = _dedup_json_overlaps(all_cues)
 
     # Preserve media/speaker metadata from first segment
     media_info: dict = {}
@@ -558,11 +595,9 @@ def _merge_transcript(
     seg_dirs: list[Path],
     offsets: list[float],
     durations: list[float],
-    overlap: float,
-    actual_inpoints: list[float],
+    split_points: list[float] | None,
     slug: str,
 ) -> None:
-    margin_end = overlap + 2
     all_words: list[dict] = []
     all_segments: list[dict] = []
     N = len(seg_dirs)
@@ -580,25 +615,38 @@ def _merge_transcript(
         segments = data.get("segments", [])
         offset = offsets[k]
         seg_dur = durations[k]
-        margin_start = actual_inpoints[k] + 2 if k > 0 else 0
 
         for w in words:
             w_start = w.get("start", 0)
-            if k > 0 and w_start < margin_start:
-                continue
-            if k < N - 1 and w_start > seg_dur - margin_end:
-                continue
-            w["start"] = w_start + offset
+            w_global = w_start + offset
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and w_global < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and w_global > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                if k > 0 and w_start < 12:
+                    continue
+                if k < N - 1 and w_start > seg_dur - 12:
+                    continue
+            w["start"] = w_global
             w["end"] = w.get("end", 0) + offset
             all_words.append(w)
 
         for seg_obj in segments:
             seg_start = seg_obj.get("start", 0)
-            if k > 0 and seg_start < margin_start:
-                continue
-            if k < N - 1 and seg_start > seg_dur - margin_end:
-                continue
-            seg_obj["start"] = seg_start + offset
+            s_global = seg_start + offset
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and s_global < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and s_global > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                if k > 0 and seg_start < 12:
+                    continue
+                if k < N - 1 and seg_start > seg_dur - 12:
+                    continue
+            seg_obj["start"] = s_global
             seg_obj["end"] = seg_obj.get("end", 0) + offset
             all_segments.append(seg_obj)
 
@@ -625,11 +673,9 @@ def _merge_annotations_ass(
     seg_dirs: list[Path],
     offsets: list[float],
     durations: list[float],
-    overlap: float,
-    actual_inpoints: list[float],
+    split_points: list[float] | None,
     slug: str,
 ) -> None:
-    margin_end = overlap + 2
     has_any = any((seg / "annotations.ass").exists() for seg in seg_dirs)
     if not has_any:
         return
@@ -645,7 +691,6 @@ def _merge_annotations_ass(
             continue
         offset = offsets[k]
         seg_dur = durations[k]
-        margin_start = actual_inpoints[k] + 2 if k > 0 else 0
         for line in ass_path.read_text(encoding="utf-8").splitlines(keepends=True):
             if not line.startswith("Dialogue:"):
                 if in_header:
@@ -659,13 +704,19 @@ def _merge_annotations_ass(
                 start = _ass_to_seconds(fields[1])
             except ValueError:
                 continue
-            if k > 0 and start < margin_start:
-                continue
-            if k < N - 1 and start > seg_dur - margin_end:
-                continue
-            start += offset
+            global_start = start + offset
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and global_start < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and global_start > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                if k > 0 and start < 12:
+                    continue
+                if k < N - 1 and start > seg_dur - 12:
+                    continue
             end = _ass_to_seconds(fields[2]) + offset
-            fields[1] = _seconds_to_ass(start)
+            fields[1] = _seconds_to_ass(global_start)
             fields[2] = _seconds_to_ass(end)
             all_events.append(",".join(fields) + "\n")
 
@@ -682,11 +733,9 @@ def _merge_annotations_vtt(
     seg_dirs: list[Path],
     offsets: list[float],
     durations: list[float],
-    overlap: float,
-    actual_inpoints: list[float],
+    split_points: list[float] | None,
     slug: str,
 ) -> None:
-    margin_end = overlap + 2
     all_cues: list[tuple[float, float, str, str]] = []
     N = len(seg_dirs)
 
@@ -698,18 +747,25 @@ def _merge_annotations_vtt(
         cues = _parse_vtt(seg / "annotations.vtt")
         offset = offsets[k]
         seg_dur = durations[k]
-        margin_start = actual_inpoints[k] + 2 if k > 0 else 0
         for start, end, text, settings in cues:
-            if k > 0 and start < margin_start:
-                continue
-            if k < N - 1 and start > seg_dur - margin_end:
-                continue
-            all_cues.append((start + offset, end + offset, text, settings))
+            global_start = start + offset
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and global_start < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and global_start > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                if k > 0 and start < 12:
+                    continue
+                if k < N - 1 and start > seg_dur - 12:
+                    continue
+            all_cues.append((global_start, end + offset, text, settings))
 
     if not all_cues:
         return
 
     all_cues.sort(key=lambda c: c[0])
+    all_cues = _dedup_vtt_overlaps(all_cues)
     out = output_dir / f"{slug}.annotations.vtt"
     _write_vtt(all_cues, out)
     print(f"  Merged annotations.vtt: {len(all_cues)} cues → {out.name}", file=sys.stderr)

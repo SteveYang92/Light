@@ -86,7 +86,12 @@ def split_video(
 
     Creates ``<parent>/.seg1/video.<ext>``, ``.seg2/``, … with copy-codec
     ffmpeg (fast, keyframe-aligned).  Returns the list of segment directories.
+
+    Also saves ``split_points.json`` in the parent directory so the merge
+    step can compute exact boundary offsets.
     """
+    import json as _json
+
     parent = video_path.parent
     ext = video_path.suffix
     N = len(split_points) - 1  # number of segments
@@ -170,6 +175,12 @@ def split_video(
                 check=True,
                 capture_output=True,
             )
+
+    # Persist split points for the merge step.
+    (parent / "split_points.json").write_text(
+        _json.dumps({"split_points": split_points, "overlap": overlap}, indent=2),
+        encoding="utf-8",
+    )
 
     return seg_dirs
 
