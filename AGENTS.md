@@ -181,3 +181,4 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 - 新 QC 规则必须零误报才提交
 - light-qc 建议始终携带 `--transcript` 参数，以启用完整的时间轴对齐规则
 - resume 见上文「断点续跑」；改 step 注册/hydrate 后跑 `tests/test_run_state.py`
+- **不要**擅自提交代码，除非用户要求提交再提交
