@@ -39,14 +39,14 @@ class EntryPointConfidence(HardRule):
     default_severity = "suggestion"
 
     # ── Primary signal: confidence cliff ──────────────────────
-    CLIFF_FIRST_MAX = 0.40   # first word must be below this
-    CLIFF_PEAK_MIN = 0.70    # later words must reach at least this
-    CLIFF_DIFF_MIN = 0.30    # minimum diff for SUGGESTION
+    CLIFF_FIRST_MAX = 0.40  # first word must be below this
+    CLIFF_PEAK_MIN = 0.70  # later words must reach at least this
+    CLIFF_DIFF_MIN = 0.30  # minimum diff for SUGGESTION
     CLIFF_DIFF_SEVERE = 0.50  # diff this large → WARNING even alone
 
     # ── Secondary signals (only meaningful with a cliff) ─────
-    STRETCH_MIN_MS = 800      # flag only when > 800 ms
-    GAP_MIN_S = 0.50          # flag only when > 0.50 s
+    STRETCH_MIN_MS = 800  # flag only when > 800 ms
+    GAP_MIN_S = 0.50  # flag only when > 0.50 s
 
     def check(self, cues: dict[str, list[SubtitleCue]], config: QCConfig) -> list[QCIssue]:
         issues: list[QCIssue] = []
@@ -87,10 +87,7 @@ class EntryPointConfidence(HardRule):
                 fix_hints = ["对齐可能偏早，建议根据音频确认入点"]
 
                 if is_stretched:
-                    detail_parts.append(
-                        f"首个词时长 {first_dur_ms:.0f}ms（{first_text_len}字符），"
-                        f"可能覆盖了前置静默"
-                    )
+                    detail_parts.append(f"首个词时长 {first_dur_ms:.0f}ms（{first_text_len}字符），可能覆盖了前置静默")
                     fix_hints.append("首个词可能覆盖了前置静默，建议推迟入点")
 
                 if has_large_gap:

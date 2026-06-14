@@ -259,7 +259,13 @@ _DEFAULT_OVERLAP = 10
 
 
 def _process_short_video(config: SubtitleConfig, video_path: Path, slug: str) -> None:
-    """Run the pipeline on a single short video, then rename outputs."""
+    """Run the pipeline on a single short video, then rename outputs.
+
+    When the video is a long-video segment (residing in a ``.seg*/`` or
+    ``chunk_*/`` directory), renaming is skipped so that segment output
+    files keep their generic names (``zh.srt``, ``cues.json``) that the
+    merge step expects.
+    """
     work_dir = _ensure_work_dir(config, video_path, slug)
 
     # Point the orchestrator at the work directory.
@@ -268,7 +274,11 @@ def _process_short_video(config: SubtitleConfig, video_path: Path, slug: str) ->
     Path(config.output_dir).mkdir(parents=True, exist_ok=True)
 
     Orchestrator(config).run()
-    _rename_outputs(work_dir, slug)
+
+    # Segments use generic names — don't rename to slug-prefixed.
+    is_segment = work_dir.name.startswith((".seg", "chunk_"))
+    if not is_segment:
+        _rename_outputs(work_dir, slug)
     _cleanup_temp(work_dir)
 
 
