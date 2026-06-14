@@ -3,16 +3,60 @@
 Alternative to whisper.cpp.  Uses VAD pre-segmentation to place
 segments in their correct time windows, then transcribes with
 faster-whisper and aligns with wav2vec2.
+
+The ASR pipeline and alignment model are cached at module level so
+that repeated calls (e.g. across video segments) share the same
+loaded models.  CTranslate2 thread count is set to ``os.cpu_count()``
+to fully utilise multi-core CPUs.
 """
 
 from __future__ import annotations
 
+import os
+import threading
 import time
 
 import whisperx
 from light_models import Word
 
 from ... import logger
+
+# ── Module-level model cache ──────────────────────────
+
+_cache: dict | None = None
+_cache_lock = threading.Lock()
+
+
+def _get_or_load_cache(model_name: str, language: str, cpu_threads: int) -> dict:
+    """Return cached pipeline + alignment model for *model_name*/*language*.
+
+    Thread-safe: only one thread loads while others wait, then all share.
+    """
+    global _cache
+    key = (model_name, language, cpu_threads)
+
+    with _cache_lock:
+        if _cache is None or _cache.get("key") != key:
+            device = "cpu"
+            pipeline = whisperx.load_model(
+                model_name,
+                device,
+                compute_type="int8",
+                vad_method="silero",
+                threads=cpu_threads,
+            )
+            align_model, align_meta = whisperx.load_align_model(
+                language_code=language,
+                device=device,
+            )
+            _cache = {
+                "key": key,
+                "pipeline": pipeline,
+                "align_model": align_model,
+                "align_meta": align_meta,
+            }
+
+    return _cache
 
 
 def run(audio_path: str, language: str = "en", model_name: str = "turbo") -> list[Word]:
@@ -24,20 +68,22 @@ def run(audio_path: str, language: str = "en", model_name: str = "turbo") -> lis
     """
     t0 = time.time()
 
-    # ── 1. Load model ──
-    device = "cpu"
-    model = whisperx.load_model(model_name, device, compute_type="int8", vad_method="silero")
+    cpu_threads = os.cpu_count() or 4
+    cache = _get_or_load_cache(model_name, language, cpu_threads)
+    pipeline = cache["pipeline"]
+    align_model = cache["align_model"]
+    align_meta = cache["align_meta"]
 
-    # ── 2. Load audio ──
+    # ── 1. Load audio ──
     audio = whisperx.load_audio(audio_path)
 
-    # ── 3. Transcribe (VAD enabled by default) ──
+    # ── 2. Transcribe (VAD enabled by default) ──
     # batch_size > 1 merges VAD segments for faster encoder inference.
-    result = model.transcribe(audio, batch_size=8)
+    result = pipeline.transcribe(audio, batch_size=8)
     logger.info(f"  ASR (whisperX): {len(result['segments'])} segments ({time.time() - t0:.0f}s)")
 
-    # ── 4. Align ──
-    align_model, align_meta = whisperx.load_align_model(language_code=language, device=device)
+    # ── 3. Align ──
+    device = "cpu"
     result = whisperx.align(
         result["segments"],
         align_model,
@@ -47,7 +93,7 @@ def run(audio_path: str, language: str = "en", model_name: str = "turbo") -> lis
         return_char_alignments=False,
     )
 
-    # ── 5. Extract words ──
+    # ── 4. Extract words ──
     words: list[Word] = []
     for seg in result.get("segments", []):
         for aw in seg.get("words", []):
