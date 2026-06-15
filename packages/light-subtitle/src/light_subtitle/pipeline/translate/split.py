@@ -96,6 +96,31 @@ _PREPOSITIONS = {
     "outside",
 }
 _ARTICLES = {"a", "an", "the"}
+_TRAILING_AUXILIARIES = {
+    "be",
+    "am",
+    "is",
+    "are",
+    "was",
+    "were",
+    "been",
+    "being",
+    "isn't",
+    "aren't",
+    "wasn't",
+    "weren't",
+    "won't",
+    "can't",
+    "couldn't",
+    "wouldn't",
+    "shouldn't",
+    "don't",
+    "doesn't",
+    "didn't",
+    "haven't",
+    "hasn't",
+    "hadn't",
+}
 
 
 @dataclass(frozen=True)
@@ -117,6 +142,7 @@ class _BatchAttempt:
     one_part_count: int
     mismatch_count: int
     absent_count: int
+    rejection_reasons: dict[str, str]
 
 
 def split_overlong_units(segments: list[Segment], config: SubtitleConfig) -> list[Segment]:
@@ -213,15 +239,59 @@ def _llm_split_batch(overlong_segments: list[Segment], config: SubtitleConfig) -
             )
             retry = _run_llm_split_attempt(client, attempt.unresolved, config, label)
             result.update(retry.splits)
-            retry_unresolved_count = len(retry.unresolved)
             logger.info(
                 f"  LLM batch retry ({label}): "
                 f"accepted={retry.accepted_count}, one_part={retry.one_part_count}, "
                 f"mismatch={retry.mismatch_count}, absent={retry.absent_count}; "
-                f"local fallback handles unresolved={retry_unresolved_count}"
+                f"unresolved={len(retry.unresolved)}"
             )
 
+            if retry.unresolved:
+                single_accepted = 0
+                for seg in retry.unresolved:
+                    reason = retry.rejection_reasons.get(seg.unit_id, "")
+                    single = _run_llm_split_single(client, seg, config, reason)
+                    result.update(single.splits)
+                    if seg.unit_id in single.splits:
+                        single_accepted += 1
+                still_unresolved = len(retry.unresolved) - single_accepted
+                logger.info(
+                    f"  LLM single retry ({label}): accepted={single_accepted}, "
+                    f"local fallback handles unresolved={still_unresolved}"
+                )
+
     return result
+
+
+def _run_llm_split_single(
+    client: OpenAIClient,
+    seg: Segment,
+    config: SubtitleConfig,
+    rejection_reason: str,
+) -> _BatchAttempt:
+    """Retry one unresolved unit with explicit feedback about the prior rejection."""
+    item = _batch_payload([seg], config.max_duration)[0]
+    system_prompt = render_prompt(
+        "compose_split_retry.j2",
+        item_json=json.dumps(item, ensure_ascii=False),
+        rejection_reason=rejection_reason or "split violated automatic safety checks",
+    )
+
+    try:
+        response, _ = client.chat(
+            [{"role": "user", "content": system_prompt}],
+            temperature=0.1,
+        )
+    except Exception:
+        logger.warning(f"    ⚠ LLM single retry failed for {seg.unit_id}, local fallback")
+        return _BatchAttempt({}, [seg], 0, 0, 0, 0, {})
+
+    data = _parse_batch_json(response)
+    if data is None:
+        logger.warning(f"    ⚠ LLM single retry JSON parse failed for {seg.unit_id}, local fallback")
+        return _BatchAttempt({}, [seg], 0, 0, 0, 0, {})
+
+    return _classify_llm_split_results([seg], data.get("results", []))
 
 
 def _run_llm_split_attempt(
@@ -231,7 +301,6 @@ def _run_llm_split_attempt(
     label: str,
 ) -> _BatchAttempt:
     """Run one LLM split attempt and classify unresolved items."""
-    batch_by_id = {seg.unit_id: seg for seg in batch}
     batch_json_str = json.dumps(_batch_payload(batch, config.max_duration), ensure_ascii=False)
     system_prompt = render_prompt("compose_split.j2", batch_json=batch_json_str)
 
@@ -242,22 +311,29 @@ def _run_llm_split_attempt(
         )
     except Exception:
         logger.warning(f"  ⚠ LLM batch failed ({label}), local fallback for {len(batch)} units")
-        return _BatchAttempt({}, batch, 0, 0, 0, len(batch))
+        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {})
 
     data = _parse_batch_json(response)
     if data is None:
         logger.warning(f"  ⚠ LLM batch JSON parse failed ({label}), local fallback for {len(batch)} units")
-        return _BatchAttempt({}, batch, 0, 0, 0, len(batch))
+        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {})
 
     raw_results = data.get("results", [])
     if not raw_results:
         logger.warning(f"  ⚠ LLM batch returned empty results ({label}), local fallback for {len(batch)} units")
-        return _BatchAttempt({}, batch, 0, 0, 0, len(batch))
+        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {})
 
+    return _classify_llm_split_results(batch, raw_results)
+
+
+def _classify_llm_split_results(batch: list[Segment], raw_results: list) -> _BatchAttempt:
+    """Map LLM JSON results to accepted splits and unresolved items."""
+    batch_by_id = {seg.unit_id: seg for seg in batch}
     splits: dict[str, list[Segment]] = {}
     seen_ids: set[str] = set()
     one_part_ids: set[str] = set()
     mismatch_ids: set[str] = set()
+    rejection_reasons: dict[str, str] = {}
 
     for item in raw_results:
         uid = item.get("id")
@@ -272,6 +348,7 @@ def _run_llm_split_attempt(
 
         if len(parts) < 2:
             one_part_ids.add(uid)
+            rejection_reasons[uid] = "returned only one part; overlong text must be split into 2 or more parts"
             continue
 
         sub_segments = _build_sub_segments(seg, parts)
@@ -279,8 +356,11 @@ def _run_llm_split_attempt(
             splits[uid] = sub_segments
         else:
             mismatch_ids.add(uid)
+            rejection_reasons[uid] = _llm_parts_rejection_reason(seg, parts)
 
     absent_ids = set(batch_by_id) - seen_ids
+    for uid in absent_ids:
+        rejection_reasons[uid] = "missing from results; include this id with 2 or more parts"
     unresolved_ids = (one_part_ids | mismatch_ids | absent_ids) - set(splits)
     unresolved = [seg for seg in batch if seg.unit_id in unresolved_ids]
     return _BatchAttempt(
@@ -290,6 +370,7 @@ def _run_llm_split_attempt(
         one_part_count=len(one_part_ids),
         mismatch_count=len(mismatch_ids),
         absent_count=len(absent_ids),
+        rejection_reasons=rejection_reasons,
     )
 
 
@@ -354,23 +435,69 @@ def _build_sub_segments(seg: Segment, parts: list[str]) -> list[Segment]:
         return []
 
     words = seg.words
-
-    # Verify LLM text matches original (with whitespace normalization).
     rejoined = " ".join(parts)
     original = seg.source_text
-    if _texts_match(rejoined, original) and words:
-        sub_segments = _build_by_word_count(seg, parts, words)
-        if _sub_segments_are_safe(sub_segments):
-            return sub_segments
-        logger.warning(f"    ⚠ LLM split unsafe boundaries for {seg.unit_id}, falling back to local split")
+    if not _texts_match(rejoined, original) or not words:
+        logger.warning(
+            f"    ⚠ LLM split text mismatch for {seg.unit_id} "
+            f"({len(original)}ch orig vs {len(rejoined)}ch joined), "
+            f"falling back to local word-boundary split"
+        )
         return []
 
-    logger.warning(
-        f"    ⚠ LLM split text mismatch for {seg.unit_id} "
-        f"({len(original)}ch orig vs {len(rejoined)}ch joined), "
-        f"falling back to local word-boundary split"
-    )
+    sub_segments = _build_by_word_count(seg, parts, words)
+    if _sub_segments_are_safe(sub_segments):
+        return sub_segments
+
+    logger.warning(f"    ⚠ LLM split unsafe boundaries for {seg.unit_id}, falling back to local split")
     return []
+
+
+def _llm_parts_rejection_reason(seg: Segment, parts: list[str]) -> str:
+    """Explain why an LLM split was rejected (for single-unit retry feedback)."""
+    rejoined = " ".join(parts)
+    if not _texts_match(rejoined, seg.source_text):
+        return (
+            "text mismatch: concatenating all parts with a single space must equal the original text "
+            "character-for-character (only whitespace may differ)"
+        )
+    if not seg.words:
+        return "missing word timestamps on the source segment"
+
+    sub_segments = _build_by_word_count(seg, parts, seg.words)
+    return _unsafe_boundary_reason(sub_segments)
+
+
+def _unsafe_boundary_reason(segments: list[Segment]) -> str:
+    """Describe the first unsafe boundary in an LLM split."""
+    if len(segments) < 2:
+        return "returned fewer than 2 valid parts"
+
+    for index, segment in enumerate(segments):
+        if not segment.words:
+            return f"part {index + 1} has no aligned words"
+        if index > 0 and _chunk_starts_with_preposition(segment.words):
+            prep = _normalized_word(segment.words[0])
+            return (
+                f'part {index + 1} starts with preposition "{prep}"; '
+                f"keep the preposition with its object in the same part"
+            )
+        if index > 0 and _chunk_starts_with_participle_after_auxiliary(segments[index - 1].words, segment.words):
+            word = _normalized_word(segment.words[0])
+            return (
+                f'part {index + 1} starts with participle/verb "{word}" after an auxiliary in part {index}; '
+                f"keep the verb phrase in one part"
+            )
+        if _chunk_ends_with_auxiliary(segment.words):
+            aux = _normalized_word(segment.words[-1])
+            return f'part {index + 1} ends with auxiliary "{aux}"; keep it with the following verb phrase'
+        if _chunk_ends_with_preposition(segment.words) and not _chunk_ends_with_preposition_idiom(segment.words):
+            prep = _normalized_word(segment.words[-1])
+            return f'part {index + 1} ends with preposition "{prep}"; keep it with its object in the same part'
+        if not _text_matches_word_tokens(segment.source_text, segment.words):
+            return f"part {index + 1} word tokens do not match the transcript word sequence"
+
+    return "unsafe split boundaries"
 
 
 _TRAILING_PUNCT = set(".!?。！？…")
@@ -441,7 +568,11 @@ def _sub_segments_are_safe(segments: list[Segment]) -> bool:
             return False
         if index > 0 and _chunk_starts_with_preposition(segment.words):
             return False
-        if _chunk_ends_with_preposition(segment.words):
+        if index > 0 and _chunk_starts_with_participle_after_auxiliary(segments[index - 1].words, segment.words):
+            return False
+        if _chunk_ends_with_preposition(segment.words) and not _chunk_ends_with_preposition_idiom(segment.words):
+            return False
+        if _chunk_ends_with_auxiliary(segment.words):
             return False
         if not _text_matches_word_tokens(segment.source_text, segment.words):
             return False
@@ -463,7 +594,11 @@ def _split_at_word_boundaries(seg: Segment, max_duration: float, *, force: bool)
     if len(words) < 2:
         return [seg]
 
-    word_chunks = _split_word_chunks(words, max_duration, force=force)
+    word_chunks = _finalize_word_chunks(
+        _split_word_chunks(words, max_duration, force=force),
+        max_duration,
+        force=force,
+    )
     if len(word_chunks) <= 1:
         return [seg]
 
@@ -512,6 +647,8 @@ def _choose_split_index(words: list[Word], max_duration: float) -> int | None:
         right = words[index:]
         if _chunk_ends_with_preposition(left) or _chunk_starts_with_preposition(right):
             continue
+        if _chunk_ends_with_auxiliary(left) or _chunk_starts_with_participle_after_auxiliary(left, right):
+            continue
 
         score = _boundary_semantic_score(words, index)
         score += _duration_score(left, right, max_duration, target_left)
@@ -541,7 +678,32 @@ def _is_forbidden_boundary(words: list[Word], index: int) -> bool:
     if prev_word == "from" or next_word in {"to", "into"} and _has_open_from(words[:index]):
         return True
 
+    if _chunk_ends_with_auxiliary(words[:index]):
+        return True
+
+    if _chunk_starts_with_participle_after_auxiliary(words[:index], words[index:]):
+        return True
+
     return False
+
+
+def _chunk_ends_with_auxiliary(words: list[Word]) -> bool:
+    """True when a chunk ends on a stranded auxiliary (e.g. ``isn't``, ``being``)."""
+    if not words:
+        return False
+    return _normalized_word(words[-1]) in _TRAILING_AUXILIARIES
+
+
+def _chunk_starts_with_participle_after_auxiliary(left: list[Word], right: list[Word]) -> bool:
+    """True when *right* begins with a participle/verb completing an auxiliary in *left*."""
+    if not left or not right:
+        return False
+    if not _chunk_ends_with_auxiliary(left):
+        return False
+    next_word = _normalized_word(right[0])
+    if not next_word:
+        return False
+    return next_word.endswith("ing") or next_word.endswith("ed")
 
 
 def _has_open_from(words: list[Word]) -> bool:
@@ -562,6 +724,65 @@ def _chunk_ends_with_preposition(words: list[Word]) -> bool:
     if not words:
         return False
     return _normalized_word(words[-1]) in _PREPOSITIONS
+
+
+_PHRASAL_PREP_ENDINGS = {
+    ("so", "on"),
+    ("thinking", "about"),
+    ("afraid", "of"),
+}
+
+
+def _chunk_ends_with_preposition_idiom(words: list[Word]) -> bool:
+    """True when a trailing preposition completes a phrasal verb or fixed phrase."""
+    norms = [_normalized_word(word) for word in words if _normalized_word(word)]
+    if len(norms) >= 2 and tuple(norms[-2:]) in _PHRASAL_PREP_ENDINGS:
+        return True
+    return False
+
+
+def _merge_prep_ending_tail(chunks: list[list[Word]]) -> list[list[Word]]:
+    """Merge a final chunk that ends on a stranded preposition back into the previous chunk."""
+    if len(chunks) < 2:
+        return chunks
+    if not _chunk_ends_with_preposition(chunks[-1]) or _chunk_ends_with_preposition_idiom(chunks[-1]):
+        return chunks
+    return [*chunks[:-2], chunks[-2] + chunks[-1]]
+
+
+def _resplit_overlong_word_chunks(chunks: list[list[Word]], max_duration: float) -> list[list[Word]]:
+    """Re-split chunks that became too long after prep-tail merging."""
+    result: list[list[Word]] = []
+    soft_max = max_duration * _SOFT_MAX_DURATION_MULTIPLIER
+    for chunk in chunks:
+        if len(chunk) >= 2 and _words_duration(chunk) > soft_max:
+            result.extend(_split_word_chunks(chunk, max_duration, force=False))
+        else:
+            result.append(chunk)
+    return result
+
+
+def _finalize_word_chunks(chunks: list[list[Word]], max_duration: float, *, force: bool) -> list[list[Word]]:
+    """Apply prep-tail merge and duration re-split until stable."""
+    current = chunks
+    for _ in range(8):
+        merged = _merge_prep_ending_tail(current)
+        resplit = _resplit_overlong_word_chunks(merged, max_duration)
+        if resplit == current:
+            break
+        current = resplit
+
+    if (
+        len(current) >= 2
+        and _chunk_ends_with_preposition(current[-1])
+        and not _chunk_ends_with_preposition_idiom(current[-1])
+    ):
+        merged = [*current[:-2], current[-2] + current[-1]]
+        max_tail_duration = max_duration * (2.5 if force else _SOFT_MAX_DURATION_MULTIPLIER * 1.5)
+        if _words_duration(merged[-1]) <= max_tail_duration:
+            return merged
+
+    return current
 
 
 def _boundary_semantic_score(words: list[Word], index: int) -> float:

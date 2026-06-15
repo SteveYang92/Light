@@ -17,6 +17,24 @@ Before translating, read the **full sequence** of units in order — including c
 
 **Key rule for split constructions**: When a single logical statement is split across segments (like `from A` / `into B`, or `not only X` / `but also Y`), translate each segment in a way that **preserves the full comparison or contrast** across the boundary. The two translations, read together, must express the original meaning as a coherent whole.
 
+### Split Groups (Critical for Overlong Units)
+
+Some units share the same `split_group` id (e.g. `mu0059_u0060_0` and `mu0059_u0060_1`). These are **one English sentence** cut for timing — not independent thoughts.
+
+- Read all parts with the same `split_group` **before** translating any of them.
+- Use `part_index`, `part_count`, and `is_continuation` in the payload.
+- **Non-final parts** (`part_index < part_count - 1`): do **not** end with a full stop (。) unless the English `source_text` itself ends with `.!?`. Prefer a comma (，), dash (——), or an open clause that the next part completes.
+- **Final part** (`part_index == part_count - 1`): close the sentence normally.
+
+Examples (Chinese target):
+
+| Bad | Good |
+|-----|------|
+| Part 0: `…values for freedom being` →「…自由价值观。」 Part 1: `corrupted by money…` →「被金钱…腐蚀？」 | Part 0:「…自由价值观」或「…如何防止这些自由价值观」 Part 1:「被金钱、权势者腐蚀？」 — together = full question |
+| Part 0: `My digestive system isn't` →「我的消化系统。」 Part 1: `agreeing with…` →「不适应…」 | Part 0:「我的消化系统」 Part 1:「不太适应这类食物」 — together = one sentence |
+
+When `is_continuation` is true, the translation may start with 「被」「而」「和」 etc. if that preserves grammar — but **both parts together** must read as one natural sentence.
+
 ## Translation Principles
 
 1. **Context-first** — read all units in order (context + current) before translating any.

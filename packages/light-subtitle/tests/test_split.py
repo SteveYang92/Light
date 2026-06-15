@@ -9,6 +9,9 @@ from light_subtitle.config import SubtitleConfig
 from light_subtitle.pipeline.translate import split as split_module
 from light_subtitle.pipeline.translate.split import (
     _PREPOSITIONS,
+    _chunk_ends_with_auxiliary,
+    _chunk_ends_with_preposition_idiom,
+    _chunk_starts_with_participle_after_auxiliary,
     _parse_batch_json,
     _texts_from_parent_chunks,
     _texts_match,
@@ -55,6 +58,8 @@ def _assert_no_stranded_preposition_chunks(segments: list[Segment]) -> None:
     for index, segment in enumerate(segments):
         if index > 0:
             assert _first_word(segment.source_text) not in _PREPOSITIONS
+        if segment.words and _chunk_ends_with_preposition_idiom(segment.words):
+            continue
         assert _last_word(segment.source_text) not in _PREPOSITIONS
 
 
@@ -444,7 +449,7 @@ class TestLlmSinglePartFallback:
 
         result = split_overlong_units([_seg("llm_single", words, text)], _config(api_key="test-key"))
 
-        assert calls["count"] == 2
+        assert calls["count"] == 3
         assert len(result) > 1
         assert result[0].source_text == "and it's always tricky as a game designer"
 
@@ -522,6 +527,115 @@ class TestLlmSinglePartFallback:
         assert [segment.source_text for segment in result] != bad_response["results"][0]["parts"]
         _assert_no_stranded_preposition_chunks(result)
 
+    def test_single_retry_with_feedback_accepts_valid_split(self, monkeypatch):
+        text = "there was a mix of veterans and then people like me joined the team during beta"
+        words = _words_from_text(text, step=0.5)
+        bad_response = {
+            "results": [
+                {
+                    "id": "prep_fix",
+                    "parts": ["there was a mix", "of veterans and then people like me joined the team during beta"],
+                }
+            ]
+        }
+        good_response = {
+            "results": [
+                {
+                    "id": "prep_fix",
+                    "parts": [
+                        "there was a mix of veterans",
+                        "and then people like me joined the team during beta",
+                    ],
+                }
+            ]
+        }
+        responses = [bad_response, bad_response, good_response]
+        calls = {"count": 0}
+
+        class FakeClient:
+            def __init__(self, **kwargs):
+                pass
+
+            def chat(self, messages, temperature):
+                calls["count"] += 1
+                if calls["count"] == 3:
+                    assert "rejected automatically" in messages[0]["content"]
+                    assert "starts with preposition" in messages[0]["content"]
+                return json.dumps(responses.pop(0)), {}
+
+        monkeypatch.setattr(split_module, "OpenAIClient", FakeClient)
+
+        result = split_overlong_units([_seg("prep_fix", words, text)], _config(api_key="test-key", max_duration=5.5))
+
+        assert calls["count"] == 3
+        assert result[0].source_text == good_response["results"][0]["parts"][0]
+        assert result[1].source_text == good_response["results"][0]["parts"][1]
+        _assert_no_stranded_preposition_chunks(result)
+
+
+class TestTranslationFriendlyBoundaries:
+    """Local split avoids auxiliary / participle hard cuts."""
+
+    def test_being_corrupted_not_split(self):
+        text = (
+            "how do you prevent these values for freedom being corrupted by money, "
+            "by people with influence, by people with power"
+        )
+        words = [_word(word, float(i), float(i) + 0.45) for i, word in enumerate(text.split())]
+        split_at = next(i for i, w in enumerate(words) if w.text == "being") + 1
+        left, right = words[:split_at], words[split_at:]
+        assert _chunk_ends_with_auxiliary(left)
+        assert _chunk_starts_with_participle_after_auxiliary(left, right)
+
+        result = split_overlong_units([_seg("being_prep", words, text)], _config(max_duration=4.0))
+        assert len(result) > 1
+        assert not any(
+            s.source_text.rstrip().endswith("being")
+            and result[i + 1].source_text.lstrip().startswith("corrupted")
+            for i, s in enumerate(result[:-1])
+        )
+
+    def test_isnt_agreeing_not_split(self):
+        text = "my digestive system isn't agreeing with this kind of food"
+        words = [_word(word, float(i), float(i) + 0.5) for i, word in enumerate(text.split())]
+        split_at = next(i for i, w in enumerate(words) if w.text == "isn't") + 1
+        left, right = words[:split_at], words[split_at:]
+        assert _chunk_ends_with_auxiliary(left)
+        assert _chunk_starts_with_participle_after_auxiliary(left, right)
+
+        result = split_overlong_units([_seg("isnt_agree", words, text)], _config(max_duration=3.0))
+        assert len(result) > 1
+        assert not any(s.source_text.rstrip().endswith("isn't") for s in result[:-1])
+
+
+class TestLocalPrepTailMerge:
+    """Local fallback merges a final chunk that ends on a stranded preposition."""
+
+    def test_merge_tail_chunk_ending_with_preposition(self):
+        text = (
+            "I don't want other people or companies, all kinds of organizations telling me what is important today "
+            "and what I should be thinking about."
+        )
+        words = [_word(word, float(i), float(i) + 0.5) for i, word in enumerate(text.split())]
+
+        result = split_overlong_units([_seg("tail_prep", words, text)], _config(max_duration=4.0))
+
+        assert len(result) > 1
+        _assert_no_stranded_preposition_chunks(result)
+
+    def test_allows_and_so_on_idiom_at_chunk_end(self):
+        text = (
+            "No alcohol, stoic mindset, strict diet and exercise, including a crazy amount of daily pull-ups and "
+            "push-ups, no phone except to occasionally test Telegram features, and so on."
+        )
+        words = [_word(word, float(i), float(i) + 0.4) for i, word in enumerate(text.split())]
+
+        result = split_overlong_units([_seg("so_on", words, text)], _config(max_duration=5.0))
+
+        assert len(result) > 1
+        assert any(segment.source_text.rstrip(".,").endswith("and so on") for segment in result)
+        _assert_no_stranded_preposition_chunks(result)
+
 
 class TestComposeSplitBatchPrompt:
     """Batch prompt documents the constraints that protect split quality."""
@@ -549,6 +663,12 @@ class TestComposeSplitBatchPrompt:
         assert "client and server" in prompt
         assert "but if" in prompt
         assert "Never create a chunk that is only a conjunction" in prompt
+
+    def test_batch_prompt_documents_of_chain_enumeration(self):
+        prompt = self._prompt_text()
+
+        assert "of X, of Y, of Z" in prompt
+        assert "of opinions," in prompt
 
 
 class TestBatchJsonParsing:

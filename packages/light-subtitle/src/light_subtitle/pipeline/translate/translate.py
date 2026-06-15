@@ -17,6 +17,8 @@ from ...llm.prompts import render_prompt
 
 CHUNK_SIZE = 100
 MAX_WORKERS = 4
+_SPLIT_PART_RE = re.compile(r"^(mu\d+_u\d+)_(\d+)$")
+_EN_SENTENCE_END = frozenset(".!?…")
 
 
 def _render_translate_prompt(config: SubtitleConfig) -> str:
@@ -67,8 +69,11 @@ def run(
     if not pending and existing:
         return _order_cues(segments, existing), None
 
-    if len(pending) <= CHUNK_SIZE:
-        cues, usage = _translate_batch(client, system_prompt, pending, segments, 0, config)
+    batch_chunks = _chunk_pending_segments(pending, CHUNK_SIZE)
+    if len(batch_chunks) == 1:
+        chunk = batch_chunks[0]
+        abs_idx = segments.index(chunk[0]) if chunk else 0
+        cues, usage = _translate_batch(client, system_prompt, chunk, segments, abs_idx, config)
         merged = dict(existing)
         for c in cues:
             merged[c.unit_id] = c
@@ -76,17 +81,22 @@ def run(
             _save_partial_cues(tx_dir, _order_cues(segments, merged))
         return _order_cues(segments, merged), usage
 
-    chunks: list[tuple[int, list[Segment]]] = []
-    for batch_idx in range(0, len(pending), CHUNK_SIZE):
-        chunks.append((batch_idx, pending[batch_idx : batch_idx + CHUNK_SIZE]))
-
     merged = dict(existing)
     total_usage: dict[str, int] = {}
 
-    with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(chunks))) as executor:
+    with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(batch_chunks))) as executor:
         futures = {
-            executor.submit(_translate_batch, client, system_prompt, chunk, segments, idx, config): idx
-            for idx, chunk in chunks
+            executor.submit(
+                _translate_batch,
+                client,
+                system_prompt,
+                chunk,
+                segments,
+                segments.index(chunk[0]),
+                config,
+            ): segments.index(chunk[0])
+            for chunk in batch_chunks
+            if chunk
         }
         results: dict[int, tuple[list[SubtitleCue], dict]] = {}
         for future in as_completed(futures):
@@ -170,7 +180,7 @@ def _translate_batch(
     for attempt in range(max_retries):
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
-            return _parse_response(response, segments, config), usage
+            return _parse_response(response, segments, config, all_segments), usage
         except (json.JSONDecodeError, ValueError) as e:
             last_error = e
             if attempt < max_retries - 1:
@@ -186,45 +196,142 @@ def _translate_batch(
     raise last_error  # type: ignore[misc]
 
 
+def _parse_split_part(unit_id: str) -> tuple[str, int] | None:
+    """Return (split_group_id, part_index) for units like ``mu0059_u0060_0``."""
+    match = _SPLIT_PART_RE.match(unit_id)
+    if not match:
+        return None
+    return match.group(1), int(match.group(2))
+
+
+def _split_group_part_counts(segments: list[Segment]) -> dict[str, int]:
+    """Map split group id to number of parts (max index + 1)."""
+    max_index: dict[str, int] = {}
+    for segment in segments:
+        parsed = _parse_split_part(segment.unit_id)
+        if parsed is None:
+            continue
+        group_id, part_index = parsed
+        max_index[group_id] = max(max_index.get(group_id, 0), part_index + 1)
+    return max_index
+
+
+def _is_last_split_part(unit_id: str, part_counts: dict[str, int]) -> bool | None:
+    """Return whether *unit_id* is the last part of its split group, or None if not split."""
+    parsed = _parse_split_part(unit_id)
+    if parsed is None:
+        return None
+    group_id, part_index = parsed
+    count = part_counts.get(group_id, part_index + 1)
+    return part_index >= count - 1
+
+
+def _source_ends_sentence(source_text: str) -> bool:
+    """True when English source ends with sentence-final punctuation."""
+    stripped = source_text.rstrip()
+    return bool(stripped) and stripped[-1] in _EN_SENTENCE_END
+
+
+def _split_payload_fields(unit_id: str, part_counts: dict[str, int]) -> dict:
+    """Optional split-group metadata for translation payloads."""
+    parsed = _parse_split_part(unit_id)
+    if parsed is None:
+        return {}
+    group_id, part_index = parsed
+    part_count = part_counts.get(group_id, part_index + 1)
+    return {
+        "split_group": group_id,
+        "part_index": part_index,
+        "part_count": part_count,
+        "is_continuation": part_index > 0,
+    }
+
+
+def _unit_payload_entry(segment: Segment, part_counts: dict[str, int], *, translate: bool = True) -> dict:
+    """Build one translation payload item for a segment."""
+    entry: dict = {
+        "unit_id": segment.unit_id,
+        "source_text": segment.source_text,
+        "speaker": segment.speaker,
+    }
+    if translate:
+        entry["duration"] = round(segment.end - segment.start, 1)
+        entry["max_chars_hint"] = int((segment.end - segment.start) * 8)
+    else:
+        entry["translate"] = False
+    entry.update(_split_payload_fields(segment.unit_id, part_counts))
+    return entry
+
+
+def _chunk_pending_segments(pending: list[Segment], chunk_size: int) -> list[list[Segment]]:
+    """Chunk pending segments without splitting a ``split_group`` across batches when feasible."""
+    if not pending:
+        return []
+    if len(pending) <= chunk_size:
+        return [pending]
+
+    chunks: list[list[Segment]] = []
+    start = 0
+    while start < len(pending):
+        end = min(start + chunk_size, len(pending))
+        if end < len(pending):
+            end = _adjust_chunk_end(pending, start, end, chunk_size)
+        chunks.append(pending[start:end])
+        start = end
+    return chunks
+
+
+def _adjust_chunk_end(pending: list[Segment], start: int, end: int, chunk_size: int) -> int:
+    """Extend or shrink *end* so split siblings stay in one batch when reasonable."""
+    if end >= len(pending):
+        return end
+
+    left = pending[end - 1]
+    right = pending[end]
+    left_part = _parse_split_part(left.unit_id)
+    right_part = _parse_split_part(right.unit_id)
+    if not left_part or not right_part or left_part[0] != right_part[0]:
+        return end
+
+    group_id = left_part[0]
+    group_end = end
+    while group_end < len(pending):
+        part = _parse_split_part(pending[group_end].unit_id)
+        if part and part[0] == group_id:
+            group_end += 1
+        else:
+            break
+
+    if group_end - start <= chunk_size + 16:
+        return group_end
+
+    group_start = end - 1
+    while group_start > start:
+        part = _parse_split_part(pending[group_start - 1].unit_id)
+        if part and part[0] == group_id:
+            group_start -= 1
+        else:
+            break
+    return max(start + 1, group_start)
+
+
 def _build_payload(
     segments: list[Segment], all_segments: list[Segment], batch_idx: int, config: SubtitleConfig
 ) -> dict:
-    # Context: up to 2 segments before and after for style reference.
+    """Build translation payload with context units and split-group metadata."""
+    part_counts = _split_group_part_counts(all_segments)
     ctx_start = max(0, batch_idx - 2)
     ctx_end = min(len(all_segments), batch_idx + len(segments) + 2)
-    context_items = []
-    for i in range(ctx_start, batch_idx):
-        s = all_segments[i]
-        context_items.append(
-            {
-                "unit_id": s.unit_id,
-                "source_text": s.source_text,
-                "speaker": s.speaker,
-                "translate": False,
-            }
-        )
+    context_items = [
+        _unit_payload_entry(all_segments[i], part_counts, translate=False) for i in range(ctx_start, batch_idx)
+    ]
 
-    unit_items = []
-    for s in segments:
-        unit_items.append(
-            {
-                "unit_id": s.unit_id,
-                "source_text": s.source_text,
-                "duration": round(s.end - s.start, 1),
-                "max_chars_hint": int((s.end - s.start) * 8),
-                "speaker": s.speaker,
-            }
-        )
-    for i in range(batch_idx + len(segments), ctx_end):
-        s = all_segments[i]
-        context_items.append(
-            {
-                "unit_id": s.unit_id,
-                "source_text": s.source_text,
-                "speaker": s.speaker,
-                "translate": False,
-            }
-        )
+    unit_items = [_unit_payload_entry(segment, part_counts, translate=True) for segment in segments]
+
+    context_items.extend(
+        _unit_payload_entry(all_segments[i], part_counts, translate=False)
+        for i in range(batch_idx + len(segments), ctx_end)
+    )
 
     return {
         **_translation_context_fields(config),
@@ -236,6 +343,7 @@ def _parse_response(
     response: str,
     source_segments: list[Segment],
     config: SubtitleConfig,
+    all_segments: list[Segment] | None = None,
 ) -> list[SubtitleCue]:
     """Parse LLM response into SubtitleCue list.
 
@@ -256,6 +364,7 @@ def _parse_response(
             return []
 
     segment_map: dict[str, Segment] = {s.unit_id: s for s in source_segments}
+    part_counts = _split_group_part_counts(all_segments if all_segments is not None else source_segments)
 
     cues: list[SubtitleCue] = []
     for item in data:
@@ -274,7 +383,12 @@ def _parse_response(
             if chunks:
                 text = "".join(chunks)
         text = text.replace("\\n", "\n")
-        text = _normalize_punctuation(text, config.target_lang)
+        text = _normalize_punctuation(
+            text,
+            config.target_lang,
+            is_last_split_part=_is_last_split_part(uid, part_counts),
+            source_ends_sentence=_source_ends_sentence(seg.source_text),
+        )
 
         cues.append(
             SubtitleCue(
@@ -326,20 +440,11 @@ def translate_missing(
         ctx_start = max(0, i - 2)
         ctx_end = min(len(segments), i + 3)
         batch = segments[ctx_start:ctx_end]
+        part_counts = _split_group_part_counts(segments)
 
-        # Build payload with explicit translate flags
         payload_items = []
         for bs in batch:
-            entry = {
-                "unit_id": bs.unit_id,
-                "source_text": bs.source_text,
-                "speaker": bs.speaker,
-            }
-            if bs.unit_id == s.unit_id:
-                entry["duration"] = round(bs.end - bs.start, 1)
-                entry["max_chars_hint"] = int((bs.end - bs.start) * 8)
-            else:
-                entry["translate"] = False
+            entry = _unit_payload_entry(bs, part_counts, translate=bs.unit_id == s.unit_id)
             payload_items.append(entry)
 
         payload = {
@@ -354,7 +459,7 @@ def translate_missing(
 
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
-            cues = _parse_response(response, batch, config)
+            cues = _parse_response(response, batch, config, segments)
             # Keep only the missing unit's cue
             cues = [c for c in cues if c.unit_id == s.unit_id]
             all_cues.extend(cues)
@@ -370,16 +475,36 @@ def translate_missing(
     return all_cues, total_usage
 
 
-def _normalize_punctuation(text: str, lang: str) -> str:
+def _normalize_punctuation(
+    text: str,
+    lang: str,
+    *,
+    is_last_split_part: bool | None = None,
+    source_ends_sentence: bool = False,
+) -> str:
     """Ensure Chinese text ends with proper punctuation.
 
-    This is the only punctuation normalization needed now that each
-    segment produces exactly one cue (no more chunk splitting).
+    For non-final split parts whose English source continues mid-sentence,
+    do not force a full stop — that breaks cross-segment readability.
     """
-    if lang == "zh" and text:
-        last = text.rstrip()[-1] if text.rstrip() else ""
-        if last in CJK_CLAUSE_PUNCT:
-            text = text.rstrip()[:-1] + "。"
-        elif last not in SENTENCE_ENDS:
-            text = text.rstrip() + "。"
+    if lang != "zh" or not text:
+        return text
+
+    stripped = text.rstrip()
+    if not stripped:
+        return text
+
+    last = stripped[-1]
+    mid_split = is_last_split_part is False and not source_ends_sentence
+
+    if last in CJK_CLAUSE_PUNCT:
+        if mid_split:
+            return stripped
+        return stripped[:-1] + "。"
+
+    if last not in SENTENCE_ENDS:
+        if mid_split:
+            return stripped
+        return stripped + "。"
+
     return text

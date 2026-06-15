@@ -44,6 +44,19 @@ These are checked automatically. If you violate them, your split is thrown away.
    - Bad: ["a transition from one type of scale", "into a different type of scaling"]
    - Good: ["a transition from one type of scale into a different type of scaling", "from pre-training to rl"]
 
+4b. **Never split parallel "of X, of Y, of Z" enumerations at the comma.** Keep the full list in one part or split before the list starts.
+   - Bad: ["…the abundance of opinions,", "of ideas, of goods and services."]
+   - Good: ["…cannot enjoy", "the abundance of opinions, of ideas, of goods and services."]
+   - Bad: ["…abstinence from alcohol,", "tobacco, coffee, pills"]
+   - Good: ["…complete abstinence from alcohol, tobacco, coffee, pills, and illegal drugs."] (one part if short enough, otherwise split before "from")
+
+4c. **Never split between an auxiliary and its verb phrase.**
+   - Auxiliaries include: be, is, are, was, were, being, isn't, aren't, wasn't, won't, can't, don't, doesn't, haven't, etc.
+   - Bad: ["how do you prevent these values for freedom being", "corrupted by money, by people with influence"]
+   - Good: ["how do you prevent these values for freedom", "being corrupted by money, by people with influence, by people with power?"]
+   - Bad: ["my digestive system isn't", "agreeing with this kind of food."]
+   - Good: ["my digestive system", "isn't agreeing with this kind of food."] OR keep the full verb phrase in one part
+
 5. **Never split coordinated noun/verb phrases joined by "and", "or", or "nor".**
    - Keep "X and Y" together when both sides belong to one phrase: "client and server", "read and write", "alpha and beta", "mix of veterans and then people".
    - Bad: ["architected the client", "and server in such a way"]
