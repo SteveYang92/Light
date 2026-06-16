@@ -24,9 +24,9 @@ from .context import TranslateContext as TranslateContext
 from .evaluate import evaluate_translations, get_low_score_cues, scores_to_dict
 from .refine import refine_translations
 from .split import split_overlong_units
+from .translate import clear_partial_cache, translate_missing
 from .translate import load_partial_cues as load_partial_cues
 from .translate import run as _translate_live
-from .translate import translate_missing
 
 
 @dataclass
@@ -43,13 +43,15 @@ def _compose_and_split(
     tx_dir: Path,
 ) -> list[Segment]:
     """Compose fragments → split overlong units → save debug compose.json."""
+    tx_dir.mkdir(parents=True, exist_ok=True)
+    clear_partial_cache(tx_dir)
+
     translation_segments = compose_segments(segments)
     logger.info(f"  Compose: {len(segments)} segments → {len(translation_segments)} translation units")
 
     translation_segments = split_overlong_units(translation_segments, config)
     logger.info(f"  Split overlong: → {len(translation_segments)} units after splitting")
 
-    tx_dir.mkdir(parents=True, exist_ok=True)
     # Debug: save compose results (after splitting).
     compose_out = [
         {

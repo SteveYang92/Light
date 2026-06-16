@@ -139,6 +139,20 @@ def _save_partial_cues(tx_dir: Path, cues: list[SubtitleCue]) -> None:
     (tx_dir / "partial.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def clear_partial_cache(tx_dir: Path) -> bool:
+    """Remove ``partial.json`` when compose/split is re-run.
+
+    Unit ids may be reused with different source text or timing; stale
+    partial entries would otherwise skip LLM translation.
+    """
+    path = tx_dir / "partial.json"
+    if not path.exists():
+        return False
+    path.unlink()
+    logger.info("  Cleared stale partial.json (re-compose)")
+    return True
+
+
 def load_partial_cues(tx_dir: Path, config: SubtitleConfig) -> list[SubtitleCue]:
     path = tx_dir / "partial.json"
     if not path.exists():
