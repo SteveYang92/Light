@@ -44,6 +44,46 @@ def should_split(video_path: Path, threshold: float = 2700) -> bool:
     return probe_duration(str(video_path)) > threshold
 
 
+def find_existing_segments(work_dir: Path) -> list[Path] | None:
+    """Return sorted segment directories under *work_dir* if all exist and have a video file.
+
+    Checks for ``.seg1/``, ``.seg2/``, … directories each containing a
+    ``video.*`` file.  Returns the sorted directory list on success, or
+    ``None`` if no segments are found or any segment is incomplete.
+    """
+    seg_dirs: list[Path] = []
+    for k in range(1, 100):  # sanity limit
+        d = work_dir / f".seg{k}"
+        if not d.is_dir():
+            break
+        if not any(d.glob("video.*")):
+            return None  # incomplete
+        seg_dirs.append(d)
+
+    if len(seg_dirs) == 0:
+        return None
+
+    # Also verify split_points.json exists
+    if not (work_dir / "split_points.json").exists():
+        return None
+
+    return seg_dirs
+
+
+def find_existing_split_points(work_dir: Path) -> list[float] | None:
+    """Load split points from ``split_points.json`` if it exists."""
+    path = work_dir / "split_points.json"
+    if not path.exists():
+        return None
+    try:
+        import json as _json
+
+        data = _json.loads(path.read_text())
+        return data.get("split_points")
+    except Exception:
+        return None
+
+
 def compute_split_points(
     video_path: Path,
     target_duration: float = 2700,

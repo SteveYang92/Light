@@ -20,11 +20,17 @@ from pathlib import Path
 import typer
 
 from .config import AsrEngine, SubtitleConfig
-from .download import derive_slug_from_path, download_video
+from .download import derive_slug_from_path, download_video, find_cached_download
 from .merge_outputs import merge_all
 from .orchestrator import Orchestrator
 from .utils.whisper_utils import find_model, find_whisper
-from .video_split import compute_split_points, should_split, split_video
+from .video_split import (
+    compute_split_points,
+    find_existing_segments,
+    find_existing_split_points,
+    should_split,
+    split_video,
+)
 
 # ── Validation ──────────────────────────────────────────
 
@@ -175,7 +181,12 @@ def run(
     output_base = Path(output_dir)
 
     if has_url:
-        video_path, slug = download_video(url, output_base)
+        cached = find_cached_download(url, output_base)
+        if cached is not None:
+            video_path, slug = cached
+            print(f"  Using cached download: {video_path}")
+        else:
+            video_path, slug = download_video(url, output_base)
         is_long = should_split(video_path, threshold=_DEFAULT_SPLIT_THRESHOLD)
     else:
         video_path = Path(input_path).resolve()
@@ -294,12 +305,18 @@ def _process_long_video(config: SubtitleConfig, video_path: Path, slug: str) -> 
     """
     work_dir = _ensure_work_dir(config, video_path, slug)
 
-    # ── Split ─────────────────────────────────────────
+    # ── Split (or reuse existing) ────────────────────
     overlap = _DEFAULT_OVERLAP
-    points = compute_split_points(video_path, target_duration=_DEFAULT_SPLIT_THRESHOLD)
-    seg_dirs = split_video(video_path, points, overlap=overlap, seg_dir_template=".seg")
-
-    print(f"Split into {len(seg_dirs)} segments: {[d.name for d in seg_dirs]}")
+    seg_dirs = find_existing_segments(work_dir)
+    if seg_dirs is not None:
+        points = find_existing_split_points(work_dir)
+        if points is None:
+            points = compute_split_points(video_path, target_duration=_DEFAULT_SPLIT_THRESHOLD)
+        print(f"Found {len(seg_dirs)} existing segments: {[d.name for d in seg_dirs]}")
+    else:
+        points = compute_split_points(video_path, target_duration=_DEFAULT_SPLIT_THRESHOLD)
+        seg_dirs = split_video(video_path, points, overlap=overlap, seg_dir_template=".seg")
+        print(f"Split into {len(seg_dirs)} segments: {[d.name for d in seg_dirs]}")
 
     # ── Build segment configs ──────────────────────────
     seg_configs: list[SubtitleConfig] = []
