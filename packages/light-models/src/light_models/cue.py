@@ -17,3 +17,4 @@ class SubtitleCue:
     qc: dict[str, bool] = field(default_factory=dict)
     words: list["Word"] = field(default_factory=list)
     annotation: str = ""
+    merged_from: list[str] = field(default_factory=list)  # unit_ids absorbed by display merge

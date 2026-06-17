@@ -217,6 +217,7 @@ def export_raw_cues(cues: list[SubtitleCue], output_path: str) -> None:
             "end": c.end,
             "text": c.text,
             "lang": c.lang,
+            **({"merged_from": c.merged_from} if c.merged_from else {}),
         }
         for c in cues
     ]

@@ -14,10 +14,12 @@ from ... import logger
 from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
+from .merge_apply import apply_display_merges
+from .merge_review import MergeHint, log_merge_hints, review_merge_hints
 
 CHUNK_SIZE = 100
 MAX_WORKERS = 4
-_SPLIT_PART_RE = re.compile(r"^(mu\d+_u\d+)_(\d+)$")
+_SPLIT_PART_RE = re.compile(r"^(mu\d+_u\d+(?:_\d+)*)_(\d+)$")
 _EN_SENTENCE_END = frozenset(".!?…")
 
 
@@ -73,46 +75,57 @@ def run(
     if len(batch_chunks) == 1:
         chunk = batch_chunks[0]
         abs_idx = segments.index(chunk[0]) if chunk else 0
-        cues, usage = _translate_batch(client, system_prompt, chunk, segments, abs_idx, config)
+        cues, usage, hints = _translate_batch(client, system_prompt, chunk, segments, abs_idx, config)
         merged = dict(existing)
         for c in cues:
             merged[c.unit_id] = c
+        ordered = _order_cues(segments, merged)
+        if config.merge_hints_apply:
+            ordered = apply_display_merges(ordered, hints, config)
         if tx_dir is not None:
-            _save_partial_cues(tx_dir, _order_cues(segments, merged))
-        return _order_cues(segments, merged), usage
+            _save_partial_cues(tx_dir, ordered)
+        for i, c in enumerate(ordered):
+            c.cue_id = f"{config.target_lang}_{i:04d}"
+        return ordered, usage
 
     merged = dict(existing)
     total_usage: dict[str, int] = {}
+    all_hints: list[MergeHint] = []
 
     with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(batch_chunks))) as executor:
         futures = {
             executor.submit(
-                _translate_batch,
-                client,
-                system_prompt,
-                chunk,
-                segments,
-                segments.index(chunk[0]),
-                config,
+                logger.run_with_file_logger(
+                    _translate_batch,
+                    client,
+                    system_prompt,
+                    chunk,
+                    segments,
+                    segments.index(chunk[0]),
+                    config,
+                ),
             ): segments.index(chunk[0])
             for chunk in batch_chunks
             if chunk
         }
-        results: dict[int, tuple[list[SubtitleCue], dict]] = {}
+        results: dict[int, tuple[list[SubtitleCue], dict, list[MergeHint]]] = {}
         for future in as_completed(futures):
             idx = futures[future]
             results[idx] = future.result()
 
         for idx in sorted(results):
-            cues, usage = results[idx]
+            cues, usage, hints = results[idx]
+            all_hints.extend(hints)
             for c in cues:
                 merged[c.unit_id] = c
             for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
                 total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)
-            if tx_dir is not None:
-                _save_partial_cues(tx_dir, _order_cues(segments, merged))
 
     ordered = _order_cues(segments, merged)
+    if config.merge_hints_apply:
+        ordered = apply_display_merges(ordered, all_hints, config)
+    if tx_dir is not None:
+        _save_partial_cues(tx_dir, ordered)
     for i, c in enumerate(ordered):
         c.cue_id = f"{config.target_lang}_{i:04d}"
 
@@ -133,6 +146,7 @@ def _save_partial_cues(tx_dir: Path, cues: list[SubtitleCue]) -> None:
             "end": c.end,
             "text": c.text,
             "lang": c.lang,
+            **({"merged_from": c.merged_from} if c.merged_from else {}),
         }
         for c in cues
     ]
@@ -167,6 +181,7 @@ def load_partial_cues(tx_dir: Path, config: SubtitleConfig) -> list[SubtitleCue]
             end=c["end"],
             text=c["text"],
             lang=c.get("lang", config.target_lang),
+            merged_from=c.get("merged_from", []),
         )
         for c in raw
     ]
@@ -179,7 +194,7 @@ def _translate_batch(
     all_segments: list[Segment],
     batch_idx: int,
     config: SubtitleConfig,
-) -> tuple[list[SubtitleCue], dict]:
+) -> tuple[list[SubtitleCue], dict, list[MergeHint]]:
     payload = _build_payload(segments, all_segments, batch_idx, config)
 
     messages = [
@@ -194,11 +209,14 @@ def _translate_batch(
     for attempt in range(max_retries):
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
-            return _parse_response(response, segments, config, all_segments), usage
+            cues, parsed_texts = _parse_response(response, segments, config, all_segments)
+            merge_hints = review_merge_hints(client, segments, parsed_texts, config)
+            log_merge_hints(merge_hints)
+            return cues, usage, merge_hints
         except (json.JSONDecodeError, ValueError) as e:
             last_error = e
             if attempt < max_retries - 1:
-                logger.warning(f"    Retry {attempt + 1}/{max_retries}: JSON parse error in batch {batch_idx}")
+                logger.warning(f"    Retry {attempt + 1}/{max_retries}: {type(e).__name__} in batch {batch_idx}: {e}")
         except Exception as e:
             last_error = e
             if attempt < max_retries - 1:
@@ -211,7 +229,7 @@ def _translate_batch(
 
 
 def _parse_split_part(unit_id: str) -> tuple[str, int] | None:
-    """Return (split_group_id, part_index) for units like ``mu0059_u0060_0``."""
+    """Return ``(split_group_id, part_index)`` for units like ``mu0059_u0060_0`` or ``mu0187_u0190_0_1``."""
     match = _SPLIT_PART_RE.match(unit_id)
     if not match:
         return None
@@ -261,7 +279,13 @@ def _split_payload_fields(unit_id: str, part_counts: dict[str, int]) -> dict:
     }
 
 
-def _unit_payload_entry(segment: Segment, part_counts: dict[str, int], *, translate: bool = True) -> dict:
+def _unit_payload_entry(
+    segment: Segment,
+    part_counts: dict[str, int],
+    *,
+    translate: bool = True,
+    batch_index: int | None = None,
+) -> dict:
     """Build one translation payload item for a segment."""
     entry: dict = {
         "unit_id": segment.unit_id,
@@ -271,62 +295,87 @@ def _unit_payload_entry(segment: Segment, part_counts: dict[str, int], *, transl
     if translate:
         entry["duration"] = round(segment.end - segment.start, 1)
         entry["max_chars_hint"] = int((segment.end - segment.start) * 8)
+        if batch_index is not None:
+            entry["batch_index"] = batch_index
     else:
         entry["translate"] = False
     entry.update(_split_payload_fields(segment.unit_id, part_counts))
     return entry
 
 
+def _split_group_extent(pending: list[Segment], index: int) -> tuple[int, int]:
+    """Return ``[start, end)`` indices of the split_group containing ``pending[index]``."""
+    parsed = _parse_split_part(pending[index].unit_id)
+    if parsed is None:
+        return index, index + 1
+    group_id = parsed[0]
+    start = index
+    while start > 0:
+        prev = _parse_split_part(pending[start - 1].unit_id)
+        if prev and prev[0] == group_id:
+            start -= 1
+        else:
+            break
+    end = index + 1
+    while end < len(pending):
+        nxt = _parse_split_part(pending[end].unit_id)
+        if nxt and nxt[0] == group_id:
+            end += 1
+        else:
+            break
+    return start, end
+
+
 def _chunk_pending_segments(pending: list[Segment], chunk_size: int) -> list[list[Segment]]:
-    """Chunk pending segments without splitting a ``split_group`` across batches when feasible."""
+    """Chunk pending segments; never split a ``split_group`` across batches.
+
+    A split_group may occupy a batch larger than *chunk_size* when the whole
+    group does not fit in the remaining space of the current batch.
+    """
     if not pending:
         return []
-    if len(pending) <= chunk_size:
-        return [pending]
 
     chunks: list[list[Segment]] = []
-    start = 0
-    while start < len(pending):
-        end = min(start + chunk_size, len(pending))
-        if end < len(pending):
-            end = _adjust_chunk_end(pending, start, end, chunk_size)
-        chunks.append(pending[start:end])
-        start = end
+    i = 0
+    while i < len(pending):
+        chunk: list[Segment] = []
+        while i < len(pending):
+            g_start, g_end = _split_group_extent(pending, i)
+            g_len = g_end - g_start
+            if g_len > 1:
+                group_slice = pending[g_start:g_end]
+                if chunk and len(chunk) + g_len > chunk_size:
+                    break
+                if not chunk and g_len > chunk_size:
+                    chunks.append(group_slice)
+                    i = g_end
+                    chunk = []
+                    break
+                chunk.extend(group_slice)
+                i = g_end
+                continue
+            if len(chunk) >= chunk_size:
+                break
+            chunk.append(pending[i])
+            i += 1
+        if chunk:
+            chunks.append(chunk)
     return chunks
 
 
 def _adjust_chunk_end(pending: list[Segment], start: int, end: int, chunk_size: int) -> int:
-    """Extend or shrink *end* so split siblings stay in one batch when reasonable."""
+    """Extend *end* so a split_group at the boundary stays in one batch (may exceed *chunk_size*)."""
     if end >= len(pending):
         return end
 
-    left = pending[end - 1]
-    right = pending[end]
-    left_part = _parse_split_part(left.unit_id)
-    right_part = _parse_split_part(right.unit_id)
-    if not left_part or not right_part or left_part[0] != right_part[0]:
+    g_start, g_end = _split_group_extent(pending, end - 1)
+    if g_end <= end:
+        g_start, g_end = _split_group_extent(pending, end)
+    if g_end - g_start <= 1:
         return end
-
-    group_id = left_part[0]
-    group_end = end
-    while group_end < len(pending):
-        part = _parse_split_part(pending[group_end].unit_id)
-        if part and part[0] == group_id:
-            group_end += 1
-        else:
-            break
-
-    if group_end - start <= chunk_size + 16:
-        return group_end
-
-    group_start = end - 1
-    while group_start > start:
-        part = _parse_split_part(pending[group_start - 1].unit_id)
-        if part and part[0] == group_id:
-            group_start -= 1
-        else:
-            break
-    return max(start + 1, group_start)
+    if g_start < start:
+        return end
+    return g_end
 
 
 def _build_payload(
@@ -340,7 +389,10 @@ def _build_payload(
         _unit_payload_entry(all_segments[i], part_counts, translate=False) for i in range(ctx_start, batch_idx)
     ]
 
-    unit_items = [_unit_payload_entry(segment, part_counts, translate=True) for segment in segments]
+    unit_items = [
+        _unit_payload_entry(segment, part_counts, translate=True, batch_index=idx)
+        for idx, segment in enumerate(segments)
+    ]
 
     context_items.extend(
         _unit_payload_entry(all_segments[i], part_counts, translate=False)
@@ -353,44 +405,74 @@ def _build_payload(
     }
 
 
+def _resolve_batch_index(
+    item: dict,
+    source_segments: list[Segment],
+    segment_map: dict[str, Segment],
+) -> int | None:
+    """Map one LLM item to a batch index (preferred) or unit_id fallback."""
+    if "batch_index" in item:
+        try:
+            return int(item["batch_index"])
+        except (TypeError, ValueError):
+            return None
+    uid = item.get("unit_id", "")
+    if uid and uid in segment_map:
+        for idx, seg in enumerate(source_segments):
+            if seg.unit_id == uid:
+                return idx
+    return None
+
+
 def _parse_response(
     response: str,
     source_segments: list[Segment],
     config: SubtitleConfig,
     all_segments: list[Segment] | None = None,
-) -> list[SubtitleCue]:
-    """Parse LLM response into SubtitleCue list.
+) -> tuple[list[SubtitleCue], dict[int, str]]:
+    """Parse LLM response into SubtitleCue list and per-index translated text.
 
-    Expected format — one translation per segment:
-      [{"unit_id": "u001", "text": "..."}]
+    Expected format — one translation per batch index:
+      [{"batch_index": 0, "text": "..."}]
 
-    Each source segment produces exactly one SubtitleCue.
-    Timestamps come directly from the source segment (one-to-one mapping).
-    Word-level timestamps are passed through for downstream alignment.
+    Raises ``ValueError`` when batch indices are incomplete or duplicated.
     """
     json_match = re.search(r"\[([\s\S]*)\]", response)
     if json_match:
         data = json.loads(json_match.group(0))
     else:
-        try:
-            data = json.loads(response)
-        except json.JSONDecodeError:
-            return []
+        data = json.loads(response)
+
+    if not isinstance(data, list):
+        raise ValueError("Translation response is not a JSON array")
 
     segment_map: dict[str, Segment] = {s.unit_id: s for s in source_segments}
     part_counts = _split_group_part_counts(all_segments if all_segments is not None else source_segments)
+    expected = set(range(len(source_segments)))
 
-    cues: list[SubtitleCue] = []
+    by_index: dict[int, dict] = {}
     for item in data:
         if not isinstance(item, dict):
             continue
-        uid = item.get("unit_id", "")
-        seg = segment_map.get(uid)
-        if seg is None:
+        idx = _resolve_batch_index(item, source_segments, segment_map)
+        if idx is None or idx not in expected:
             continue
+        if idx in by_index:
+            raise ValueError(f"Duplicate batch_index in translation response: {idx}")
+        by_index[idx] = item
 
-        # Take the first non-empty text: prefer `text`, fallback to joined chunks
-        # (for backward compatibility with models that still emit chunks).
+    if set(by_index) != expected:
+        missing = sorted(expected - set(by_index))
+        extra = sorted(set(by_index) - expected)
+        raise ValueError(f"Batch incomplete: missing index {missing}, unexpected {extra}")
+
+    cues: list[SubtitleCue] = []
+    parsed_texts: dict[int, str] = {}
+    for idx in range(len(source_segments)):
+        seg = source_segments[idx]
+        item = by_index[idx]
+        uid = seg.unit_id
+
         text = item.get("text", "") or ""
         if not text:
             chunks = item.get("chunks") or []
@@ -403,6 +485,17 @@ def _parse_response(
             is_last_split_part=_is_last_split_part(uid, part_counts),
             source_ends_sentence=_source_ends_sentence(seg.source_text),
         )
+        parsed_texts[idx] = text
+
+    for idx in range(len(source_segments)):
+        seg = source_segments[idx]
+        item = by_index[idx]
+        uid = seg.unit_id
+        resp_uid = item.get("unit_id")
+        if resp_uid and resp_uid != uid:
+            logger.warning(f"  batch_index {idx} unit_id mismatch: expected {uid}, got {resp_uid} — using index")
+
+        text = parsed_texts[idx]
 
         cues.append(
             SubtitleCue(
@@ -416,7 +509,7 @@ def _parse_response(
             )
         )
 
-    return cues
+    return cues, parsed_texts
 
 
 def translate_missing(
@@ -458,7 +551,13 @@ def translate_missing(
 
         payload_items = []
         for bs in batch:
-            entry = _unit_payload_entry(bs, part_counts, translate=bs.unit_id == s.unit_id)
+            is_target = bs.unit_id == s.unit_id
+            entry = _unit_payload_entry(
+                bs,
+                part_counts,
+                translate=is_target,
+                batch_index=0 if is_target else None,
+            )
             payload_items.append(entry)
 
         payload = {
@@ -473,9 +572,8 @@ def translate_missing(
 
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
-            cues = _parse_response(response, batch, config, segments)
-            # Keep only the missing unit's cue
-            cues = [c for c in cues if c.unit_id == s.unit_id]
+            cues, parsed_texts = _parse_response(response, [s], config, segments)
+            log_merge_hints(review_merge_hints(client, [s], parsed_texts, config))
             all_cues.extend(cues)
             for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
                 total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)

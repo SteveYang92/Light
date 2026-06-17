@@ -64,6 +64,9 @@ class SubtitleConfig:
     context_prep_enabled: bool = True  # Extract glossary + summary before translation
     content_summary: dict | None = None  # Injected into translation prompts
 
+    # ── Translation merge hints (translate-time display merge) ──
+    merge_hints_apply: bool = True
+
     glossary: dict[str, str] = field(default_factory=dict)
     speaker_names: dict[str, str] = field(default_factory=dict)
     shot_changes: list[float] = field(default_factory=list)

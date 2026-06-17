@@ -22,6 +22,7 @@ from .. import export
 from .compose import compose_segments
 from .context import TranslateContext as TranslateContext
 from .evaluate import evaluate_translations, get_low_score_cues, scores_to_dict
+from .merge_apply import covered_unit_ids
 from .refine import refine_translations
 from .split import split_overlong_units
 from .translate import clear_partial_cache, translate_missing
@@ -228,7 +229,7 @@ def _retry_missing_translations(
     """
     MAX_RETRY = 2
     for attempt in range(MAX_RETRY):
-        translated_ids = {c.unit_id for c in translated_cues}
+        translated_ids = covered_unit_ids(translated_cues)
         missing_ids = {s.unit_id for s in translation_segments} - translated_ids
 
         # Detect duplicate translations within merged unit groups.
@@ -258,8 +259,10 @@ def _retry_missing_translations(
         retry_cues, retry_usage = translate_missing(translation_segments, missing_ids, config)
 
         if retry_cues:
-            # Replace missing cues with retry results.
-            merged = [c for c in translated_cues if c.unit_id not in missing_ids]
+            # Replace missing cues with retry results (keep cues that absorbed retried units).
+            merged = [
+                c for c in translated_cues if c.unit_id not in missing_ids and not set(c.merged_from) & missing_ids
+            ]
             merged.extend(retry_cues)
             merged.sort(key=lambda c: c.start)
             translated_cues = merged
