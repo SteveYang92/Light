@@ -226,9 +226,6 @@ def _run_translate_retry(orch: Orchestrator) -> None:
         orch.config,
         orch.tx_ctx.usage,
     )
-    tx_dir = _tx_dir(orch.config)
-    if orch.tx_ctx.translated_cues:
-        export_module.export_raw_cues(orch.tx_ctx.translated_cues, str(tx_dir / "partial.json"))
     _sync_translate_state(orch)
 
 

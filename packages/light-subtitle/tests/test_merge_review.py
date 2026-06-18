@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
-import pytest
 from light_models import Segment, Word
 from light_subtitle.config import SubtitleConfig
 from light_subtitle.pipeline.translate.merge_review import (
@@ -45,10 +44,10 @@ class TestParseMergeReviewResponse:
         flags = _parse_merge_review_response(response, 2)
         assert flags == {0: False, 1: True}
 
-    def test_incomplete_raises(self):
+    def test_incomplete_defaults_missing_to_false(self):
         response = json.dumps([{"batch_index": 0, "merge_with_next": False}])
-        with pytest.raises(ValueError, match="Merge review incomplete"):
-            _parse_merge_review_response(response, 2)
+        flags = _parse_merge_review_response(response, 2)
+        assert flags == {0: False, 1: False}
 
 
 class TestHintsFromFlags:
@@ -111,12 +110,22 @@ class TestGapFilters:
         assert filtered[0] is False
         assert filtered[1] is True
 
-    def test_keeps_true_when_gap_below_threshold(self):
+    def test_forces_false_on_closure_regardless_of_gap(self):
         segments = [
             _seg("u0", "a", start=0.0, end=1.0),
             _seg("u1", "b", start=1.08, end=2.0),
         ]
         texts = {0: "很多人用酒精。", 1: "来维持社交生活。"}
+        flags = {0: True, 1: False}
+        filtered = _apply_gap_filters(flags, segments, texts)
+        assert filtered[0] is False
+
+    def test_keeps_true_when_gap_below_threshold_and_no_closure(self):
+        segments = [
+            _seg("u0", "a", start=0.0, end=1.0),
+            _seg("u1", "b", start=1.08, end=2.0),
+        ]
+        texts = {0: "很多人用酒精", 1: "来维持社交生活。"}
         flags = {0: True, 1: False}
         filtered = _apply_gap_filters(flags, segments, texts)
         assert filtered[0] is True

@@ -91,6 +91,7 @@ def load_cached_translation(
             end=c["end"],
             text=c["text"],
             lang=c.get("lang", config.target_lang),
+            merged_from=c.get("merged_from", []),
         )
         for c in raw_data
     ]

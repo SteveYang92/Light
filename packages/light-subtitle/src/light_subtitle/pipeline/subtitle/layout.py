@@ -101,6 +101,7 @@ def _try_merge(
         speaker=prev.speaker,
         words=(prev.words or []) + (curr.words or []),
         qc=prev.qc,
+        merged_from=list(prev.merged_from),
     )
     max_chars = config.max_chars_per_line_zh if prev.lang == "zh" else config.max_chars_per_line_en
     if max(len(ln) for ln in prev_lines) <= max_chars:

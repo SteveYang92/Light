@@ -45,16 +45,20 @@ def _apply_gap_filters(
     segments: list[Segment],
     parsed_texts: dict[int, str],
 ) -> dict[int, bool]:
-    """Force ``false`` on long gaps unless text is severely dangling."""
+    """Force ``false`` when closure or long gap rules apply."""
     result = dict(flags)
     for idx, merge in result.items():
         if not merge:
             continue
+        text = parsed_texts[idx]
+        if _ends_with_closure(text):
+            result[idx] = False
+            logger.info(f"  Merge skipped (closure): {segments[idx].unit_id} | '{_snip_text(text)}'")
+            continue
         gap = _gap_to_next_ms(segments, idx)
         if gap is None or gap < _CLOSURE_GAP_FALSE_MS:
             continue
-        text = parsed_texts[idx]
-        if _ends_with_closure(text) or not _is_severely_dangling(text):
+        if not _is_severely_dangling(text):
             result[idx] = False
     return result
 
@@ -95,7 +99,12 @@ def _parse_merge_review_response(response: str, n: int) -> dict[int, bool]:
     if set(by_index) != expected:
         missing = sorted(expected - set(by_index))
         extra = sorted(set(by_index) - expected)
-        raise ValueError(f"Merge review incomplete: missing {missing}, unexpected {extra}")
+        if missing:
+            for idx in missing:
+                by_index[idx] = False
+            logger.warning(f"  Merge review incomplete: missing {missing}, defaulting to merge_with_next=false")
+        if extra:
+            raise ValueError(f"Merge review incomplete: missing {missing}, unexpected {extra}")
 
     return by_index
 

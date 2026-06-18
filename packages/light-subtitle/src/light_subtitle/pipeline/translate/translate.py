@@ -14,11 +14,12 @@ from ... import logger
 from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
-from .merge_apply import apply_display_merges
+from .merge_apply import apply_display_merges, covered_unit_ids
 from .merge_review import MergeHint, log_merge_hints, review_merge_hints
 
 CHUNK_SIZE = 100
 MAX_WORKERS = 4
+_PARTIAL_VERSION = 1
 _SPLIT_PART_RE = re.compile(r"^(mu\d+_u\d+(?:_\d+)*)_(\d+)$")
 _EN_SENTENCE_END = frozenset(".!?…")
 
@@ -63,34 +64,39 @@ def run(
     )
 
     system_prompt = _render_translate_prompt(config)
-    existing: dict[str, SubtitleCue] = {}
+    existing_cues: list[SubtitleCue] = []
+    hint_records: list[dict[str, str]] = []
     if tx_dir is not None:
-        existing = {c.unit_id: c for c in load_partial_cues(tx_dir, config)}
+        existing_cues, hint_records = load_partial(tx_dir, config)
 
-    pending = [s for s in segments if s.unit_id not in existing]
-    if not pending and existing:
-        return _order_cues(segments, existing), None
+    covered = covered_unit_ids(existing_cues)
+    pending = [s for s in segments if s.unit_id not in covered]
+    stored_hints = _hints_from_records(segments, hint_records)
 
+    if not pending and existing_cues:
+        ordered = _finalize_translated_cues(
+            existing_cues,
+            stored_hints,
+            config,
+        )
+        return ordered, None
+
+    existing = {c.unit_id: c for c in existing_cues}
     batch_chunks = _chunk_pending_segments(pending, CHUNK_SIZE)
     if len(batch_chunks) == 1:
         chunk = batch_chunks[0]
         abs_idx = segments.index(chunk[0]) if chunk else 0
         cues, usage, hints = _translate_batch(client, system_prompt, chunk, segments, abs_idx, config)
-        merged = dict(existing)
         for c in cues:
-            merged[c.unit_id] = c
-        ordered = _order_cues(segments, merged)
-        if config.merge_hints_apply:
-            ordered = apply_display_merges(ordered, hints, config)
+            existing[c.unit_id] = c
+        ordered_1_1 = _order_cues(segments, existing)
+        hint_records = _dedupe_hint_records(hint_records + _hint_records_from_hints(hints))
         if tx_dir is not None:
-            _save_partial_cues(tx_dir, ordered)
-        for i, c in enumerate(ordered):
-            c.cue_id = f"{config.target_lang}_{i:04d}"
+            _save_partial(tx_dir, ordered_1_1, hint_records)
+        ordered = _finalize_translated_cues(ordered_1_1, _hints_from_records(segments, hint_records), config)
         return ordered, usage
 
-    merged = dict(existing)
     total_usage: dict[str, int] = {}
-    all_hints: list[MergeHint] = []
 
     with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(batch_chunks))) as executor:
         futures = {
@@ -115,20 +121,21 @@ def run(
 
         for idx in sorted(results):
             cues, usage, hints = results[idx]
-            all_hints.extend(hints)
+            hint_records = _dedupe_hint_records(hint_records + _hint_records_from_hints(hints))
             for c in cues:
-                merged[c.unit_id] = c
+                existing[c.unit_id] = c
             for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
                 total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)
+            ordered_1_1 = _order_cues(segments, existing)
+            if tx_dir is not None:
+                _save_partial(tx_dir, ordered_1_1, hint_records)
 
-    ordered = _order_cues(segments, merged)
-    if config.merge_hints_apply:
-        ordered = apply_display_merges(ordered, all_hints, config)
-    if tx_dir is not None:
-        _save_partial_cues(tx_dir, ordered)
-    for i, c in enumerate(ordered):
-        c.cue_id = f"{config.target_lang}_{i:04d}"
-
+    ordered_1_1 = _order_cues(segments, existing)
+    ordered = _finalize_translated_cues(
+        ordered_1_1,
+        _hints_from_records(segments, hint_records),
+        config,
+    )
     return ordered, total_usage or None
 
 
@@ -136,21 +143,73 @@ def _order_cues(segments: list[Segment], by_id: dict[str, SubtitleCue]) -> list[
     return [by_id[s.unit_id] for s in segments if s.unit_id in by_id]
 
 
-def _save_partial_cues(tx_dir: Path, cues: list[SubtitleCue]) -> None:
+def _finalize_translated_cues(
+    cues_1_1: list[SubtitleCue],
+    hints: list[MergeHint],
+    config: SubtitleConfig,
+) -> list[SubtitleCue]:
+    """Apply display merges and assign sequential cue_ids."""
+    ordered = cues_1_1
+    if config.merge_hints_apply and hints:
+        ordered = apply_display_merges(cues_1_1, hints, config)
+    for i, c in enumerate(ordered):
+        c.cue_id = f"{config.target_lang}_{i:04d}"
+    return ordered
+
+
+def _hint_records_from_hints(hints: list[MergeHint]) -> list[dict[str, str]]:
+    return [{"curr_unit_id": curr.unit_id, "next_unit_id": nxt.unit_id} for curr, nxt, _, _ in hints]
+
+
+def _dedupe_hint_records(records: list[dict[str, str]]) -> list[dict[str, str]]:
+    seen: set[tuple[str, str]] = set()
+    result: list[dict[str, str]] = []
+    for record in records:
+        key = (record["curr_unit_id"], record["next_unit_id"])
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(record)
+    return result
+
+
+def _hints_from_records(segments: list[Segment], records: list[dict[str, str]]) -> list[MergeHint]:
+    seg_by_id = {s.unit_id: s for s in segments}
+    hints: list[MergeHint] = []
+    for record in records:
+        curr = seg_by_id.get(record["curr_unit_id"])
+        nxt = seg_by_id.get(record["next_unit_id"])
+        if curr is None or nxt is None:
+            continue
+        hints.append((curr, nxt, "", ""))
+    return hints
+
+
+def _cue_dict_from_partial(cue: SubtitleCue) -> dict:
+    return {
+        "cue_id": cue.cue_id,
+        "unit_id": cue.unit_id,
+        "start": cue.start,
+        "end": cue.end,
+        "text": cue.text,
+        "lang": cue.lang,
+    }
+
+
+def _save_partial(tx_dir: Path, cues: list[SubtitleCue], hint_records: list[dict[str, str]]) -> None:
+    """Persist 1:1 translation checkpoint with merge hints."""
     tx_dir.mkdir(parents=True, exist_ok=True)
-    data = [
-        {
-            "cue_id": c.cue_id,
-            "unit_id": c.unit_id,
-            "start": c.start,
-            "end": c.end,
-            "text": c.text,
-            "lang": c.lang,
-            **({"merged_from": c.merged_from} if c.merged_from else {}),
-        }
-        for c in cues
-    ]
+    data = {
+        "version": _PARTIAL_VERSION,
+        "cues": [_cue_dict_from_partial(c) for c in cues],
+        "merge_hints": hint_records,
+    }
     (tx_dir / "partial.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _save_partial_cues(tx_dir: Path, cues: list[SubtitleCue]) -> None:
+    """Backward-compatible alias — saves 1:1 cues with empty merge hints."""
+    _save_partial(tx_dir, cues, [])
 
 
 def clear_partial_cache(tx_dir: Path) -> bool:
@@ -167,24 +226,42 @@ def clear_partial_cache(tx_dir: Path) -> bool:
     return True
 
 
-def load_partial_cues(tx_dir: Path, config: SubtitleConfig) -> list[SubtitleCue]:
+def load_partial(tx_dir: Path, config: SubtitleConfig) -> tuple[list[SubtitleCue], list[dict[str, str]]]:
+    """Load 1:1 partial cues and persisted merge-hint records."""
     path = tx_dir / "partial.json"
     if not path.exists():
-        return []
+        return [], []
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
-    return [
-        SubtitleCue(
-            cue_id=c["cue_id"],
-            unit_id=c["unit_id"],
-            start=c["start"],
-            end=c["end"],
-            text=c["text"],
-            lang=c.get("lang", config.target_lang),
-            merged_from=c.get("merged_from", []),
-        )
-        for c in raw
-    ]
+
+    if isinstance(raw, list):
+        if any(c.get("merged_from") for c in raw if isinstance(c, dict)):
+            logger.warning("  Legacy partial.json contains merged cues; delete partial.json for a clean resume.")
+        return [_cue_from_partial_dict(c, config) for c in raw], []
+
+    if isinstance(raw, dict):
+        cue_items = raw.get("cues", [])
+        hint_records = raw.get("merge_hints", [])
+        return [_cue_from_partial_dict(c, config) for c in cue_items], list(hint_records)
+
+    return [], []
+
+
+def _cue_from_partial_dict(data: dict, config: SubtitleConfig) -> SubtitleCue:
+    return SubtitleCue(
+        cue_id=data["cue_id"],
+        unit_id=data["unit_id"],
+        start=data["start"],
+        end=data["end"],
+        text=data["text"],
+        lang=data.get("lang", config.target_lang),
+        merged_from=data.get("merged_from", []),
+    )
+
+
+def load_partial_cues(tx_dir: Path, config: SubtitleConfig) -> list[SubtitleCue]:
+    cues, _hints = load_partial(tx_dir, config)
+    return cues
 
 
 def _translate_batch(

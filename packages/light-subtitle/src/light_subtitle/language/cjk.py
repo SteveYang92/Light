@@ -310,6 +310,7 @@ def _make_chinese_cue(original: SubtitleCue, lines: list[str]) -> SubtitleCue:
         lang=original.lang,
         speaker=original.speaker,
         words=list(original.words) if original.words else [],
+        merged_from=list(original.merged_from),
     )
 
 

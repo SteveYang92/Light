@@ -539,6 +539,7 @@ def _make_english_cue(original: SubtitleCue, lines: list[str]) -> SubtitleCue:
         lang=original.lang,
         speaker=original.speaker,
         words=list(original.words) if original.words else [],
+        merged_from=list(original.merged_from),
     )
 
 
@@ -614,6 +615,7 @@ def _build_english_cues(
                 lang=original.lang,
                 speaker=original.speaker,
                 words=chunk_words,
+                merged_from=list(original.merged_from),
             )
         )
     return cues

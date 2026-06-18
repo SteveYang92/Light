@@ -7,10 +7,15 @@ The `units` array contains two types of items:
 - **Context units** (marked `"translate": false`, no `batch_index`) — surrounding segments for reference only. **Do NOT output translations for them.**
 
 {% if content_summary %}
-Before translating, read the **Content Summary** below to understand the global context (topic, speakers, key themes). Use it only to resolve pronouns and omitted subjects within each unit's own `source_text`.
+Before translating, read the **Content Summary** below to understand the global context (topic, speakers, key themes). Place each local segment within this broader picture when resolving pronouns, omitted subjects, and topic shifts.
 {% endif %}
 
-Read context units to understand discourse flow, but **each output item must translate only its own `source_text`**.
+Before translating, read the **full sequence** of units in order — including context units before and after the current batch. This ensures you understand:
+- Discourse flow and pronoun references.
+- Parallel or contrastive structures split across segments (e.g. `from one type of scale` / `into a different type of scaling` — these form ONE comparison, not two independent facts).
+- Continuations (e.g. a segment starting with `and` or `but` that continues the previous thought).
+
+**Key rule for split constructions**: When a single logical statement is split across segments (like `from A` / `into B`, or `not only X` / `but also Y`), translate each segment in a way that **preserves the full comparison or contrast** across the boundary. The two translations, read together, must express the original meaning as a coherent whole.
 
 ## Per-Unit Isolation (Critical — prevents mis-mapping)
 
@@ -19,35 +24,58 @@ For each item with `batch_index` = i and `source_text` = S_i:
 - **`text` must contain ONLY information from S_i** — facts, entities, and clauses that appear in S_i.
 - **Do NOT** include facts that appear only in S_{i-1} or S_{i+1}, even if the sequence reads smoother that way.
 - Context units help with pronouns referring back to earlier speech, but **never copy the next unit's meaning into the current translation**.
-- Within the same `split_group`, parts may share grammar across boundaries (comma / open clause), but each part still translates **only** its own `source_text` words.
+- **Coherence across boundaries is allowed only through grammar and connectives** (comma, dash, open clause) — not by importing the neighbor's facts into S_i.
+- **Reordering within S_i is allowed** — Isolation forbids neighbor-unit facts, not natural Chinese word order inside the same `source_text`.
 
-### Split Groups (overlong units cut for timing)
+### Split Groups (Critical for Overlong Units)
 
 Some units share the same `split_group` id (e.g. `mu0059_u0060_0` and `mu0059_u0060_1`). These are **one English sentence** cut for timing — not independent thoughts.
 
-- Read all parts with the same `split_group` before translating any of them.
+- Read all parts with the same `split_group` **before** translating any of them.
 - Use `part_index`, `part_count`, and `is_continuation` in the payload.
 - **Non-final parts** (`part_index < part_count - 1`): do **not** end with a full stop (。) unless the English `source_text` itself ends with `.!?`. Prefer a comma (，), dash (——), or an open clause that the next part completes.
 - **Final part** (`part_index == part_count - 1`): close the sentence normally.
-- When `is_continuation` is true, the translation may start with 「被」「而」「和」 etc. if that preserves grammar — but each part still maps only to its own `source_text`.
+- When `is_continuation` is true, the translation may start with 「被」「而」「和」 etc. if that preserves grammar — but **both parts together** must read as one natural sentence, and each part still maps only to its own `source_text`.
 
-Examples (Chinese target):
+#### Appositive splits (同位语跨 part 续接)
+
+When **part i+1** starts with `a/an/the + NP` and part i ends at `, N,` or `of N,`, part i+1 is usually an **appositive to N** — not a new sentence and not modifying the wrong noun (e.g. "conversation").
+
+- **Anchor the head noun in part 0** — within S_0 only, reorder so N (company, title, role) appears **before** the split, in natural Chinese title order (`{机构}{职务}{人名}`). Part 0 should read as a **complete intro phrase** — end on the noun phrase (e.g.「…的对话」), **without** a trailing dash or「他是…——」.
+- **Part 1: prefer a standalone clause over dash apposition** — translate S_1 as its own short sentence/clause. Link back with **其 / 他 / 该** (or repeat N once) so the NP clearly attaches to the head from part 0 — e.g.「其{产品类型}{S_1 中的事实}」. Use `——` + appositive NP **only** when a dash reads more naturally than a restructured clause.
+- **Do not** use「他是 {Org} 的 {title}——」on part 0 +「——一家…」on part 1 — read together this attaches the appositive to the wrong noun (「对话」).
+- **Clause fragments** — when S_i ends with an unfinished clause and the next part completes it, part i must **not** end with 。; use `，` or an open clause.
+
+Examples (Chinese target — illustrative patterns only):
 
 | Bad | Good |
 |-----|------|
-| Part 0: `…values for freedom being` →「…自由价值观。」 Part 1: `corrupted by money…` →「被金钱…腐蚀？」 | Part 0:「…自由价值观」 Part 1:「被金钱、权势者腐蚀？」 |
-| Part 0: `My digestive system isn't` →「我的消化系统。」 Part 1: `agreeing with…` →「不适应…」 | Part 0:「我的消化系统」 Part 1:「不太适应这类食物」 |
+| P0: `…dean of the Medical School,` →「…他是医学院院长——」 P1: `a research hospital…` →「——一家研究型医院…」 → 医院像修饰「对话」 | P0: `…dean of the Medical School,` →「…医学院院长李教授的对话」 P1: `a research hospital…` →「其所属研究型医院规模…」 — part 1 = standalone clause, links to head |
+| P0: `…if you` →「…如果你。」 P1: `want to leave…` →「想离开…」 | P0:「…如果你想」 P1:「离开…，」 — open clause, no full stop on part 0 |
 
 ## Translation Principles
 
-1. **One source → one translation** — each `batch_index` maps to exactly one `text`.
-2. **Compress when needed** — subtitle text can be ~30% shorter than literal translation. **Do not omit information** from that unit's `source_text`. Drop filler words like "you know", "I mean", "like", "sort of".
-3. **Natural, conversational** — no machine-translation tone.
-4. **Terminology consistency** — use the provided glossary. Proper nouns retain original spelling.
-5. **Preserve tone** — keep the emotional coloring of the original.
+1. **Context-first** — read all units in order (context + current) before translating any.
+2. **One source → one translation** — each `batch_index` maps to exactly one `text`.
+3. **Cross-segment coherence** — when a sentence is split across multiple segments, ensure the translations form a coherent whole. A split like `from A` / `into B` must produce translations that together express "from A to B", not two unrelated statements — without importing neighbor facts into S_i.
+4. **Compress when needed** — subtitle text can be ~30% shorter than literal translation. **Do not omit information** from that unit's `source_text`. Drop filler words like "you know", "I mean", "like", "sort of".
+5. **Natural, conversational** — no machine-translation tone, no word-for-word literalism.
+6. **Terminology consistency** — use the provided glossary. Proper nouns (names, brands, places) retain original spelling. **Within the same batch, the same English term must be translated identically every time.**
+7. **Preserve tone** — keep the emotional coloring and attitude of the original.
 
 {% if target_lang == "zh" %}
+### Natural Chinese (自然、不拗口)
+
+Write for the ear — subtitles should sound like natural spoken Chinese, not a word-for-word English calque.
+
+- **Word order** — reorder components **within S_i** for Chinese rhythm (Isolation only forbids facts from other units). For intros with title + org, prefer `{机构}{职务}{人名}` (e.g.「Acme 公司 CEO 张三」) over stiff「和 {人名} 的对话，他是 {机构} 的 {职务}」.
+- **Avoid calques** — do not mirror awkward English contrasts literally (e.g. "live longer but shorter" → prefer natural phrasing like「更短却更充实」when meaning allows within S_i).
+- **Front-load meaning** — put the core verb or topic early; trim English padding (`The following is` →「以下是」).
+- **Connectors** — omit when Chinese flows without them; never stack formal connectors (此外 / 因此 / 然而).
+
 ### AVOID Translationese (重要)
+
+These are signs of machine-translation — replace them with natural Chinese:
 
 | Avoid | Use Instead |
 |---|---|
@@ -101,7 +129,7 @@ Each unit has a `duration` field (seconds) and a `max_chars_hint`. Fit your tran
 ## Glossary{% if glossary %} (MANDATORY){% endif %}
 
 {% if glossary %}
-When a glossary source term appears in the source text, you MUST use the listed translation. Apply identically across all segments in this batch.
+When a glossary source term appears in the source text, you MUST use the listed translation. Apply identically across all segments in this batch and stay consistent with glossary entries from prior context.
 {% for src, tgt in glossary.items() %}
 - {{ src }} → {{ tgt }}
 {% endfor %}
@@ -109,10 +137,25 @@ When a glossary source term appears in the source text, you MUST use the listed 
 
 ## Self-Check (Before Output)
 
+After drafting all translations for the current batch, **re-read them in order** (along with adjacent context units) and verify:
+
 1. **Coverage**: Exactly one output object per `batch_index` from 0 to n-1 — no gaps, no duplicates.
 2. **Isolation**: Re-read each `text` — does it contain any fact not in that unit's `source_text`? If yes, remove it.
-3. {% if target_lang == "zh" %}**Translationese scan**: Replace forbidden patterns listed above.
-4. {% endif %}**Term consistency**: Glossary terms identical across the batch.
+3. **Coherence check**: Do adjacent translations form a coherent discourse? Read them aloud in sequence — any jarring transition or broken thought indicates a problem.
+4. **Split construction check**: For `from A / into B`, `not only X / but also Y`, etc.: do the two translations together accurately express the full comparison? A single incoherent segment is acceptable only if the **combined meaning** of adjacent segments is correct.
+{% if target_lang == "zh" %}
+5. **Appositive attachment check**: For each split_group, read parts together — if part 1 is `a/an + NP`, which noun does it modify? It must match the English head noun. Prefer a standalone clause with 其/他/该 over a dash if the dash would attach to the wrong noun (e.g.「对话」).
+6. **Independent readability**: Does each translation independently make sense given its context? A segment may be incomplete on its own (e.g. starting with "因此" or "but"), as long as the sequence flows naturally.
+7. **Read-aloud naturalness**: Read at least 3 split_groups and 3 adjacent cue pairs aloud — if phrasing feels stiff or tongue-twisting, revise word order (still within Isolation).
+8. **Back-translation check**: Mentally translate your Chinese back to English. Did you lose any facts, numbers, or key concepts? If so, revise.
+9. **Translationese scan**: Scan for the forbidden patterns listed above. Replace any that appear.
+10. **Term consistency**: For each glossary term and proper noun / technical term appearing multiple times, is the translation identical every time and matching the glossary?
+{% else %}
+5. **Independent readability**: Does each translation independently make sense given its context? A segment may be incomplete on its own (e.g. starting with "but"), as long as the sequence flows naturally.
+6. **Term consistency**: For each glossary term and proper noun / technical term appearing multiple times, is the translation identical every time and matching the glossary?
+{% endif %}
+
+If any issue is found, **revise the affected translations** before finalizing.
 
 ## Output Format
 
