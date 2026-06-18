@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from light_models import Word
-from light_subtitle.pipeline.asr.punct_restore import (
+from light_subtitle.pipeline.punct_restore import (
     _diff_punct_to_words,
     _group_words,
     _has_sufficient_punctuation,

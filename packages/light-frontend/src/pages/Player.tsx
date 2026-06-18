@@ -316,6 +316,7 @@ export default function Player() {
         // (e.g. AV1 software decoding) and the first seconds show only the poster.
         preload: "auto",
         fluid: true,
+        aspectRatio: "16:9",
         html5: {
           nativeTextTracks: false,
         },
@@ -640,18 +641,18 @@ export default function Player() {
 
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1">
-          <div className="rounded-xl overflow-hidden bg-black relative">
-            <div ref={playerContainerRef} />
-            {annotationOverlayEl && annotationsEnabled && annotationText && (
-              createPortal(
-                <div className="vjs-light-annotation-overlay">
-                  {annotationText}
-                </div>,
-                annotationOverlayEl,
-              )
-            )}
-
-          </div>
+          <div
+            ref={playerContainerRef}
+            className="aspect-video max-h-[75vh] max-w-full mx-auto rounded-xl overflow-hidden bg-black relative"
+          />
+          {annotationOverlayEl && annotationsEnabled && annotationText && (
+            createPortal(
+              <div className="vjs-light-annotation-overlay">
+                {annotationText}
+              </div>,
+              annotationOverlayEl,
+            )
+          )}
 
           <div className="mt-3">
             <SubtitleControls

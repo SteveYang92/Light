@@ -23,6 +23,11 @@ body {
   display: none !important;
 }
 
+/* 视频保持原生宽高比，竖版视频在 16:9 框内左右黑边居中 */
+.video-js .vjs-tech {
+  object-fit: contain;
+}
+
 .vjs-light-pause-overlay {
   position: absolute;
   inset: 0;

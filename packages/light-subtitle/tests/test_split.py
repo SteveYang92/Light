@@ -590,8 +590,7 @@ class TestTranslationFriendlyBoundaries:
         result = split_overlong_units([_seg("being_prep", words, text)], _config(max_duration=4.0))
         assert len(result) > 1
         assert not any(
-            s.source_text.rstrip().endswith("being")
-            and result[i + 1].source_text.lstrip().startswith("corrupted")
+            s.source_text.rstrip().endswith("being") and result[i + 1].source_text.lstrip().startswith("corrupted")
             for i, s in enumerate(result[:-1])
         )
 

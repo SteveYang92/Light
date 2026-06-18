@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -171,7 +169,15 @@ async def get_video_thumbnail(video_id: str):
 
 @router.post("/{video_id}/retry")
 async def retry_pipeline(video_id: str):
-    """Retry failed pipeline using the original submit parameters."""
+    """Retry failed pipeline — resumes from the last completed step.
+
+    Does NOT delete downloaded video or segment files.  The runner will
+    automatically:
+      - reuse the cached download (find_cached_download)
+      - reuse existing segments (find_existing_segments)
+      - resume each segment from its pipeline_run.json (clone_for_segment
+        sets resume=True when the file exists)
+    """
     cfg = get_config()
     video = get_video(cfg.db_path, video_id)
     if video is None:
@@ -179,13 +185,6 @@ async def retry_pipeline(video_id: str):
 
     update_video(cfg.db_path, video_id, status="pending")
     delete_chunks(cfg.db_path, video_id)
-
-    # Clean up stale chunk output dirs, keep the downloaded video
-    video_dir = os.path.join(cfg.data_dir, "videos", video_id)
-    chunks_dir = os.path.join(video_dir, "chunks")
-    if os.path.isdir(chunks_dir):
-        for d in Path(chunks_dir).glob("out_*"):
-            shutil.rmtree(d, ignore_errors=True)
 
     # Rebuild config from stored parameters, falling back to defaults
     stored = {}
@@ -198,6 +197,7 @@ async def retry_pipeline(video_id: str):
     sub_config = SubtitleConfig(
         input_path=video.get("source_url") or "",
         output_dir="",
+        resume=True,  # 断点续跑
         target_lang=stored.get("target_lang") or "zh",
         bilingual=stored.get("bilingual", False),
         whisper_model=stored.get("whisper_model", "ggml-large-v3-turbo.bin"),
