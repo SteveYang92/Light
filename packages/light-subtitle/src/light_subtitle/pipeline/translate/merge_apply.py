@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from light_models import SubtitleCue
+from light_models import SubtitleCue, effective_unit_ids
 
 from ... import logger
 from ...config import SubtitleConfig
@@ -56,8 +56,7 @@ def covered_unit_ids(cues: list[SubtitleCue]) -> set[str]:
     """Return all unit_ids present or absorbed via display merge."""
     ids: set[str] = set()
     for cue in cues:
-        ids.add(cue.unit_id)
-        ids.update(cue.merged_from)
+        ids |= effective_unit_ids(cue)
     return ids
 
 

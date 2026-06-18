@@ -1,4 +1,5 @@
 from .cue import SubtitleCue
+from .cue_utils import covered_source_text, covered_time_window, effective_unit_ids
 from .punctuation import (
     CJK_ALL_PUNCT,
     CJK_CLAUSE_PUNCT,
@@ -24,6 +25,9 @@ __all__ = [
     "Word",
     "Segment",
     "SubtitleCue",
+    "covered_source_text",
+    "covered_time_window",
+    "effective_unit_ids",
     "QCIssue",
     "QCReport",
     "seconds_to_srt",

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from light_models import Segment, SubtitleCue
+from light_models import Segment, SubtitleCue, covered_source_text
 
 from .. import logger
 from ..config import SubtitleConfig
@@ -52,11 +52,10 @@ def generate_annotations(
 
         batch_data = []
         for cue in batch:
-            source = source_map.get(cue.unit_id, "")
             batch_data.append(
                 {
                     "unit_id": cue.unit_id,
-                    "source": source,
+                    "source": covered_source_text(cue, source_map),
                     "translation": cue.text.replace("\n", " "),
                 }
             )

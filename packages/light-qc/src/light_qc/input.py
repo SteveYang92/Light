@@ -108,21 +108,27 @@ def parse_json(path: str) -> list[SubtitleCue]:
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
-    cues = []
-    for item in data.get("cues", data.get("cues", [])):
-        if isinstance(item, dict):
-            cues.append(
-                SubtitleCue(
-                    cue_id=item.get("cue_id", item.get("id", "")),
-                    unit_id=item.get("unit_id", ""),
-                    start=item.get("start", 0),
-                    end=item.get("end", 0),
-                    text=item.get("text", item.get("zh_text", item.get("en_text", ""))),
-                    lang=item.get("lang", item.get("language", _detect_lang(item.get("text", "")))),
-                    speaker=item.get("speaker", ""),
-                    qc=item.get("qc", {}),
-                )
+    items = data.get("cues", []) if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        return []
+
+    cues: list[SubtitleCue] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        cues.append(
+            SubtitleCue(
+                cue_id=item.get("cue_id", item.get("id", "")),
+                unit_id=item.get("unit_id", ""),
+                start=item.get("start", 0),
+                end=item.get("end", 0),
+                text=item.get("text", item.get("zh_text", item.get("en_text", ""))),
+                lang=item.get("lang", item.get("language", _detect_lang(item.get("text", "")))),
+                speaker=item.get("speaker", ""),
+                qc=item.get("qc", {}),
+                merged_from=item.get("merged_from", []),
             )
+        )
     return cues
 
 

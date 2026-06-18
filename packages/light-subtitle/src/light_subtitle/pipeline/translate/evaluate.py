@@ -18,9 +18,9 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from light_models import Segment, SubtitleCue
+from light_models import Segment, SubtitleCue, covered_source_text
 
+if TYPE_CHECKING:
     from ...config import SubtitleConfig
 from ... import logger
 from ...llm.prompts import render_prompt
@@ -80,7 +80,7 @@ def evaluate_translations(
     # Pair cues with their source texts (only those with valid source).
     pairs: list[tuple[SubtitleCue, str]] = []
     for cue in translated_cues:
-        src = source_map.get(cue.unit_id, "")
+        src = covered_source_text(cue, source_map)
         if src:
             pairs.append((cue, src))
 

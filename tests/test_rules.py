@@ -12,13 +12,32 @@ from light_qc.rules.hard import (
     MissingPunctuation,
     Overlap,
     ReadingSpeed,
+    TimeAxisNotOverflow,
     TranslationCompleteness,
 )
 from light_qc.rules.soft import ExitPointPrecision
 
 
-def _make_cue(cue_id="c1", start=1.0, end=4.0, text="", lang="zh", speaker="", unit_id="u1"):
-    return SubtitleCue(cue_id=cue_id, unit_id=unit_id, start=start, end=end, text=text, lang=lang, speaker=speaker)
+def _make_cue(
+    cue_id="c1",
+    start=1.0,
+    end=4.0,
+    text="",
+    lang="zh",
+    speaker="",
+    unit_id="u1",
+    merged_from: list[str] | None = None,
+):
+    return SubtitleCue(
+        cue_id=cue_id,
+        unit_id=unit_id,
+        start=start,
+        end=end,
+        text=text,
+        lang=lang,
+        speaker=speaker,
+        merged_from=merged_from or [],
+    )
 
 
 def _wrap(cues: list[SubtitleCue]) -> dict[str, list[SubtitleCue]]:
@@ -343,6 +362,54 @@ class TestTranslationCompleteness:
         cfg = _cfg(source_lang="en", target_lang="zh")
         issues = TranslationCompleteness().check({"zh": cues}, cfg)
         assert len(issues) == 0
+
+    def test_merged_from_counts_as_covered(self):
+        src = [
+            _make_cue("s1", unit_id="u001", text="原文一"),
+            _make_cue("s2", unit_id="u002", text="原文二"),
+            _make_cue("s3", unit_id="u003", text="原文三"),
+        ]
+        tgt = [
+            _make_cue("t1", unit_id="u001", text="合并译文", lang="zh", merged_from=["u002", "u003"]),
+        ]
+        cfg = _cfg(source_lang="en", target_lang="zh", bilingual=True)
+        issues = TranslationCompleteness().check({"en": src, "zh": tgt}, cfg)
+        assert len(issues) == 0
+
+
+class TestTimeAxisNotOverflow:
+    def test_merged_cue_uses_chain_time_window(self):
+        w0 = Word(text="a", start=1.0, end=2.0, confidence=0.9)
+        w1 = Word(text="b", start=2.5, end=4.0, confidence=0.9)
+        w2 = Word(text="c", start=4.5, end=6.0, confidence=0.9)
+        src = [
+            SubtitleCue(cue_id="s1", unit_id="u0", start=1.0, end=2.0, text="a", lang="en", words=[w0]),
+            SubtitleCue(cue_id="s2", unit_id="u1", start=2.5, end=4.0, text="b", lang="en", words=[w1]),
+            SubtitleCue(cue_id="s3", unit_id="u2", start=4.5, end=6.0, text="c", lang="en", words=[w2]),
+        ]
+        tgt = [
+            SubtitleCue(
+                cue_id="t1",
+                unit_id="u0",
+                start=1.0,
+                end=6.0,
+                text="合并",
+                lang="zh",
+                merged_from=["u1", "u2"],
+            ),
+        ]
+        cfg = _cfg(source_lang="en", target_lang="zh", bilingual=True)
+        issues = TimeAxisNotOverflow().check({"en": src, "zh": tgt}, cfg)
+        assert len(issues) == 0
+
+    def test_unmerged_overflow_still_reported(self):
+        w0 = Word(text="a", start=1.0, end=2.0, confidence=0.9)
+        src = [SubtitleCue(cue_id="s1", unit_id="u0", start=1.0, end=2.0, text="a", lang="en", words=[w0])]
+        tgt = [SubtitleCue(cue_id="t1", unit_id="u0", start=1.0, end=3.0, text="太长", lang="zh")]
+        cfg = _cfg(source_lang="en", target_lang="zh", bilingual=True)
+        issues = TimeAxisNotOverflow().check({"en": src, "zh": tgt}, cfg)
+        assert len(issues) == 1
+        assert "晚于" in issues[0].detail
 
 
 # ═══════════════════════════════════════════════════════════════════

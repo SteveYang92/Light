@@ -1,4 +1,4 @@
-from light_models import QCIssue, SubtitleCue, seconds_to_srt
+from light_models import QCIssue, SubtitleCue, effective_unit_ids, seconds_to_srt
 
 from ...config import QCConfig
 from ..base import HardRule
@@ -47,7 +47,10 @@ class TranslationCompleteness(HardRule):
         issues: list[QCIssue] = []
 
         source_units = {c.unit_id for c in source_cues if c.unit_id}
-        target_units = {c.unit_id for c in target_cues if c.unit_id}
+        target_units: set[str] = set()
+        for c in target_cues:
+            if c.unit_id:
+                target_units |= effective_unit_ids(c)
 
         missing = source_units - target_units
         orphan = target_units - source_units

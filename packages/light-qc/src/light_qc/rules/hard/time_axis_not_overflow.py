@@ -1,4 +1,4 @@
-from light_models import QCIssue, SubtitleCue, seconds_to_srt
+from light_models import QCIssue, SubtitleCue, covered_time_window, seconds_to_srt
 
 from ...config import QCConfig
 from ..base import HardRule
@@ -39,9 +39,12 @@ class TimeAxisNotOverflow(HardRule):
                 target_cues.extend(cue_list)
 
         for i, tc in enumerate(target_cues):
-            if not tc.unit_id or tc.unit_id not in unit_times:
+            if not tc.unit_id:
                 continue
-            src_start, src_end = unit_times[tc.unit_id]
+            window = covered_time_window(tc, unit_times)
+            if window is None:
+                continue
+            src_start, src_end = window
 
             if tc.start < src_start - 0.05:
                 issues.append(
