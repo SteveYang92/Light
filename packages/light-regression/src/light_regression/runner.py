@@ -47,7 +47,10 @@ class RegressionRunner:
 
             self.history.save_run(case.name, record, subtitle_path if keep_subtitle else None)
 
-            prev = self.history.get_previous_run(case.name, run_id)
+            # Prefer a fixed golden baseline (set via `rebaseline`) for cross-person
+            # comparability; fall back to the immediately previous run when no
+            # baseline is set yet (first run / not yet rebaselined).
+            prev = self.history.get_baseline(case.name) or self.history.get_previous_run(case.name, run_id)
             if prev is None:
                 diff = DiffReport(
                     baseline_run_id=run_id,
@@ -59,7 +62,7 @@ class RegressionRunner:
                     new_issues=[],
                     fixed_issues=[],
                     degraded=False,
-                    reasons=["First run — no previous to compare"],
+                    reasons=["First run — no baseline and no previous to compare"],
                 )
             else:
                 diff = self.checker.compare(prev, record, case.thresholds)

@@ -1,0 +1,19 @@
+name: "ilya_test_5min"
+description: "Ilya Sutskever 访谈前 5 分钟，英文单语 smoke case，用于快速验证 ASR/断句/标点/导出"
+
+input:
+  audio: "../../../../resources/audio/ilya_test_5min.wav"
+
+light_subtitle:
+  source_lang: "en"
+
+qc:
+  source_lang: "en"
+
+thresholds:
+  max_errors: 5
+  max_new_errors: 3
+  strict_rules:
+    - "Overlap"
+    - "EmptyText"
+    - "ReadingSpeed"

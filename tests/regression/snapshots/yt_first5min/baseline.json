@@ -1,0 +1,903 @@
+{
+  "total_cues": 92,
+  "errors": 8,
+  "warnings": 12,
+  "suggestions": 79,
+  "passed": false,
+  "bilingual": false,
+  "source_lang": "en",
+  "target_lang": null,
+  "issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 37,
+      "time": "00:01:43,165",
+      "detail": "阅读速度 82.1 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 68,
+      "time": "00:03:39,883",
+      "detail": "阅读速度 25.0 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 78,
+      "time": "00:04:10,287",
+      "detail": "阅读速度 26.5 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 82,
+      "time": "00:04:23,432",
+      "detail": "阅读速度 25.8 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 19,
+      "time": "00:00:52,457",
+      "detail": "字幕时长 0.78s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 37,
+      "time": "00:01:43,165",
+      "detail": "字幕时长 0.78s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 91,
+      "time": "00:04:57,044",
+      "detail": "字幕时长 0.64s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "TinyCue",
+      "cue_id": 38,
+      "time": "00:01:44,050",
+      "detail": "字幕仅 3 个字符: 'AI,'",
+      "fix": "合并到上一条或下一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 38,
+      "time": "00:01:44,050",
+      "detail": "入点偏离首个词语 0.304s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:01:44,354"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 70,
+      "time": "00:03:47,897",
+      "detail": "入点偏离首个词语 1.572s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:03:49,469"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 86,
+      "time": "00:04:34,114",
+      "detail": "入点偏离首个词语 0.311s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:04:34,425"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 35,
+      "time": "00:01:36,416",
+      "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 19,
+      "time": "00:00:52,457",
+      "detail": "尾cue仅2个字符 'Y.'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 38,
+      "time": "00:01:44,050",
+      "detail": "尾cue仅3个字符 'AI,'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 72,
+      "time": "00:03:54,936",
+      "detail": "尾cue仅3个字符 'Go.'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 91,
+      "time": "00:04:57,044",
+      "detail": "尾cue仅5个字符 'Here,'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "ConsecutiveFragments",
+      "cue_id": 77,
+      "time": "00:04:09,318",
+      "detail": "连续 6 条 cue 无句末标点，可能 segment 过度切分",
+      "fix": "考虑合并部分片段或检查 segment 的 gap 阈值"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 27,
+      "time": "00:01:12,227",
+      "detail": "与上一条字幕词汇重叠 50%",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 82,
+      "time": "00:04:23,432",
+      "detail": "与上一条字幕词汇重叠 43%",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 83,
+      "time": "00:04:25,938",
+      "detail": "与上一条字幕词汇重叠 33%",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:01:45,715",
+      "detail": "转录词 ' approach' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:01:46,095",
+      "detail": "转录词 ' to' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:01:46,315",
+      "detail": "转录词 ' AI,' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 8,
+      "time": "00:00:23,927",
+      "detail": "入点偏离首个词语 0.210s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:00:24,137"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 9,
+      "time": "00:00:24,832",
+      "detail": "入点偏离首个词语 0.225s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:00:25,057"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 40,
+      "time": "00:01:51,819",
+      "detail": "入点偏离首个词语 0.211s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:01:52,030"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 41,
+      "time": "00:01:52,724",
+      "detail": "入点偏离首个词语 0.207s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:01:52,931"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 45,
+      "time": "00:02:08,997",
+      "detail": "入点偏离首个词语 0.163s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:02:09,160"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 63,
+      "time": "00:03:20,142",
+      "detail": "入点偏离首个词语 0.151s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:03:20,293"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 68,
+      "time": "00:03:39,883",
+      "detail": "入点偏离首个词语 0.286s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:03:40,169"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 71,
+      "time": "00:03:52,232",
+      "detail": "入点偏离首个词语 0.220s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:03:52,452"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 74,
+      "time": "00:03:56,851",
+      "detail": "入点偏离首个词语 0.205s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:03:57,056"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 82,
+      "time": "00:04:23,432",
+      "detail": "入点偏离首个词语 0.170s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:04:23,602"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 91,
+      "time": "00:04:57,044",
+      "detail": "入点偏离首个词语 0.296s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:04:57,340"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 3,
+      "time": "00:00:06,932",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.060s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 12,
+      "time": "00:00:34,311",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 17,
+      "time": "00:00:47,155",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 21,
+      "time": "00:00:56,094",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 23,
+      "time": "00:01:01,479",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.100s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 25,
+      "time": "00:01:07,544",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 29,
+      "time": "00:01:18,853",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.020s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 33,
+      "time": "00:01:31,566",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 40,
+      "time": "00:01:51,819",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.089s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 43,
+      "time": "00:02:01,756",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 44,
+      "time": "00:02:05,763",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.072s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 48,
+      "time": "00:02:20,018",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 54,
+      "time": "00:02:46,330",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 55,
+      "time": "00:02:50,478",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.105s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 56,
+      "time": "00:02:53,165",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.049s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 59,
+      "time": "00:03:03,884",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 61,
+      "time": "00:03:12,146",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 64,
+      "time": "00:03:23,696",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 66,
+      "time": "00:03:33,524",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.060s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 68,
+      "time": "00:03:39,883",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.060s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 73,
+      "time": "00:03:55,946",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.071s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 77,
+      "time": "00:04:09,318",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 78,
+      "time": "00:04:10,287",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.105s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 91,
+      "time": "00:04:57,044",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.061s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 1,
+      "time": "00:00:01,650",
+      "detail": "词 ' a' 与 ' controversial' 之间间隔 0.400s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 3,
+      "time": "00:00:09,893",
+      "detail": "词 ' dollars' 与 ' to' 之间间隔 0.500s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 6,
+      "time": "00:00:17,875",
+      "detail": "词 ' language' 与 ' and' 之间间隔 0.400s，远超中位数 0.070s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 15,
+      "time": "00:00:42,954",
+      "detail": "词 ' text' 与 ' X' 之间间隔 0.300s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 15,
+      "time": "00:00:43,434",
+      "detail": "词 ' X' 与 ' and' 之间间隔 0.500s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 17,
+      "time": "00:00:49,316",
+      "detail": "词 ' image' 与 ' X' 之间间隔 0.280s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 17,
+      "time": "00:00:49,756",
+      "detail": "词 ' X' 与 ' and' 之间间隔 0.460s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 21,
+      "time": "00:00:56,895",
+      "detail": "词 ' inputs' 与 ' X' 之间间隔 0.240s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 21,
+      "time": "00:00:57,775",
+      "detail": "词 ' outputs' 与 ' Y' 之间间隔 0.281s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 23,
+      "time": "00:01:04,041",
+      "detail": "词 ' numbers,' 与 ' often' 之间间隔 0.700s，远超中位数 0.050s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 25,
+      "time": "00:01:09,966",
+      "detail": "词 ' predictor,' 与 ' is' 之间间隔 0.460s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 27,
+      "time": "00:01:13,468",
+      "detail": "词 ' of' 与 ' X.' 之间间隔 0.221s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 30,
+      "time": "00:01:22,536",
+      "detail": "词 ' replace' 与 ' LLMs' 之间间隔 0.220s，远超中位数 0.020s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 42,
+      "time": "00:01:56,973",
+      "detail": "词 ' part' 与 ' one' 之间间隔 0.220s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 42,
+      "time": "00:01:58,534",
+      "detail": "词 ' series,' 与 ' we'll' 之间间隔 0.400s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 43,
+      "time": "00:02:04,938",
+      "detail": "词 ' architectures,' 与 ' just' 之间间隔 0.520s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 44,
+      "time": "00:02:07,339",
+      "detail": "词 ' language,' 与 ' and' 之间间隔 0.921s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 45,
+      "time": "00:02:12,762",
+      "detail": "词 ' problem' 与 ' that' 之间间隔 0.361s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 48,
+      "time": "00:02:22,400",
+      "detail": "词 ' implementations' 与 ' and' 之间间隔 0.580s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 50,
+      "time": "00:02:31,968",
+      "detail": "词 ' LeCun' 与 ' saw' 之间间隔 0.220s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 51,
+      "time": "00:02:38,593",
+      "detail": "词 ' systems' 与 ' that' 之间间隔 0.360s，远超中位数 0.050s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 55,
+      "time": "00:02:50,974",
+      "detail": "词 ' AI,' 与 ' the' 之间间隔 0.520s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 56,
+      "time": "00:02:53,676",
+      "detail": "词 ' AlexNet,' 与 ' turned' 之间间隔 0.440s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 59,
+      "time": "00:03:06,726",
+      "detail": "词 ' concerned' 与 ' by' 之间间隔 0.561s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 62,
+      "time": "00:03:16,049",
+      "detail": "词 ' dataset' 与 ' using' 之间间隔 0.361s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 62,
+      "time": "00:03:17,731",
+      "detail": "词 ' learning,' 与 ' where' 之间间隔 0.480s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 65,
+      "time": "00:03:28,560",
+      "detail": "词 ' dog,' 与 ' with' 之间间隔 0.560s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 67,
+      "time": "00:03:36,746",
+      "detail": "词 ' learning,' 与 ' interest' 之间间隔 0.561s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 68,
+      "time": "00:03:41,090",
+      "detail": "词 ' learning' 与 ' where' 之间间隔 0.352s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 69,
+      "time": "00:03:45,185",
+      "detail": "词 ' data,' 与 ' experienced' 之间间隔 0.621s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 75,
+      "time": "00:04:01,560",
+      "detail": "词 ' labels,' 与 ' including' 之间间隔 0.740s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 76,
+      "time": "00:04:04,662",
+      "detail": "词 ' learning,' 与 ' where' 之间间隔 0.561s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 80,
+      "time": "00:04:15,740",
+      "detail": "词 ' if' 与 ' it's' 之间间隔 0.900s，远超中位数 0.020s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 80,
+      "time": "00:04:17,100",
+      "detail": "词 ' cake' 与 ' slide,' 之间间隔 0.380s，远超中位数 0.020s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 80,
+      "time": "00:04:18,180",
+      "detail": "词 ' So' 与 ' if' 之间间隔 0.221s，远超中位数 0.020s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 81,
+      "time": "00:04:21,441",
+      "detail": "词 ' is' 与 ' self-supervised' 之间间隔 1.061s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 85,
+      "time": "00:04:30,984",
+      "detail": "词 ' like,' 与 ' this' 之间间隔 0.240s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 85,
+      "time": "00:04:32,384",
+      "detail": "词 ' to,' 与 ' you' 之间间隔 0.681s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 89,
+      "time": "00:04:47,194",
+      "detail": "词 ' in' 与 ' text' 之间间隔 0.941s，远超中位数 0.160s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 90,
+      "time": "00:04:53,958",
+      "detail": "词 ' natural' 与 ' modalities' 之间间隔 1.040s，远超中位数 0.170s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "PaddingConflict",
+      "cue_id": 56,
+      "time": "00:02:56,167",
+      "detail": "说话间隙仅 0.040s，但阅读 padding 有 0.049s，可能冲突",
+      "fix": "压缩阅读 padding 至约 0.050s"
+    }
+  ]
+}

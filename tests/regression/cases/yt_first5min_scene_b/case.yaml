@@ -1,0 +1,21 @@
+name: "yt_first5min_scene_b"
+description: "YouTube 科技视频前 5 分钟，en→zh 翻译 smoke case，用于快速验证翻译+字幕格式"
+
+input:
+  audio: "../../../../resources/audio/yt_first5min.mp3"
+
+light_subtitle:
+  source_lang: "en"
+  target_lang: "zh"
+
+qc:
+  source_lang: "en"
+  target_lang: "zh"
+
+thresholds:
+  max_errors: 10
+  max_new_errors: 3
+  strict_rules:
+    - "Overlap"
+    - "EmptyText"
+    - "TranslationCompleteness"

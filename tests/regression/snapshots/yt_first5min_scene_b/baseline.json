@@ -1,0 +1,264 @@
+{
+  "total_cues": 54,
+  "errors": 8,
+  "warnings": 2,
+  "suggestions": 18,
+  "passed": false,
+  "bilingual": false,
+  "source_lang": "en",
+  "target_lang": "zh",
+  "issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 15,
+      "time": "00:01:18,853",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 20,
+      "time": "00:01:43,153",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 26,
+      "time": "00:02:20,018",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 28,
+      "time": "00:02:34,870",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 31,
+      "time": "00:02:51,494",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 34,
+      "time": "00:03:12,146",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 41,
+      "time": "00:03:49,469",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "BadWordSplit",
+      "cue_id": 4,
+      "time": "00:00:20,396 → 00:00:27,017",
+      "detail": "英文词/名被跨cue切断: #4末'…JEPA' → #5首'JEPA…' (合并为'JEPAJEPA')",
+      "fix": "将'JEPAJEPA'保留在同一个cue中"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 19,
+      "time": "00:01:36,311",
+      "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 9,
+      "time": "00:00:47,155",
+      "detail": "与上一条字幕信息重叠 (相似度 58%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 20,
+      "time": "00:01:43,153",
+      "detail": "字幕时长 7.84s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 24,
+      "time": "00:02:08,260",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 28,
+      "time": "00:02:34,870",
+      "detail": "字幕时长 7.09s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 31,
+      "time": "00:02:51,494",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 33,
+      "time": "00:03:03,884",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 49,
+      "time": "00:04:29,647",
+      "detail": "字幕时长 7.32s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 53,
+      "time": "00:04:48,895",
+      "detail": "字幕时长 7.74s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 50,
+      "time": "00:04:37,206",
+      "detail": "中文句尾可能缺少感叹号: '因为它效率太低了'",
+      "fix": "如为感叹句，添加 ！"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 18,
+      "time": "00:01:31,566",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 20,
+      "time": "00:01:43,153",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 33,
+      "time": "00:03:03,884",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.054s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 48,
+      "time": "00:04:27,203",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 52,
+      "time": "00:04:46,434",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.075s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 53,
+      "time": "00:04:48,895",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 28,
+      "time": "00:02:34,870",
+      "detail": "双行长度失衡 71% (L1: 9字, L2: 31字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 34,
+      "time": "00:03:12,146",
+      "detail": "双行长度失衡 72% (L1: 32字, L2: 9字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 32,
+      "time": "00:03:00,241",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 45,
+      "time": "00:04:14,560",
+      "detail": "包含填充词 '那个'，建议省略",
+      "fix": "删除填充词，保持字幕简洁"
+    }
+  ]
+}

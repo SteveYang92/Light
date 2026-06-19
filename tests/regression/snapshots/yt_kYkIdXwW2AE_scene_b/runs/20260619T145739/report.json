@@ -1,0 +1,1785 @@
+{
+  "total_cues": 407,
+  "errors": 65,
+  "warnings": 40,
+  "suggestions": 92,
+  "passed": false,
+  "bilingual": false,
+  "source_lang": "en",
+  "target_lang": "zh",
+  "issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 3,
+      "time": "00:00:13,474",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 15,
+      "time": "00:01:18,853",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 20,
+      "time": "00:01:43,153",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 26,
+      "time": "00:02:20,018",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 31,
+      "time": "00:02:51,494",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 34,
+      "time": "00:03:12,146",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 41,
+      "time": "00:03:49,469",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 56,
+      "time": "00:05:08,638",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 58,
+      "time": "00:05:18,723",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 63,
+      "time": "00:05:42,274",
+      "detail": "字幕有 3 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 64,
+      "time": "00:05:55,219",
+      "detail": "字幕有 3 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 75,
+      "time": "00:06:59,498",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 76,
+      "time": "00:07:06,061",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 111,
+      "time": "00:10:13,770",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 114,
+      "time": "00:10:31,442",
+      "detail": "字幕有 3 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 115,
+      "time": "00:10:44,746",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 117,
+      "time": "00:10:58,716",
+      "detail": "字幕有 3 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 154,
+      "time": "00:14:22,335",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 165,
+      "time": "00:15:25,119",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 179,
+      "time": "00:16:41,962",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 189,
+      "time": "00:17:37,848",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 192,
+      "time": "00:17:58,014",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 195,
+      "time": "00:18:22,921",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 197,
+      "time": "00:18:32,056",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 200,
+      "time": "00:18:49,206",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 204,
+      "time": "00:19:19,385",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 221,
+      "time": "00:20:42,412",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 223,
+      "time": "00:20:55,172",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 234,
+      "time": "00:22:12,830",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 248,
+      "time": "00:23:20,188",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 262,
+      "time": "00:24:39,902",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 264,
+      "time": "00:24:58,456",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 266,
+      "time": "00:25:09,708",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 267,
+      "time": "00:25:16,433",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 268,
+      "time": "00:25:23,418",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 269,
+      "time": "00:25:29,834",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 276,
+      "time": "00:26:05,228",
+      "detail": "字幕有 4 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 278,
+      "time": "00:26:19,880",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 282,
+      "time": "00:26:42,363",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 288,
+      "time": "00:27:13,212",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 299,
+      "time": "00:28:08,949",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 308,
+      "time": "00:28:58,957",
+      "detail": "字幕有 3 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 343,
+      "time": "00:32:03,126",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 373,
+      "time": "00:34:27,134",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 374,
+      "time": "00:34:34,298",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 375,
+      "time": "00:34:41,742",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 377,
+      "time": "00:34:52,533",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 378,
+      "time": "00:34:57,766",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 400,
+      "time": "00:36:44,127",
+      "detail": "字幕有 3 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "TinyCue",
+      "cue_id": 209,
+      "time": "00:19:49,218",
+      "detail": "字幕仅 3 个字符: '对 对'",
+      "fix": "合并到上一条或下一条字幕"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "UntranslatedText",
+      "cue_id": 58,
+      "time": "00:05:18,723",
+      "detail": "中文 cue 中混入英文: ilya, sutskeveralec, radford, google",
+      "fix": "将英文替换为中文翻译"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "UntranslatedText",
+      "cue_id": 64,
+      "time": "00:05:55,219",
+      "detail": "中文 cue 中混入英文: radford, openai, openai, transformer",
+      "fix": "将英文替换为中文翻译"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "UntranslatedText",
+      "cue_id": 111,
+      "time": "00:10:13,770",
+      "detail": "中文 cue 中混入英文: hudson, river, trading, transformer",
+      "fix": "将英文替换为中文翻译"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "UntranslatedText",
+      "cue_id": 223,
+      "time": "00:20:55,172",
+      "detail": "中文 cue 中混入英文: phane, denis, lecun, barlow",
+      "fix": "将英文替换为中文翻译"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "UntranslatedText",
+      "cue_id": 308,
+      "time": "00:28:58,957",
+      "detail": "中文 cue 中混入英文: barlow, twins, vicreg, dino",
+      "fix": "将英文替换为中文翻译"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "BadWordSplit",
+      "cue_id": 128,
+      "time": "00:11:54,211 → 00:12:00,115",
+      "detail": "词 '方远超' 被跨cue切断 (#128末'… 万次方' → #129首'远超可观测宇…')",
+      "fix": "将'方远超'保留在同一个cue中"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "BadWordSplit",
+      "cue_id": 171,
+      "time": "00:15:55,685 → 00:16:01,971",
+      "detail": "词 '人负' 被跨cue切断 (#171末'…自同一人' → #172首'负样本包含一…')",
+      "fix": "将'人负'保留在同一个cue中"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "BadWordSplit",
+      "cue_id": 58,
+      "time": "00:05:18,723",
+      "detail": "英文词/名被换行拆散: 第1行末'…Sutskever' + 第2行首'Alec…' (合并为'SutskeverAlec')",
+      "fix": "将'SutskeverAlec'保持在同一行"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "BadWordSplit",
+      "cue_id": 4,
+      "time": "00:00:20,396 → 00:00:27,017",
+      "detail": "英文词/名被跨cue切断: #4末'…JEPA' → #5首'JEPA…' (合并为'JEPAJEPA')",
+      "fix": "将'JEPAJEPA'保留在同一个cue中"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "CompoundWords",
+      "cue_id": 267,
+      "time": "00:25:16,433",
+      "detail": "复合词 '取得' 被换行拆散",
+      "fix": "将'取得'保持在同一行"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "CompoundWords",
+      "cue_id": 308,
+      "time": "00:28:58,957",
+      "detail": "复合词 '文件名' 被换行拆散",
+      "fix": "将'文件名'保持在同一行"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 52,
+      "time": "00:04:46,435",
+      "detail": "阅读 padding 1.539s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 293,
+      "time": "00:27:39,976",
+      "detail": "阅读 padding 1.118s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 359,
+      "time": "00:33:25,951",
+      "detail": "阅读 padding 1.817s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 380,
+      "time": "00:35:07,274",
+      "detail": "阅读 padding 2.079s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 52,
+      "time": "00:04:46,435",
+      "detail": "字幕时长 9.08s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 63,
+      "time": "00:05:42,274",
+      "detail": "字幕时长 11.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 114,
+      "time": "00:10:31,442",
+      "detail": "字幕时长 12.49s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 192,
+      "time": "00:17:58,014",
+      "detail": "字幕时长 13.54s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 204,
+      "time": "00:19:19,385",
+      "detail": "字幕时长 10.27s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 262,
+      "time": "00:24:39,902",
+      "detail": "字幕时长 10.73s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 299,
+      "time": "00:28:08,949",
+      "detail": "字幕时长 10.72s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 308,
+      "time": "00:28:58,957",
+      "detail": "字幕时长 13.04s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 105,
+      "time": "00:09:41,994",
+      "detail": "入点偏离首个词语 0.718s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:09:42,712"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 119,
+      "time": "00:11:09,668",
+      "detail": "入点偏离首个词语 0.636s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:11:10,304"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 223,
+      "time": "00:20:55,172",
+      "detail": "入点偏离首个词语 0.629s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:20:55,801"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 276,
+      "time": "00:26:05,228",
+      "detail": "入点偏离首个词语 0.589s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:26:05,817"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 377,
+      "time": "00:34:52,533",
+      "detail": "入点偏离首个词语 0.675s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:34:53,208"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 19,
+      "time": "00:01:36,311",
+      "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 156,
+      "time": "00:14:36,106",
+      "detail": "入点首个词 ' that' 置信度 0.31，后续词峰值 0.97（差 0.66）；首个词时长 820ms（4字符），可能覆盖了前置静默",
+      "fix": "对齐可能偏早，建议根据音频确认入点; 首个词可能覆盖了前置静默，建议推迟入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 289,
+      "time": "00:27:20,265",
+      "detail": "入点首个词 ' which' 置信度 0.16，后续词峰值 0.99（差 0.83）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 296,
+      "time": "00:27:50,390",
+      "detail": "入点首个词 ' The' 置信度 0.16，后续词峰值 0.83（差 0.67）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 358,
+      "time": "00:33:21,557",
+      "detail": "入点首个词 ' And' 置信度 0.10，后续词峰值 0.94（差 0.84）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 361,
+      "time": "00:33:35,024",
+      "detail": "入点首个词 ' This' 置信度 0.00，后续词峰值 0.92（差 0.91）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 365,
+      "time": "00:33:50,671",
+      "detail": "入点首个词 ' What' 置信度 0.34，后续词峰值 0.88（差 0.54）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 53,
+      "time": "00:04:55,624",
+      "detail": "尾cue仅4个字符 '比如视觉'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 209,
+      "time": "00:19:49,218",
+      "detail": "尾cue仅3个字符 '对 对'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 210,
+      "time": "00:19:50,342",
+      "detail": "尾cue仅4个字符 '对于视频'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 6,
+      "time": "00:00:29,570",
+      "detail": "与上一条字幕信息重叠 (相似度 42%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 9,
+      "time": "00:00:47,155",
+      "detail": "与上一条字幕信息重叠 (相似度 60%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 100,
+      "time": "00:09:16,042",
+      "detail": "与上一条字幕信息重叠 (相似度 79%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 131,
+      "time": "00:12:09,670",
+      "detail": "与上一条字幕信息重叠 (相似度 56%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 172,
+      "time": "00:16:01,971",
+      "detail": "与上一条字幕信息重叠 (相似度 77%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 174,
+      "time": "00:16:13,619",
+      "detail": "与上一条字幕信息重叠 (相似度 64%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 194,
+      "time": "00:18:17,419",
+      "detail": "与上一条字幕信息重叠 (相似度 77%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 207,
+      "time": "00:19:40,655",
+      "detail": "与上一条字幕信息重叠 (相似度 42%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 239,
+      "time": "00:22:39,645",
+      "detail": "与上一条字幕信息重叠 (相似度 55%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 240,
+      "time": "00:22:42,898",
+      "detail": "与上一条字幕信息重叠 (相似度 51%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 252,
+      "time": "00:23:44,786",
+      "detail": "与上一条字幕信息重叠 (相似度 75%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 346,
+      "time": "00:32:17,750",
+      "detail": "与上一条字幕信息重叠 (相似度 47%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 359,
+      "time": "00:33:25,951",
+      "detail": "与上一条字幕信息重叠 (相似度 44%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 362,
+      "time": "00:33:40,085",
+      "detail": "与上一条字幕信息重叠 (相似度 42%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 365,
+      "time": "00:33:50,671",
+      "detail": "与上一条字幕信息重叠 (相似度 67%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 378,
+      "time": "00:34:57,766",
+      "detail": "与上一条字幕信息重叠 (相似度 48%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 395,
+      "time": "00:36:16,586",
+      "detail": "与上一条字幕信息重叠 (相似度 74%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 20,
+      "time": "00:01:43,153",
+      "detail": "字幕时长 7.84s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 24,
+      "time": "00:02:08,260",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 28,
+      "time": "00:02:34,870",
+      "detail": "字幕时长 7.09s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 31,
+      "time": "00:02:51,494",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 33,
+      "time": "00:03:03,884",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 49,
+      "time": "00:04:29,647",
+      "detail": "字幕时长 7.32s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 76,
+      "time": "00:07:06,061",
+      "detail": "字幕时长 7.18s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 88,
+      "time": "00:08:09,786",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 94,
+      "time": "00:08:38,810",
+      "detail": "字幕时长 7.43s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 95,
+      "time": "00:08:46,984",
+      "detail": "字幕时长 7.19s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 111,
+      "time": "00:10:13,770",
+      "detail": "字幕时长 8.63s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 117,
+      "time": "00:10:58,716",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 151,
+      "time": "00:13:57,452",
+      "detail": "字幕时长 7.25s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 152,
+      "time": "00:14:05,822",
+      "detail": "字幕时长 7.29s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 154,
+      "time": "00:14:22,335",
+      "detail": "字幕时长 7.49s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 165,
+      "time": "00:15:25,119",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 178,
+      "time": "00:16:34,156",
+      "detail": "字幕时长 7.23s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 189,
+      "time": "00:17:37,848",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 197,
+      "time": "00:18:32,056",
+      "detail": "字幕时长 7.70s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 200,
+      "time": "00:18:49,206",
+      "detail": "字幕时长 7.64s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 202,
+      "time": "00:19:02,396",
+      "detail": "字幕时长 7.70s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 203,
+      "time": "00:19:10,701",
+      "detail": "字幕时长 7.76s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 212,
+      "time": "00:19:56,185",
+      "detail": "字幕时长 8.80s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 219,
+      "time": "00:20:32,665",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 224,
+      "time": "00:21:02,003",
+      "detail": "字幕时长 7.04s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 227,
+      "time": "00:21:18,818",
+      "detail": "字幕时长 7.27s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 228,
+      "time": "00:21:27,424",
+      "detail": "字幕时长 7.55s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 234,
+      "time": "00:22:12,830",
+      "detail": "字幕时长 8.38s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 256,
+      "time": "00:24:06,270",
+      "detail": "字幕时长 7.20s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 290,
+      "time": "00:27:21,770",
+      "detail": "字幕时长 7.10s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 296,
+      "time": "00:27:50,390",
+      "detail": "字幕时长 7.26s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 310,
+      "time": "00:29:20,186",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 349,
+      "time": "00:32:30,166",
+      "detail": "字幕时长 7.21s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 359,
+      "time": "00:33:25,951",
+      "detail": "字幕时长 7.29s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 375,
+      "time": "00:34:41,742",
+      "detail": "字幕时长 7.26s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 380,
+      "time": "00:35:07,274",
+      "detail": "字幕时长 7.32s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 391,
+      "time": "00:35:54,718",
+      "detail": "字幕时长 7.43s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 400,
+      "time": "00:36:44,127",
+      "detail": "字幕时长 7.30s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 402,
+      "time": "00:36:55,038",
+      "detail": "字幕时长 7.26s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 50,
+      "time": "00:04:37,206",
+      "detail": "中文句尾可能缺少感叹号: '因为它效率太低'",
+      "fix": "如为感叹句，添加 ！"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 63,
+      "time": "00:05:42,274",
+      "detail": "中文句尾可能缺少问号: '所有内容 并训练来预测这个最终词元是什么'",
+      "fix": "如为疑问句，添加 ？"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 151,
+      "time": "00:13:57,452",
+      "detail": "中文句尾可能缺少感叹号: '真正重要的是模型在解决下一个词元预测任务时学到的内部表示和特征'",
+      "fix": "如为感叹句，添加 ！"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 227,
+      "time": "00:21:18,818",
+      "detail": "中文句尾可能缺少问号: '所以如果嵌入向量长度为 128 那么每个网络的输出层就包含 128 个神经元'",
+      "fix": "如为疑问句，添加 ？"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 242,
+      "time": "00:22:49,022",
+      "detail": "中文句尾可能缺少感叹号: '团队还在论文附录中指出 在实践中他们没发现这些替代方案之间有太大差异'",
+      "fix": "如为感叹句，添加 ！"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 93,
+      "time": "00:08:36,705",
+      "detail": "入点偏离首个词语 0.431s，超过 0.30s 建议阈值",
+      "fix": "将入点对齐至 00:08:37,136"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 332,
+      "time": "00:31:06,069",
+      "detail": "入点偏离首个词语 0.415s，超过 0.30s 建议阈值",
+      "fix": "将入点对齐至 00:31:06,484"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "SemanticBreaks",
+      "cue_id": 377,
+      "time": "00:34:52,533",
+      "detail": "首行过短(最后)，语义切分可能不自然",
+      "fix": "调整断行位置到语义分界处"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 18,
+      "time": "00:01:31,566",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 20,
+      "time": "00:01:43,153",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 33,
+      "time": "00:03:03,884",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.054s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 48,
+      "time": "00:04:27,203",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 94,
+      "time": "00:08:38,810",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 118,
+      "time": "00:11:06,721",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 163,
+      "time": "00:15:16,557",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.008s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 192,
+      "time": "00:17:58,014",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 197,
+      "time": "00:18:32,056",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 200,
+      "time": "00:18:49,206",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 202,
+      "time": "00:19:02,396",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 208,
+      "time": "00:19:43,276",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.075s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 215,
+      "time": "00:20:14,653",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 228,
+      "time": "00:21:27,424",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 262,
+      "time": "00:24:39,902",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 274,
+      "time": "00:25:56,414",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.055s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 276,
+      "time": "00:26:05,228",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.007s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 291,
+      "time": "00:27:28,979",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.077s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 292,
+      "time": "00:27:34,583",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.007s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 331,
+      "time": "00:31:01,300",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 362,
+      "time": "00:33:40,085",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.075s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 376,
+      "time": "00:34:49,426",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 385,
+      "time": "00:35:31,260",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 391,
+      "time": "00:35:54,718",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "PaddingConflict",
+      "cue_id": 216,
+      "time": "00:20:23,851",
+      "detail": "说话间隙仅 0.080s，但阅读 padding 有 0.092s，可能冲突",
+      "fix": "压缩阅读 padding 至约 0.050s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 34,
+      "time": "00:03:12,146",
+      "detail": "双行长度失衡 72% (L1: 32字, L2: 9字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 58,
+      "time": "00:05:18,723",
+      "detail": "双行长度失衡 64% (L1: 14字, L2: 39字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 75,
+      "time": "00:06:59,498",
+      "detail": "双行长度失衡 83% (L1: 35字, L2: 6字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 115,
+      "time": "00:10:44,746",
+      "detail": "双行长度失衡 65% (L1: 13字, L2: 37字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 223,
+      "time": "00:20:55,172",
+      "detail": "双行长度失衡 64% (L1: 39字, L2: 14字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 266,
+      "time": "00:25:09,708",
+      "detail": "双行长度失衡 82% (L1: 6字, L2: 34字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 269,
+      "time": "00:25:29,834",
+      "detail": "双行长度失衡 80% (L1: 7字, L2: 35字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 282,
+      "time": "00:26:42,363",
+      "detail": "双行长度失衡 66% (L1: 10字, L2: 29字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 377,
+      "time": "00:34:52,533",
+      "detail": "双行长度失衡 95% (L1: 2字, L2: 38字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 378,
+      "time": "00:34:57,766",
+      "detail": "双行长度失衡 76% (L1: 38字, L2: 9字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 32,
+      "time": "00:03:00,241",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 45,
+      "time": "00:04:14,560",
+      "detail": "包含填充词 '那个'，建议省略",
+      "fix": "删除填充词，保持字幕简洁"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 80,
+      "time": "00:07:32,787",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 90,
+      "time": "00:08:24,946",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 132,
+      "time": "00:12:14,473",
+      "detail": "包含填充词 '那个'，建议省略",
+      "fix": "删除填充词，保持字幕简洁"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 146,
+      "time": "00:13:31,060",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 179,
+      "time": "00:16:41,962",
+      "detail": "翻译腔：'值得注意的是' → 建议使用 '关键是' / '重点是'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 191,
+      "time": "00:17:54,033",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 234,
+      "time": "00:22:12,830",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 278,
+      "time": "00:26:19,880",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    }
+  ]
+}

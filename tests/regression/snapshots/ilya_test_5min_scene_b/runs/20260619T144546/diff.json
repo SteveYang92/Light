@@ -1,0 +1,14 @@
+{
+  "baseline_run_id": "20260619T144546",
+  "current_run_id": "20260619T144546",
+  "errors_delta": 0,
+  "warnings_delta": 0,
+  "suggestions_delta": 0,
+  "rule_changes": [],
+  "new_issues": [],
+  "fixed_issues": [],
+  "degraded": false,
+  "reasons": [
+    "First run — no previous to compare"
+  ]
+}

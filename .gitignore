@@ -53,4 +53,3 @@ packages/light-frontend/tsconfig.*.tsbuildinfo
 .pytest_cache/
 regression_dashboard.html
 .cache/
-tests/regression/snapshots/

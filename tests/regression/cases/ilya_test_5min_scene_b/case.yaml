@@ -1,0 +1,21 @@
+name: "ilya_test_5min_scene_b"
+description: "Ilya Sutskever 访谈前 5 分钟，en→zh 翻译 smoke case，用于快速验证翻译+字幕格式"
+
+input:
+  audio: "../../../../resources/audio/ilya_test_5min.wav"
+
+light_subtitle:
+  source_lang: "en"
+  target_lang: "zh"
+
+qc:
+  source_lang: "en"
+  target_lang: "zh"
+
+thresholds:
+  max_errors: 10
+  max_new_errors: 3
+  strict_rules:
+    - "Overlap"
+    - "EmptyText"
+    - "TranslationCompleteness"

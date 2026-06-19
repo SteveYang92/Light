@@ -1,0 +1,1281 @@
+{
+  "baseline_run_id": "20260525T003827",
+  "current_run_id": "20260619T150812",
+  "errors_delta": 20,
+  "warnings_delta": 25,
+  "suggestions_delta": -40,
+  "rule_changes": [
+    {
+      "rule": "OrphanWords",
+      "before": 1,
+      "after": 4,
+      "delta": 3
+    },
+    {
+      "rule": "MissingPunctuation",
+      "before": 9,
+      "after": 7,
+      "delta": -2
+    },
+    {
+      "rule": "MinDuration",
+      "before": 1,
+      "after": 16,
+      "delta": 15
+    },
+    {
+      "rule": "MaxLines",
+      "before": 10,
+      "after": 5,
+      "delta": -5
+    },
+    {
+      "rule": "TinyCue",
+      "before": 0,
+      "after": 5,
+      "delta": 5
+    },
+    {
+      "rule": "ExitPointPrecision",
+      "before": 60,
+      "after": 48,
+      "delta": -12
+    },
+    {
+      "rule": "BadWordSplit",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    {
+      "rule": "EntryPointConfidence",
+      "before": 0,
+      "after": 20,
+      "delta": 20
+    },
+    {
+      "rule": "LineImbalance",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "ReadingSpeed",
+      "before": 1,
+      "after": 4,
+      "delta": 3
+    },
+    {
+      "rule": "MaxDuration",
+      "before": 60,
+      "after": 49,
+      "delta": -11
+    },
+    {
+      "rule": "TranslationQuality",
+      "before": 12,
+      "after": 29,
+      "delta": 17
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 12,
+      "after": 8,
+      "delta": -4
+    },
+    {
+      "rule": "TranscriptionCoverage",
+      "before": 31,
+      "after": 5,
+      "delta": -26
+    },
+    {
+      "rule": "BoundaryRepetition",
+      "before": 2,
+      "after": 3,
+      "delta": 1
+    },
+    {
+      "rule": "PaddingConflict",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "OverlappingContent",
+      "before": 3,
+      "after": 5,
+      "delta": 2
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 1,
+      "time": "00:00:00,278",
+      "detail": "阅读速度 9.1 字/秒，超过上限 9 字/秒",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 49,
+      "time": "00:02:41,565",
+      "detail": "阅读速度 9.9 字/秒，超过上限 9 字/秒",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 52,
+      "time": "00:02:44,862",
+      "detail": "阅读速度 11.6 字/秒，超过上限 9 字/秒",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 5,
+      "time": "00:00:06,140",
+      "detail": "字幕时长 0.76s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 20,
+      "time": "00:01:12,171",
+      "detail": "字幕时长 0.53s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 22,
+      "time": "00:01:15,020",
+      "detail": "字幕时长 0.77s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 33,
+      "time": "00:01:56,275",
+      "detail": "字幕时长 0.77s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 40,
+      "time": "00:02:29,524",
+      "detail": "字幕时长 0.78s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 42,
+      "time": "00:02:32,668",
+      "detail": "字幕时长 0.62s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 47,
+      "time": "00:02:39,451",
+      "detail": "字幕时长 0.25s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 49,
+      "time": "00:02:41,565",
+      "detail": "字幕时长 0.70s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 51,
+      "time": "00:02:44,408",
+      "detail": "字幕时长 0.35s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 53,
+      "time": "00:02:46,088",
+      "detail": "字幕时长 0.60s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 104,
+      "time": "00:06:56,138",
+      "detail": "字幕时长 0.73s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 119,
+      "time": "00:07:53,682",
+      "detail": "字幕时长 0.50s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 122,
+      "time": "00:08:01,101",
+      "detail": "字幕时长 0.74s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 189,
+      "time": "00:13:28,534",
+      "detail": "字幕时长 0.75s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 255,
+      "time": "00:18:49,102",
+      "detail": "字幕时长 0.78s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "TinyCue",
+      "cue_id": 58,
+      "time": "00:03:06,978",
+      "detail": "字幕仅 3 个字符: '和狭隘'",
+      "fix": "合并到上一条或下一条字幕"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "TinyCue",
+      "cue_id": 104,
+      "time": "00:06:56,138",
+      "detail": "字幕仅 3 个字符: '第二个'",
+      "fix": "合并到上一条或下一条字幕"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "TinyCue",
+      "cue_id": 355,
+      "time": "00:26:28,207",
+      "detail": "字幕仅 2 个字符: '进化'",
+      "fix": "合并到上一条或下一条字幕"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "TinyCue",
+      "cue_id": 377,
+      "time": "00:28:09,667",
+      "detail": "字幕仅 3 个字符: '哦 对'",
+      "fix": "合并到上一条或下一条字幕"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "TinyCue",
+      "cue_id": 393,
+      "time": "00:29:28,370",
+      "detail": "字幕仅 2 个字符: '嗯哼'",
+      "fix": "合并到上一条或下一条字幕"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "BadWordSplit",
+      "cue_id": 138,
+      "time": "00:09:17,633 → 00:09:19,978",
+      "detail": "词 '时会' 被跨cue切断 (#138末'…型犯错时' → #139首'会不会是因为…')",
+      "fix": "将'时会'保留在同一个cue中"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 1,
+      "time": "00:00:00,278",
+      "detail": "入点首个词 ' You' 置信度 0.31，后续词峰值 0.90（差 0.59）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 9,
+      "time": "00:00:14,864",
+      "detail": "入点首个词 ' Another' 置信度 0.35，后续词峰值 0.86（差 0.51）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 12,
+      "time": "00:00:29,898",
+      "detail": "入点首个词 ' but' 置信度 0.37，后续词峰值 0.98（差 0.61）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 47,
+      "time": "00:02:39,451",
+      "detail": "入点首个词 ' Right.' 置信度 0.23，后续词峰值 0.96（差 0.73）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 55,
+      "time": "00:02:48,263",
+      "detail": "入点首个词 ' Yeah.' 置信度 0.30，后续词峰值 0.97（差 0.67）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 67,
+      "time": "00:03:52,141",
+      "detail": "入点首个词 ' and' 置信度 0.35，后续词峰值 1.00（差 0.65）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 86,
+      "time": "00:05:29,561",
+      "detail": "入点首个词 ' Well,' 置信度 0.23，后续词峰值 0.91（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 104,
+      "time": "00:06:56,138",
+      "detail": "入点首个词 ' The' 置信度 0.25，后续词峰值 0.89（差 0.64）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 197,
+      "time": "00:13:58,322",
+      "detail": "入点首个词 ' you' 置信度 0.00，后续词峰值 0.95（差 0.95）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 198,
+      "time": "00:14:01,166",
+      "detail": "入点首个词 ' and' 置信度 0.31，后续词峰值 0.96（差 0.65）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 224,
+      "time": "00:16:10,442",
+      "detail": "入点首个词 ' then' 置信度 0.01，后续词峰值 1.00（差 0.99）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 226,
+      "time": "00:16:15,285",
+      "detail": "入点首个词 ' yeah' 置信度 0.37，后续词峰值 0.91（差 0.53）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 315,
+      "time": "00:23:03,436",
+      "detail": "入点首个词 ' You' 置信度 0.25，后续词峰值 0.98（差 0.73）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 323,
+      "time": "00:23:38,290",
+      "detail": "入点首个词 ' and' 置信度 0.00，后续词峰值 0.94（差 0.94）；前两个词 ' and' → ' maybe' 间隔 1.141s",
+      "fix": "对齐可能偏早，建议根据音频确认入点; 入点词间存在大段静默，入点可能偏早"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 329,
+      "time": "00:24:23,720",
+      "detail": "入点首个词 ' You' 置信度 0.21，后续词峰值 0.90（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 371,
+      "time": "00:27:49,082",
+      "detail": "入点首个词 ' You' 置信度 0.18，后续词峰值 0.84（差 0.66）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 375,
+      "time": "00:28:00,522",
+      "detail": "入点首个词 ' It' 置信度 0.35，后续词峰值 0.96（差 0.61）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 96,
+      "time": "00:06:24,168",
+      "detail": "入点首个词 ' So' 置信度 0.37，后续词峰值 0.87（差 0.49）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 119,
+      "time": "00:07:53,682",
+      "detail": "入点首个词 ' Yeah.' 置信度 0.36，后续词峰值 0.72（差 0.36）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 126,
+      "time": "00:08:15,058",
+      "detail": "入点首个词 ' It's' 置信度 0.39，后续词峰值 0.87（差 0.48）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 58,
+      "time": "00:03:06,978",
+      "detail": "尾cue仅3个字符 '和狭隘'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 355,
+      "time": "00:26:28,207",
+      "detail": "尾cue仅2个字符 '进化'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 398,
+      "time": "00:29:40,987",
+      "detail": "尾cue仅5个字符 '它更无监督'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 39,
+      "time": "00:02:27,082",
+      "detail": "与上一条字幕信息重叠 (相似度 46%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 260,
+      "time": "00:19:06,108",
+      "detail": "与上一条字幕信息重叠 (相似度 42%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "BoundaryRepetition",
+      "cue_id": 286,
+      "time": "00:21:03,781",
+      "detail": "边界重复: '数据' 出现在上一条末尾和本条开头",
+      "fix": "合并或调整拆分边界，消除重复词"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 20,
+      "time": "00:01:12,171",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 33,
+      "time": "00:01:56,275",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 47,
+      "time": "00:02:39,451",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 105,
+      "time": "00:06:56,976",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 119,
+      "time": "00:07:53,682",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 122,
+      "time": "00:08:01,101",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 130,
+      "time": "00:08:35,340",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 133,
+      "time": "00:08:48,533",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 184,
+      "time": "00:13:19,457",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 189,
+      "time": "00:13:28,534",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 193,
+      "time": "00:13:43,270",
+      "detail": "字幕仅包含一个汉字 '好'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 332,
+      "time": "00:24:35,889",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 352,
+      "time": "00:26:19,105",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 384,
+      "time": "00:28:39,831",
+      "detail": "字幕仅包含一个汉字 '对'，可能压缩过度",
+      "fix": "检查翻译是否丢失了关键信息"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 21,
+      "time": "00:01:12,810",
+      "detail": "包含填充词 '那个'，建议省略",
+      "fix": "删除填充词，保持字幕简洁"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 63,
+      "time": "00:03:32,835",
+      "detail": "包含填充词 '那个'，建议省略",
+      "fix": "删除填充词，保持字幕简洁"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 65,
+      "time": "00:03:41,098",
+      "detail": "包含填充词 '那个'，建议省略",
+      "fix": "删除填充词，保持字幕简洁"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 33,
+      "time": "00:02:17,234",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 78,
+      "time": "00:05:54,421",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 128,
+      "time": "00:10:41,274",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 134,
+      "time": "00:11:07,563",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 240,
+      "time": "00:20:48,781",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 33,
+      "time": "00:02:17,234",
+      "detail": "阅读 padding 1.121s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 142,
+      "time": "00:12:19,029",
+      "detail": "阅读 padding 1.609s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 11,
+      "time": "00:00:32,032",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.040s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 15,
+      "time": "00:00:45,789",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.019s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 29,
+      "time": "00:01:44,680",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 32,
+      "time": "00:02:04,563",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 37,
+      "time": "00:02:42,067",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.008s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 65,
+      "time": "00:04:39,105",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.057s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 66,
+      "time": "00:04:47,511",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.011s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 77,
+      "time": "00:05:45,795",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 78,
+      "time": "00:05:54,421",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 83,
+      "time": "00:06:28,453",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 32,
+      "time": "00:02:04,563",
+      "detail": "字幕时长 12.09s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 78,
+      "time": "00:05:54,421",
+      "detail": "字幕时长 12.58s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 83,
+      "time": "00:06:28,453",
+      "detail": "字幕时长 10.99s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 113,
+      "time": "00:09:04,452",
+      "detail": "字幕时长 12.07s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 134,
+      "time": "00:11:07,563",
+      "detail": "字幕时长 17.25s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 136,
+      "time": "00:11:35,769",
+      "detail": "字幕时长 12.35s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 194,
+      "time": "00:16:41,898",
+      "detail": "字幕时长 11.79s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 215,
+      "time": "00:18:37,455",
+      "detail": "字幕时长 11.82s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 218,
+      "time": "00:18:57,986",
+      "detail": "字幕时长 10.53s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 240,
+      "time": "00:20:48,781",
+      "detail": "字幕时长 12.26s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 269,
+      "time": "00:23:15,817",
+      "detail": "字幕时长 10.49s，超过最大 7.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 12,
+      "time": "00:00:32,937",
+      "detail": "入点偏离首个词语 1.200s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:00:34,137"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 42,
+      "time": "00:02:56,131",
+      "detail": "入点偏离首个词语 0.900s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:02:57,031"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 71,
+      "time": "00:05:21,273",
+      "detail": "入点偏离首个词语 0.799s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:05:22,072"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 162,
+      "time": "00:13:55,491",
+      "detail": "入点偏离首个词语 1.041s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:13:56,532"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:24,777",
+      "detail": "转录词 ' go' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:24,898",
+      "detail": "转录词 ' to' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:24,998",
+      "detail": "转录词 ' some' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:25,159",
+      "detail": "转录词 ' place,' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:25,399",
+      "detail": "转录词 ' and' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:25,480",
+      "detail": "转录词 ' then' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:25,720",
+      "detail": "转录词 ' you' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:25,821",
+      "detail": "转录词 ' get' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:25,941",
+      "detail": "转录词 ' a' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:26,001",
+      "detail": "转录词 ' bug,' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:27,085",
+      "detail": "转录词 ' and' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:27,185",
+      "detail": "转录词 ' then' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:27,306",
+      "detail": "转录词 ' you' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:27,406",
+      "detail": "转录词 ' tell' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:27,607",
+      "detail": "转录词 ' the' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:27,747",
+      "detail": "转录词 ' model' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:28,249",
+      "detail": "转录词 ' can' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:28,389",
+      "detail": "转录词 ' you' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:28,489",
+      "detail": "转录词 ' please' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:28,710",
+      "detail": "转录词 ' fix' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:28,951",
+      "detail": "转录词 ' the' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:02:29,051",
+      "detail": "转录词 ' bug?' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:04:46,609",
+      "detail": "转录词 ' of' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:04:46,689",
+      "detail": "转录词 ' what' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:04:46,829",
+      "detail": "转录词 ' we' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:04:46,970",
+      "detail": "转录词 ' are' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 3,
+      "time": "00:00:06,957",
+      "detail": "中文句尾可能缺少问号: '所有这些AI的东西 这么大的领域 它就这么发生了'",
+      "fix": "如为疑问句，添加 ？"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 45,
+      "time": "00:03:08,664",
+      "detail": "中文句尾可能缺少问号: '有点……怎么说呢 过于迟钝'",
+      "fix": "如为疑问句，添加 ？"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "PaddingConflict",
+      "cue_id": 164,
+      "time": "00:14:09,603",
+      "detail": "说话间隙仅 0.020s，但阅读 padding 有 0.027s，可能冲突",
+      "fix": "压缩阅读 padding 至约 0.050s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 128,
+      "time": "00:10:41,274",
+      "detail": "双行长度失衡 66% (L1: 29字, L2: 10字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    }
+  ],
+  "degraded": true,
+  "reasons": [
+    "Errors increased: 14 → 34 (+20)",
+    "67 new issues introduced"
+  ]
+}
