@@ -173,9 +173,15 @@ uv run light-qc -i output/en.srt --transcript output/transcript.json -f html -o 
 
 ### light-regression
 
+回归测试采用**固定黄金基线**比对：每个 case 在 `tests/regression/snapshots/<case>/baseline.json` 存一份黄金基线，`run` 每次都跟它比，跨人/跨机器可比；首跑（无基线）直接通过。代码改进、确认输出质量达标后用 `rebaseline` 推进基线。
+
 ```bash
-# 运行回归测试（首次无对比，后续自动与上一次对比）
+# 运行回归测试（跟黄金基线比对；首跑无基线直接通过）
 uv run light-regression run tests/regression/cases/yt_kYkIdXwW2AE/case.yaml
+
+# 推进黄金基线（确认当前输出质量达标后）
+uv run light-regression rebaseline tests/regression/cases/yt_kYkIdXwW2AE/case.yaml                # 重跑一次并设为新基线
+uv run light-regression rebaseline tests/regression/cases/yt_kYkIdXwW2AE/case.yaml --from-run 20260619T145251  # 用已有 run 设基线（不重跑）
 
 # 生成 Dashboard
 uv run light-regression dashboard
