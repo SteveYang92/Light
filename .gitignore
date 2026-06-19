@@ -53,3 +53,9 @@ packages/light-frontend/tsconfig.*.tsbuildinfo
 .pytest_cache/
 regression_dashboard.html
 .cache/
+
+# Skills
+.agents/
+.pi/
+.claude/
+skills-lock.json
