@@ -115,7 +115,7 @@ uv run light-subtitle --url https://www.youtube.com/watch?v=VIDEO_ID --target-la
 uv run light-subtitle --url https://youtu.be/VIDEO_ID --target-lang zh --evaluate
 ```
 
-`--url` 支持所有 yt-dlp 兼容平台：YouTube、Bilibili、X/Twitter、YouTube Music 等。下载的视频按标题自动命名，输出到 `output/<slug>/`。长视频（>45分钟）自动按静音点切片、逐段处理、合并输出。
+`--url` 支持所有 yt-dlp 兼容平台：YouTube、Bilibili、X/Twitter、YouTube Music 等。下载的视频按标题自动命名，输出到 `output/<slug>/`。长视频（时长超过 `--split-threshold`，默认 2700 秒 = 45 分钟）自动按静音点切片、逐段处理、合并输出。用 `--split-threshold` 调整切分阈值（调低可强制对较短视频切分，用于测试跨段行为）。
 
 > **注意**：`--input` 和 `--url` 互斥，一次只能指定一个。
 

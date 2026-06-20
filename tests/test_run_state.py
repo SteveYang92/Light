@@ -55,6 +55,18 @@ def test_resolve_resume_from_unknown_step(tmp_path: Path):
         resolve_start_index(plan, config, None)
 
 
+def test_split_threshold_default_and_clone():
+    """split_threshold defaults to 2700s and survives clone_for_segment."""
+    config = _config(output_dir="./output")
+    assert config.split_threshold == 2700.0
+
+    custom = _config(output_dir="./output", split_threshold=300.0)
+    assert custom.split_threshold == 300.0
+
+    cloned = custom.clone_for_segment(input_path="seg1.mp4", output_dir="./output/.seg1")
+    assert cloned.split_threshold == 300.0
+
+
 def test_run_state_manager_lifecycle(tmp_path: Path):
     mgr = RunStateManager(tmp_path)
     mgr.begin("in.wav", str(tmp_path))

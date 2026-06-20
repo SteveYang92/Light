@@ -37,7 +37,6 @@ from .video_split import (
 
 ProgressCallback = Callable[[str, float, str], None] | None
 
-_DEFAULT_SPLIT_THRESHOLD = 2700  # 45 minutes
 _DEFAULT_OVERLAP = 10
 
 
@@ -76,11 +75,11 @@ def process_video(
             prog("download", 0.0, "下载中…")
             video_path, slug = download_video(config.url, Path(config.output_dir))
             prog("download", 1.0, "下载完成")
-        is_long = should_split(video_path, threshold=_DEFAULT_SPLIT_THRESHOLD)
+        is_long = should_split(video_path, threshold=config.split_threshold)
     else:
         video_path = Path(config.input_path).resolve()
         slug = config.slug or _slugify(Path(config.input_path).stem)
-        is_long = should_split(video_path, threshold=_DEFAULT_SPLIT_THRESHOLD)
+        is_long = should_split(video_path, threshold=config.split_threshold)
 
     work_dir = video_path.parent if config.url else Path(config.output_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -138,11 +137,11 @@ def _process_long(
     if seg_dirs is not None:
         points = find_existing_split_points(work_dir)
         if points is None:
-            points = compute_split_points(video_path, target_duration=_DEFAULT_SPLIT_THRESHOLD)
+            points = compute_split_points(video_path, target_duration=config.split_threshold)
         prog("split", 1.0, f"复用 {len(seg_dirs)} 个分段")
     else:
         prog("split", 0.0, "检测分块点…")
-        points = compute_split_points(video_path, target_duration=_DEFAULT_SPLIT_THRESHOLD)
+        points = compute_split_points(video_path, target_duration=config.split_threshold)
         seg_dirs = split_video(video_path, points, overlap=overlap, seg_dir_template=".seg")
         prog("split", 1.0, f"切分为 {len(seg_dirs)} 段")
 

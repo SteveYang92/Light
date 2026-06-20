@@ -42,6 +42,9 @@ class SubtitleConfig:
     llm_api_key: str = field(default_factory=lambda: os.environ.get("DEEPSEEK_API_KEY", ""))
     llm_temperature: float = 0.4
 
+    # ── Long-video splitting ──
+    split_threshold: float = 2700.0  # Seconds; videos longer than this are split at silence boundaries (default 45 min)
+
     asr: AsrEngine = AsrEngine.WHISPERX
     resume: bool = False
     resume_from: str | None = None

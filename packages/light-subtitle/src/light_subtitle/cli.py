@@ -147,6 +147,15 @@ def run(
     ),
     glossary: str = typer.Option("", "--glossary", help="Path to YAML glossary"),
     config_file: str = typer.Option("", "-c", "--config", help="YAML config file"),
+    # ── Long-video splitting ─────────────────────────
+    split_threshold: float = typer.Option(
+        2700.0,
+        "--split-threshold",
+        help=(
+            "Seconds; videos longer than this are split at silence boundaries "
+            "(default 2700 = 45 min). Lower to force splitting shorter videos."
+        ),
+    ),
     # ── Resume ──────────────────────────────────────────
     resume: bool = typer.Option(False, "--resume", help="Resume from failed/interrupted step in pipeline_run.json"),
     resume_from: str = typer.Option(
@@ -242,6 +251,7 @@ def run(
             context_prep_enabled=not no_context,
             annotate=annotate,
             annotation_width=annotation_width,
+            split_threshold=split_threshold,
         )
 
     # ═══════════════════════════════════════════════════════
