@@ -1,4 +1,4 @@
-"""Strip Chinese punctuation — post-formatting → pre-export.
+"""Strip Chinese punctuation - post-formatting → pre-export.
 
 Converts conventional CJK punctuation to the minimal-punctuation convention
 used for on-screen display.  Must run AFTER layout/pace/polish so that
@@ -10,13 +10,13 @@ Rules
 +-------+---------------+-------------------------------------------+
 | 字符   | 位置           | 处理                                      |
 +=======+===============+===========================================+
-| ，、；： | 任意           | → 全角空格（　）                            |
+| ，；：   | 任意           | → 全角空格（　）                            |
 +-------+---------------+-------------------------------------------+
-| 。     | 行末           | → 移除（换行就是视觉句号）                    |
+| 。     | 行末           | → 移除(换行就是视觉句号)                    |
 +-------+---------------+-------------------------------------------+
-| 。     | 行中           | → 全角空格（断句引擎未换行的句子边界）         |
+| 。     | 行中           | → 全角空格(断句引擎未换行的句子边界)         |
 +-------+---------------+-------------------------------------------+
-| ？！…   | 任意           | → 保留（疑问/感叹/省略语义不可省略）           |
+| ?!...   | 任意           | → 保留(疑问/感叹/省略语义不可省略)           |
 +-------+---------------+-------------------------------------------+
 
 Edge cases
@@ -41,13 +41,13 @@ if TYPE_CHECKING:
 _FULLWIDTH_SPACE = " "
 
 # Punctuation replaced with full-width space (pause semantics).
-_REPLACE_WITH_SPACE: set[str] = {"，", "、", "；", "："}
+_REPLACE_WITH_SPACE: set[str] = {"，", "；", "："}
 
-# 。is special — line-end → remove, mid-line → full-width space.
+# 。is special - line-end → remove, mid-line → full-width space.
 _PERIOD = "。"
 
 # Punctuation preserved (irreplaceable semantic/tone information).
-_KEEP: set[str] = {"？", "！", "…"}
+_KEEP: set[str] = {"?", "！", "…", "、"}
 
 
 def strip_chinese_punct(
@@ -56,12 +56,12 @@ def strip_chinese_punct(
 ) -> list[SubtitleCue]:
     """Strip/replace Chinese punctuation for on-screen display.
 
-    Must be called AFTER layout/pace/polish — punctuation is needed
+    Must be called AFTER layout/pace/polish - punctuation is needed
     as break-point signal throughout the formatting pipeline.
 
     Chinese subtitle convention: screen space is precious.  The line
-    break itself serves as the visual period; full-width spaces（　）
-    replace commas and other pause marks.  Only ？！… are preserved
+    break itself serves as the visual period; full-width spaces( )
+    replace commas and other pause marks.  Only ?!... are preserved
     for their irreplaceable semantic/tone information.
     """
     for cue in cues:
@@ -83,16 +83,16 @@ def _strip_line(line: str) -> str:
         is_line_end = i == len(line) - 1
 
         if ch == _PERIOD and is_line_end:
-            # 行末句号 → 丢弃（换行即句号）
+            # 行末句号 → 丢弃(换行即句号)
             continue
         elif ch == _PERIOD:
             # 行中句号 → 全角空格
             _append_space(result)
         elif ch in _REPLACE_WITH_SPACE:
-            # ，、；：→ 全角空格
+            # ,、;:→ 全角空格
             _append_space(result)
         elif ch in _KEEP:
-            # ？！…→ 保留
+            # ?!...→ 保留
             result.append(ch)
         else:
             result.append(ch)
