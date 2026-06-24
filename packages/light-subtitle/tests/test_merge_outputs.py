@@ -1,4 +1,4 @@
-"""Tests for merge_outputs.py — SRT/VTT time-shift merge and overlap trimming."""
+"""Tests for merge_outputs.py — SRT/VTT time-shift merge, overlap trimming, and annotation dedup."""
 
 from __future__ import annotations
 
@@ -6,10 +6,13 @@ import tempfile
 from pathlib import Path
 
 from light_subtitle.merge_outputs import (
+    _dedup_annotation_terms,
+    _extract_annotation_term,
     _parse_srt,
     _parse_vtt,
     _seconds_to_srt,
     _srt_to_seconds,
+    _strip_annotation_marker,
     _write_srt,
     _write_vtt,
 )
@@ -116,3 +119,103 @@ class TestWriteVtt:
         path.unlink()
         assert len(parsed) == 1
         assert parsed[0][:3] == (1.0, 5.0, "Hello")
+
+
+# ── Annotation term dedup ───────────────────────────────────────────────────
+
+
+class TestStripAnnotationMarker:
+    def test_removes_marker(self) -> None:
+        assert _strip_annotation_marker("※ RL训练") == "RL训练"
+
+    def test_removes_multiple_markers(self) -> None:
+        assert _strip_annotation_marker("※※ RL训练") == "RL训练"
+
+    def test_no_marker_unchanged(self) -> None:
+        assert _strip_annotation_marker("RL训练") == "RL训练"
+
+    def test_marker_with_no_space(self) -> None:
+        assert _strip_annotation_marker("※RL训练") == "RL训练"
+
+    def test_only_marker_becomes_empty(self) -> None:
+        assert _strip_annotation_marker("※") == ""
+
+    def test_whitespace_marker(self) -> None:
+        assert _strip_annotation_marker("  ※   RL训练") == "RL训练"
+
+
+class TestExtractAnnotationTerm:
+    def test_chinese_colon(self) -> None:
+        assert _extract_annotation_term("※ RL训练：强化学习的方法") == "rl训练"
+
+    def test_ascii_colon(self) -> None:
+        assert _extract_annotation_term("※ RL训练: 强化学习的方法") == "rl训练"
+
+    def test_no_separator(self) -> None:
+        assert _extract_annotation_term("※ 简单术语") == "简单术语"
+
+    def test_no_marker(self) -> None:
+        assert _extract_annotation_term("RL训练：强化学习") == "rl训练"
+
+    def test_case_insensitive(self) -> None:
+        assert _extract_annotation_term("※ RL训练：强化学习") == _extract_annotation_term("※ rl训练：强化学习")
+
+    def test_multiple_colons_in_explanation(self) -> None:
+        assert _extract_annotation_term("※ RL训练：优势：高效学习") == "rl训练"
+
+
+class TestDedupAnnotationTerms:
+    def test_same_term_keeps_first(self) -> None:
+        cues = [
+            (1.0, 5.0, "※ RL训练：强化学习的方法", "align:start line:0%"),
+            (10.0, 15.0, "※ RL训练：另一种解释", "align:start line:0%"),
+        ]
+        result = _dedup_annotation_terms(cues)
+        assert len(result) == 1
+        assert result[0] == cues[0]
+
+    def test_different_terms_both_kept(self) -> None:
+        cues = [
+            (1.0, 5.0, "※ RL训练：强化学习", "align:start line:0%"),
+            (10.0, 15.0, "※ 梯度下降：优化算法", "align:start line:0%"),
+        ]
+        result = _dedup_annotation_terms(cues)
+        assert len(result) == 2
+
+    def test_empty_list(self) -> None:
+        assert _dedup_annotation_terms([]) == []
+
+    def test_no_colon_uses_full_body_as_key(self) -> None:
+        cues = [
+            (1.0, 5.0, "※ 鲁迅", "align:start line:0%"),
+            (10.0, 15.0, "※ 鲁迅", "align:start line:0%"),
+        ]
+        result = _dedup_annotation_terms(cues)
+        assert len(result) == 1
+
+    def test_same_term_without_marker(self) -> None:
+        cues = [
+            (1.0, 5.0, "RL训练：强化学习", ""),
+            (10.0, 15.0, "※ RL训练：另一种解释", ""),
+        ]
+        result = _dedup_annotation_terms(cues)
+        assert len(result) == 1
+        assert result[0] == cues[0]
+
+    def test_three_same_keeps_first(self) -> None:
+        cues = [
+            (1.0, 5.0, "※ RL训练：解释A", ""),
+            (10.0, 15.0, "※ RL训练：解释B", ""),
+            (20.0, 25.0, "※ RL训练：解释C", ""),
+        ]
+        result = _dedup_annotation_terms(cues)
+        assert len(result) == 1
+        assert result[0] == cues[0]
+
+    def test_term_with_whitespace_variation(self) -> None:
+        cues = [
+            (1.0, 5.0, "※  RL训练  ：强化学习", ""),
+            (10.0, 15.0, "※ RL训练：另一种解释", ""),
+        ]
+        result = _dedup_annotation_terms(cues)
+        assert len(result) == 1

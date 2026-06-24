@@ -667,6 +667,43 @@ def _merge_transcript(
 
 # ── Annotation merge ────────────────────────────────────
 
+_ANNOTATION_MARKER_RE = re.compile(r"^\s*(?:※\s*)+")
+
+
+def _strip_annotation_marker(text: str) -> str:
+    """Remove leading ※ markers from annotation body text."""
+    return _ANNOTATION_MARKER_RE.sub("", text).strip()
+
+
+def _extract_annotation_term(text: str) -> str:
+    """Extract normalized term from formatted annotation text.
+
+    "※ RL训练：强化学习的方法" → "rl训练"
+    """
+    body = _strip_annotation_marker(text)
+    if "：" in body:
+        return body.split("：")[0].strip().lower()
+    if ":" in body:
+        return body.split(":")[0].strip().lower()
+    return body.strip().lower()
+
+
+def _dedup_annotation_terms(cues: list[tuple]) -> list[tuple]:
+    """Remove duplicate annotations by normalized term, keeping first occurrence."""
+    seen: set[str] = set()
+    removed = 0
+    deduped: list = []
+    for cue in cues:
+        key = _extract_annotation_term(cue[2])
+        if key in seen:
+            removed += 1
+            continue
+        seen.add(key)
+        deduped.append(cue)
+    if removed:
+        print(f"    Deduplicated {removed} annotation(s) by term", file=sys.stderr)
+    return deduped
+
 
 def _merge_annotations_ass(
     output_dir: Path,
@@ -682,7 +719,7 @@ def _merge_annotations_ass(
 
     N = len(seg_dirs)
     header_lines: list[str] = []
-    all_events: list[str] = []
+    all_events: list[tuple[float, float, str, list[str]]] = []
     in_header = True
 
     for k, seg in enumerate(seg_dirs):
@@ -718,14 +755,18 @@ def _merge_annotations_ass(
             end = _ass_to_seconds(fields[2]) + offset
             fields[1] = _seconds_to_ass(global_start)
             fields[2] = _seconds_to_ass(end)
-            all_events.append(",".join(fields) + "\n")
+            all_events.append((global_start, end, fields[9], fields))
 
     if not all_events:
         return
 
+    all_events.sort(key=lambda e: e[0])
+    all_events = _dedup_annotation_terms(all_events)
+    event_lines = [",".join(fields) + "\n" for _, _, _, fields in all_events]
+
     out = output_dir / f"{slug}.annotations.ass"
-    out.write_text("".join(header_lines + all_events), encoding="utf-8")
-    print(f"  Merged annotations.ass: {len(all_events)} entries → {out.name}", file=sys.stderr)
+    out.write_text("".join(header_lines + event_lines), encoding="utf-8")
+    print(f"  Merged annotations.ass: {len(event_lines)} entries → {out.name}", file=sys.stderr)
 
 
 def _merge_annotations_vtt(
@@ -766,6 +807,7 @@ def _merge_annotations_vtt(
 
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_vtt_overlaps(all_cues)
+    all_cues = _dedup_annotation_terms(all_cues)
     out = output_dir / f"{slug}.annotations.vtt"
     _write_vtt(all_cues, out)
     print(f"  Merged annotations.vtt: {len(all_cues)} cues → {out.name}", file=sys.stderr)
