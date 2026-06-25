@@ -333,5 +333,40 @@ def _cleanup_temp(work_dir: Path) -> None:
             f.unlink()
 
 
+# ── Pack command ─────────────────────────────────────────
+
+
+@app.command()
+def pack(
+    output_dir: str = typer.Argument(..., help="Pipeline output directory containing video and subtitles"),
+    font: str = typer.Option("PingFang SC", "--font", help="Font for main subtitle overlay"),
+    encoder: str = typer.Option(
+        "h264_videotoolbox",
+        "--encoder",
+        help="Video encoder: h264_videotoolbox (Apple hardware) or libx264 (software)",
+    ),
+    video: str = typer.Option(
+        "",
+        "--video",
+        help="Explicit path to input video (auto-detected from output_dir if not set)",
+    ),
+):
+    """Burn subtitles into video — produce a self-contained MP4.
+
+    Discovers .zh.srt and optional .annotations.ass from OUTPUT_DIR,
+    hard-burns both subtitle tracks into the video stream, and writes
+    ``{slug}_pack.mp4`` alongside the original video.
+    """
+    from .pack import PackConfig, run_pack
+
+    config = PackConfig(
+        output_dir=output_dir,
+        font=font,
+        encoder=encoder,
+        video=video if video else None,
+    )
+    run_pack(config)
+
+
 def main():
     app()
