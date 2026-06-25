@@ -16,11 +16,30 @@ Read the **entire transcript** in playback order before extracting — do not re
 
 ## Glossary Rules
 
-- Include ONLY domain-specific, high-impact terms (technical jargon, proper nouns, abbreviations).
-- Skip common words a general audience already knows (bug, API, GPU, model, data).
-- Values must be suggested {{ target_lang }} translations.
-- Keep proper nouns in original spelling when they should not be translated (e.g. whisper.cpp).
-- 5-30 entries typical; quality over quantity.
+Decide each candidate in two steps:
+
+### Step 1: Should this term appear in the glossary?
+Include ONLY terms that are:
+- Domain-specific and high-impact for understanding this content.
+- Unfamiliar to a general {{ target_lang }}-speaking audience.
+
+Skip:
+- Common words the audience already knows (bug, server, plugin, data, model).
+- Terms used only in passing with no technical significance.
+
+### Step 2: Keep as-is or translate?
+Once a term passes Step 1, decide its glossary value:
+
+A) Keep original spelling (the value equals the term itself) when:
+- It is a tool name, product name, or brand name (e.g. "Voxstrol Realtime": "Voxstrol Realtime").
+- It is a widely-known technical abbreviation the target audience uses in English (e.g. "ASR": "ASR", "TTS": "TTS").
+
+B) Provide a suggested {{ target_lang }} translation only when:
+- The term genuinely needs explanation for a {{ target_lang }} audience.
+- The original form is not commonly used by that audience.
+- **IMPORTANT**: If the key contains an abbreviation in parentheses (e.g. "automated speech recognition (ASR)"), always preserve that abbreviation in the value (e.g. "自动语音识别 (ASR)").
+
+5-30 entries typical; quality over quantity.
 
 ## Full Transcript
 
