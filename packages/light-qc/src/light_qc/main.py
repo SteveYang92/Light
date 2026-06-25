@@ -31,7 +31,7 @@ def check(
     cps_limit: int = typer.Option(9, "--cps-limit"),
     cps_limit_en: int = typer.Option(25, "--cps-limit-en"),
     min_duration: float = typer.Option(0.8, "--min-duration"),
-    max_duration: float = typer.Option(7.0, "--max-duration"),
+    max_duration: float = typer.Option(6.0, "--max-duration"),
     min_gap: float = typer.Option(0.1, "--min-gap"),
     glossary: str = typer.Option("", "--glossary", help="Path to YAML glossary"),
     fps: float = typer.Option(25.0, "--fps", help="Video frame rate for tolerance calculation"),

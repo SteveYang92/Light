@@ -325,7 +325,7 @@ def _run_segment(orch: Orchestrator) -> None:
     orch.state.source_lang = detect_source_lang(orch.state.words)
     logger.info(f"  Detected language: {orch.state.source_lang}")
 
-    orch.state.segments = segment.run(orch.state.words)
+    orch.state.segments = segment.run(orch.state.words, orch.config.max_duration)
     logger.info(f"  Segment: {len(orch.state.segments)} segments")
 
     export_module.export_segments(

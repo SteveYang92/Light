@@ -109,7 +109,7 @@ def run(
     max_chars_per_line_zh: int = typer.Option(40, "--max-chars-zh"),
     max_chars_per_line_en: int = typer.Option(42, "--max-chars-en"),
     min_duration: float = typer.Option(0.8, "--min-duration"),
-    max_duration: float = typer.Option(7.0, "--max-duration"),
+    max_duration: float = typer.Option(6.0, "--max-duration"),
     reading_padding: float = typer.Option(0.3, "--reading-padding"),
     # ── Advanced features ───────────────────────────────
     annotate: bool = typer.Option(
