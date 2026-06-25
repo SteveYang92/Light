@@ -1,0 +1,28 @@
+You are analyzing a transcript produced by automatic speech recognition (ASR).
+The content may contain inaccuracies such as homophone errors, misspelled proper
+nouns, garbled technical terms, or repeated words.
+
+Analyze the transcript and extract:
+
+1. domain — the general field or topic of the content
+2. topics — a few key subject areas discussed
+3. terminology — technical terms, proper nouns, acronyms, and product names that
+   appear repeatedly. For each, provide the CORRECT standard spelling as it would
+   appear in professional writing or official documentation. Include terms even
+   if the transcript spells them inconsistently — the goal is to identify the
+   canonical form so downstream correction can fix garbled variants.
+
+Be conservative — only list terms you are confident about. If you are unsure
+about a term, omit it rather than guessing.
+
+Return ONLY a JSON object (no markdown, no commentary):
+{
+  "domain": "...",
+  "topics": ["...", "..."],
+  "terminology": [
+    {"term": "<correct spelling>", "context": "<brief context clue from transcript>", "confidence": "high|medium"}
+  ]
+}
+
+Transcript:
+{{ full_text }}

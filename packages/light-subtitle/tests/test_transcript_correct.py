@@ -1,10 +1,11 @@
-"""Tests for transcript correction — 1:1 word mapping and grammar fixes."""
+"""Tests for transcript correction — 1:1 word mapping, grammar fixes, and diff-based alignment."""
 
 from __future__ import annotations
 
 import pytest
 from light_models import Word
 from light_subtitle.pipeline.transcript_correct import (
+    _align_and_apply,
     _apply_word_corrections,
     _redistribute_timing,
     apply_word_corrections,
@@ -58,7 +59,7 @@ class TestRedistributeTiming:
         assert len(result) == 4
         assert result[0].start == 0.0
         assert result[3].end == 6.0
-        assert result[1].start == 1.5  # 2/4 * 3 → 1.5 * 2s → 3.0 → wait
+        assert result[1].start == 1.5
         assert result[1].end == 3.0
 
     def test_removes_one_word_proportional(self):
@@ -90,14 +91,15 @@ class TestPrivateApplyWordCorrections:
         assert words[0].text == " was"
         assert words[1].text == " great"
 
-    def test_skip_delta_greater_than_one(self):
+    def test_skip_delta_beyond_max_positive(self):
         words = [_w(" a"), _w(" b")]
-        assert not _apply_word_corrections(words, [" x", " y", " z"])
+        assert not _apply_word_corrections(words, [" x", " y", " z", " w", " v"])
         assert words[0].text == " a"
 
-    def test_skip_delta_negative_greater_than_one(self):
-        words = [_w(" a"), _w(" b"), _w(" c")]
+    def test_skip_delta_beyond_max_negative(self):
+        words = [_w(" a"), _w(" b"), _w(" c"), _w(" d")]
         assert not _apply_word_corrections(words, [" x"])
+        assert words[0].text == " a"
 
     def test_grammar_fix_adds_word_at_start(self):
         words = [
@@ -130,3 +132,97 @@ class TestPrivateApplyWordCorrections:
         assert _apply_word_corrections(words, [" the", " model", " is", " good"])
         assert len(words) == 4
         assert words[0].text == " the"
+
+    def test_delta_minus_1_duplicate_removal(self):
+        words = [
+            _w(" A", 0.0, 0.3),
+            _w(" A", 0.3, 0.6),
+            _w(" speech", 0.6, 1.0),
+            _w(" model", 1.0, 1.5),
+        ]
+        assert _apply_word_corrections(words, [" A", " speech", " model"])
+        assert len(words) == 3
+        assert words[0].text == " A"
+        assert words[1].text == " speech"
+        assert words[2].text == " model"
+
+    def test_delta_plus_2_add_two_words(self):
+        words = [
+            _w(" the", 0.0, 0.5),
+            _w(" model", 0.5, 1.0),
+            _w(" good", 1.0, 1.5),
+            _w(" today", 1.5, 2.0),
+        ]
+        assert _apply_word_corrections(words, [" the", " model", " is", " very", " good", " today"])
+        assert len(words) == 6
+
+    def test_delta_minus_2_merge_words(self):
+        words = [
+            _w(" super", 0.0, 0.3),
+            _w(" cali", 0.3, 0.6),
+            _w(" fragilistic", 0.6, 0.9),
+            _w(" expialidocious", 0.9, 1.2),
+        ]
+        assert _apply_word_corrections(words, [" super", " califragilisticexpialidocious"])
+        assert len(words) == 2
+
+
+class TestAlignAndApply:
+    def test_merge_compound_words(self):
+        words = [
+            _w(" supercali", 0.0, 0.3),
+            _w(" fragilistic", 0.3, 0.6),
+            _w(" expialidocious", 0.6, 0.9),
+        ]
+        tokens = [" supercalifragilisticexpialidocious"]
+        _align_and_apply(words, tokens)
+        assert len(words) == 1
+        assert words[0].text == " supercalifragilisticexpialidocious"
+
+    def test_remove_duplicate(self):
+        words = [
+            _w(" A", 0.0, 0.3),
+            _w(" A", 0.3, 0.6),
+            _w(" model", 0.6, 1.0),
+        ]
+        tokens = [" A", " model"]
+        _align_and_apply(words, tokens)
+        assert len(words) == 2
+        assert words[0].text == " A"
+        assert words[1].text == " model"
+
+    def test_replace_and_insert(self):
+        words = [
+            _w(" treating", 0.0, 0.5),
+            _w(" latency", 0.5, 1.0),
+            _w(" quality", 1.0, 1.5),
+        ]
+        tokens = [" trading", " latency", " for", " quality"]
+        _align_and_apply(words, tokens)
+        assert len(words) == 4
+        assert words[0].text == " trading"
+        assert words[2].text == " for"
+
+    def test_equal_no_change(self):
+        words = [
+            _w(" hello", 0.0, 0.5),
+            _w(" world", 0.5, 1.0),
+        ]
+        tokens = [" hello", " world"]
+        _align_and_apply(words, tokens)
+        assert len(words) == 2
+        assert words[0].text == " hello"
+        assert words[1].text == " world"
+
+    def test_preserves_segment_boundaries(self):
+        words = [
+            _w(" a", 1.0, 2.0),
+            _w(" b", 2.0, 3.0),
+            _w(" c", 3.0, 4.0),
+            _w(" d", 4.0, 5.0),
+        ]
+        tokens = [" a", " b", " new", " c", " d"]
+        _align_and_apply(words, tokens)
+        assert len(words) == 5
+        assert words[0].start == 1.0
+        assert words[-1].end == 5.0

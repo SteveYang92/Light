@@ -1,22 +1,26 @@
-"""Transcript correction — LLM-based ASR error fixes with word-level safety.
+"""Transcript correction — LLM-based ASR error fixes with domain-aware correction.
 
-Corrects homophones, spelling, and obvious grammar word forms without
-changing word count or timestamps.
+Extracts domain context from the full transcript before correction, then
+corrects homophones, proper nouns, duplicate words, and grammar word forms
+via batched LLM calls with expanded context windows.
 
 Flow::
 
-    words → gap-based grouping → merge short → batch (context + target) → LLM
-        → 1:1 word array back to words → return
+    words → domain context extraction (LLM) → gap-based grouping → merge short
+          → batch (context + target) → LLM → diff-based word alignment → return
 
 Debug artifacts (``output_dir/transcript_correct/``)::
 
-    pre_correct.json  — gap-grouped words before correction
-    post_correct.json — words after correction (with changed flags)
+    domain_context.json — extracted domain, topics, and terminology
+    pre_correct.json     — gap-grouped words before correction
+    post_correct.json    — words after correction (with changed flags)
 """
 
 from __future__ import annotations
 
+import difflib
 import json
+import logging
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -30,11 +34,14 @@ from ..llm.client import OpenAIClient, format_token_usage, merge_token_usage
 from ..llm.prompts import render_prompt
 from ._word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
 
-_CHUNK_SIZE = 10
-_CONTEXT_WINDOW = 2
+_CHUNK_SIZE = 50
+_CONTEXT_WINDOW = 5
 _MAX_WORKERS = 4
+_MAX_DELTA = 2
 _DEFAULT_CONFIDENCE = 0.85
 _GRAMMAR_MIN_WORDS = 4
+
+_CONTEXT_LOG = logging.getLogger(__name__)
 
 
 def correct_transcript(
@@ -42,7 +49,7 @@ def correct_transcript(
     config: SubtitleConfig,
     output_dir: str | Path,
 ) -> list[Word]:
-    """Fix ASR errors in *words* via LLM while preserving word count and timestamps."""
+    """Fix ASR errors in *words* via LLM while preserving timestamps."""
     if not words or not config.llm_api_key or not config.correct_enabled:
         return words
 
@@ -50,6 +57,16 @@ def correct_transcript(
     correct_dir = output_dir / "transcript_correct"
     correct_dir.mkdir(parents=True, exist_ok=True)
 
+    client = OpenAIClient(
+        base_url=config.llm_base_url,
+        api_key=config.llm_api_key,
+        model=config.llm_model,
+    )
+
+    # Step 0: extract domain context from the full transcript
+    domain_context = _extract_domain_context(client, words, correct_dir)
+
+    # Step 1: group words into pause-based segments
     segments = group_words_by_gap(words)
     logger.info(f"  Transcript correct: {len(words)} words → {len(segments)} segments")
 
@@ -59,13 +76,11 @@ def correct_transcript(
     if not segments:
         return words
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
-    system_prompt = render_prompt("transcript_correct.j2")
+    # Step 2: build system prompt with domain context injected
+    domain_str = _format_domain_context(domain_context)
+    system_prompt = render_prompt("transcript_correct.j2", domain_context=domain_str)
 
+    # Step 3: batch and correct
     chunks: list[list[WordSegment]] = []
     for i in range(0, len(segments), _CHUNK_SIZE):
         chunks.append(segments[i : i + _CHUNK_SIZE])
@@ -105,9 +120,6 @@ def correct_transcript(
         f"{format_token_usage(total_usage)}"
     )
 
-    # Rebuild the flat word list from segments — grammar fixes may have
-    # changed word counts per segment, and those changes happen on
-    # WordSegment.words (a slice), not on the top-level *words* list.
     rebuilt: list[Word] = []
     for seg in segments:
         rebuilt.extend(seg.words)
@@ -126,14 +138,6 @@ def _redistribute_timing(words: list[Word], new_texts: list[str]) -> list[Word]:
 
     Preserves the segment boundary (first word start, last word end) and maps
     the original timing contour onto the new word sequence.
-
-    Original N words have N+1 boundary points B[0..N]:
-        B[0] = words[0].start
-        B[i] = words[i-1].end   for 0 < i < N
-        B[N] = words[-1].end
-
-    For M new tokens we produce M new boundary points B'[0..M]
-    via linear interpolation of *position* within the segment.
     """
     if not words or not new_texts:
         return words
@@ -141,25 +145,22 @@ def _redistribute_timing(words: list[Word], new_texts: list[str]) -> list[Word]:
     n = len(words)
     m = len(new_texts)
 
-    # Original boundaries.
     seg_start = words[0].start
     seg_end = words[-1].end
     orig_bounds = [seg_start] + [w.end for w in words]
 
-    # New boundaries via fractional mapping.
     new_bounds = [seg_start]
     for k in range(1, m):
-        pos = k / m  # fractional position in new seq [0, 1]
-        orig_idx = pos * n  # same position in original [0, n]
-        i = int(orig_idx)  # left bound index
+        pos = k / m
+        orig_idx = pos * n
+        i = int(orig_idx)
         if i >= n:
             i = n - 1
-        f = orig_idx - i  # fraction between i and i+1
+        f = orig_idx - i
         t = orig_bounds[i] * (1.0 - f) + orig_bounds[i + 1] * f
         new_bounds.append(t)
     new_bounds.append(seg_end)
 
-    # Compute average confidence for the segment.
     avg_conf = sum(w.confidence for w in words) / n if n else _DEFAULT_CONFIDENCE
 
     result: list[Word] = []
@@ -189,11 +190,11 @@ def apply_word_corrections(words: list[Word], corrected_tokens: list[str]) -> bo
 
 
 def _apply_word_corrections(words: list[Word], corrected_tokens: list) -> bool:
-    """Apply corrected tokens, allowing ±1 word for grammar fixes.
+    """Apply corrected tokens, allowing ±MAX_DELTA word count changes.
 
     - If word count matches → 1:1 word-level correction (timestamps unchanged).
-    - If word count differs by exactly 1 and original ≥ ``_GRAMMAR_MIN_WORDS``
-      → grammar fix: rebuild word list with redistributed timing.
+    - If delta within ±MAX_DELTA and original ≥ _GRAMMAR_MIN_WORDS
+      → align via difflib and rebuild with redistributed timing.
     - Otherwise → skip the segment, log a warning.
     """
     if not isinstance(corrected_tokens, list):
@@ -205,21 +206,146 @@ def _apply_word_corrections(words: list[Word], corrected_tokens: list) -> bool:
         return apply_word_corrections(words, tokens)
 
     delta = m - n
-    if delta == 1 and n >= _GRAMMAR_MIN_WORDS:
-        word_texts = []
-        for i, t in enumerate(tokens):
-            if i == 0 and delta > 0:
-                word_texts.append(t)
-            else:
-                old_idx = max(0, i - max(delta, 0))
-                old_idx = min(old_idx, n - 1)
-                word_texts.append(preserve_leading_space(words[old_idx].text, t))
-        new_words = _redistribute_timing(words, word_texts)
-        words[:] = new_words
+    if abs(delta) <= _MAX_DELTA and n >= _GRAMMAR_MIN_WORDS:
+        _align_and_apply(words, tokens)
         return True
 
     logger.warning(f"    Transcript correct skipped segment: word count {n} → {m} (delta={delta})")
     return False
+
+
+def _align_and_apply(words: list[Word], tokens: list[str]) -> None:
+    """Align old words with new tokens via word-level difflib, rebuild with redistributed timing.
+
+    Uses difflib on stripped word forms to compute the edit script, then
+    applies the sequence of operations (equal/replace/delete/insert) to build
+    the corrected word list. Timing is redistributed proportionally.
+    """
+    old_texts = [w.text for w in words]
+
+    old_stripped = [t.strip().lower() for t in old_texts]
+    new_stripped = [t.strip().lower() for t in tokens]
+
+    matcher = difflib.SequenceMatcher(None, old_stripped, new_stripped)
+
+    result_texts: list[str] = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            result_texts.extend(old_texts[i1:i2])
+        elif tag == "replace":
+            for j in range(j1, j2):
+                if j - j1 < i2 - i1:
+                    old_idx = i1 + (j - j1)
+                    result_texts.append(preserve_leading_space(old_texts[old_idx], tokens[j]))
+                else:
+                    result_texts.append(_infer_leading_space(old_texts, tokens[j], len(result_texts)))
+        elif tag == "delete":
+            pass
+        elif tag == "insert":
+            for j in range(j1, j2):
+                result_texts.append(_infer_leading_space(old_texts, tokens[j], len(result_texts)))
+
+    new_words = _redistribute_timing(words, result_texts)
+    words[:] = new_words
+
+
+def _infer_leading_space(old_texts: list[str], token: str, result_len: int) -> str:
+    """Determine whether *token* should have a leading space based on context."""
+    if token.startswith(" "):
+        return token
+    if result_len > 0:
+        return " " + token
+    return token
+
+
+def _extract_domain_context(
+    client: OpenAIClient,
+    words: list[Word],
+    correct_dir: Path,
+) -> dict:
+    """Extract domain, topics, and terminology from the full transcript via LLM.
+
+    Returns cached result if ``domain_context.json`` already exists.
+    """
+    cache_path = correct_dir / "domain_context.json"
+    if cache_path.exists():
+        data = json.loads(cache_path.read_text(encoding="utf-8"))
+        logger.info(f"  Transcript correct: using cached domain context ({len(data.get('terminology', []))} terms)")
+        return data
+
+    full_text = join_word_text(words)
+    prompt = render_prompt("correct_context.j2", full_text=full_text)
+
+    try:
+        response, usage = client.chat([{"role": "user", "content": prompt}], temperature=0.1)
+    except Exception as e:
+        logger.warning(f"  Domain context extraction failed: {e}")
+        return {"domain": "", "topics": [], "terminology": []}
+
+    context = _parse_domain_context(response)
+    cache_path.write_text(json.dumps(context, indent=2, ensure_ascii=False), encoding="utf-8")
+    logger.info(
+        f"  Transcript correct: extracted domain context "
+        f"({len(context.get('terminology', []))} terms, {format_token_usage(usage)})"
+    )
+    return context
+
+
+def _parse_domain_context(response: str) -> dict:
+    """Parse LLM response into domain context dict."""
+    json_match = re.search(r"\{[\s\S]*\}", response)
+    raw: dict = {}
+    if json_match:
+        try:
+            raw = json.loads(json_match.group(0))
+        except json.JSONDecodeError:
+            pass
+    if not raw and response.strip():
+        try:
+            raw = json.loads(response.strip())
+        except json.JSONDecodeError:
+            pass
+
+    if not isinstance(raw, dict):
+        return {"domain": "", "topics": [], "terminology": []}
+
+    terminology = raw.get("terminology", [])
+    if not isinstance(terminology, list):
+        terminology = []
+
+    return {
+        "domain": str(raw.get("domain", "")),
+        "topics": [str(t) for t in raw.get("topics", []) if isinstance(raw.get("topics"), list)],
+        "terminology": terminology,
+    }
+
+
+def _format_domain_context(context: dict) -> str:
+    """Format domain context dict as a string for injection into the correction prompt."""
+    parts: list[str] = []
+
+    domain = context.get("domain", "")
+    if domain:
+        parts.append(f"Domain: {domain}")
+
+    topics = context.get("topics", [])
+    if topics:
+        parts.append(f"Topics: {', '.join(topics)}")
+
+    terminology = context.get("terminology", [])
+    if terminology:
+        lines = ["Known terminology (prefer these spellings when phonetically similar):"]
+        for entry in terminology:
+            if isinstance(entry, dict) and entry.get("term"):
+                term = entry["term"]
+                ctx = entry.get("context", "")
+                if ctx:
+                    lines.append(f"  - {term}  ({ctx})")
+                else:
+                    lines.append(f"  - {term}")
+        parts.append("\n".join(lines))
+
+    return "\n".join(parts)
 
 
 def _correct_batch(
