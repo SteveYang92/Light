@@ -94,7 +94,6 @@ class RegressionRunner:
             "uv",
             "run",
             "light-subtitle",
-            "run",
             "-i",
             str(case.input_audio),
             "-o",

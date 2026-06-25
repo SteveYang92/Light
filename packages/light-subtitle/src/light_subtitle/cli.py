@@ -45,8 +45,9 @@ def _default_resume_from_help() -> str:
     return f"Start from a specific step (e.g. {', '.join(steps[:4])}, …). Depends on --target-lang, --asr, etc."
 
 
-@app.command()
+@app.callback(invoke_without_command=True)
 def run(
+    ctx: typer.Context,
     # ── Input (mutually exclusive: --url or --input) ───
     input_path: str = typer.Option(
         "",
@@ -164,6 +165,9 @@ def run(
         help=_default_resume_from_help(),
     ),
 ):
+    if ctx.invoked_subcommand is not None:
+        return
+
     # ═══════════════════════════════════════════════════════
     #  1. Validate mutually exclusive input
     # ═══════════════════════════════════════════════════════
