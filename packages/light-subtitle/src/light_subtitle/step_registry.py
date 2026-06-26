@@ -470,7 +470,11 @@ def _write_bilingual_exports(
     if target_fmt:
         export_module.export_srt(target_fmt, str(out / f"{tgt_ext}.srt"))
         export_module.export_vtt(target_fmt, str(out / f"{tgt_ext}.vtt"))
-        export_module.export_bilingual_ass(source_fmt, target_fmt, str(out / "bilingual.ass"))
+        # Composed EN segments carry word-level timing; bilingual ASS uses them
+        # to derive each ZH cue's EN text via the shared unit_id graph.
+        export_module.export_bilingual_ass(
+            source_fmt, target_fmt, str(out / "bilingual.ass"), source_segments=orch.state.composed_segments
+        )
 
     export_module.export_json(source_fmt + target_fmt, str(out / "cues.json"))
 
