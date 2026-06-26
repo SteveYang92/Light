@@ -153,6 +153,25 @@ uv run light-subtitle -i input.mp4 --target-lang zh --resume-from subtitle
 
 完整参数见 `uv run light-subtitle --help`。
 
+#### pack — 烧录字幕到视频
+
+`pack` 是 `light-subtitle` 的子命令，把字幕硬烧进视频生成自包含 MP4（`{slug}_pack.mp4`）。自动识别主字幕：优先 `bilingual.ass`（双语，中上英下），回退 `zh.srt`（单语中文）。可选叠加 `annotations.ass` 副图层。
+
+```bash
+# 单语运行后烧中文字幕
+uv run light-subtitle -i input.mp4 --target-lang zh -o output
+uv run light-subtitle pack output
+
+# 双语运行后烧双语字幕（中上英下，EN 单行 fs14）
+uv run light-subtitle -i input.mp4 --target-lang zh --bilingual -o output
+uv run light-subtitle pack output
+
+# 指定编码器/字体/视频（单语 SRT 路径生效；bilingual.ass 用内嵌样式，--font 不生效）
+uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video path/to/video.mp4
+```
+
+> 需 `ffmpeg-full`（Homebrew）提供 libass 支持：`brew install ffmpeg-full`
+
 ### light-qc
 
 ```bash
@@ -246,10 +265,10 @@ output/
 ├── audio_asr.wav                 提取的音频
 ├── asr/
 │   └── asr_whisperx.json         ASR 词级结果（引擎名随 --asr 变化）
-├── en.srt / en.vtt               源语字幕
-├── zh.srt / zh.vtt               译语字幕
-├── bilingual.ass                 双语 ASS（双流写法：EN/ZH 各自独立成层，按 unit_id 对齐）
-├── annotations.ass               副字幕注解（--annotate）
+├── {slug}.en.srt / {slug}.en.vtt   源语字幕（短视频/合并后带 slug 前缀）
+├── {slug}.zh.srt / {slug}.zh.vtt   译语字幕
+├── {slug}.bilingual.ass            双语 ASS（单 Dialogue 合并：ZH 行 + \N + EN 单行 fs14，按 unit_id 配对）
+├── {slug}.annotations.ass          副字幕注解（--annotate）
 ├── cues.json                     字幕 cue 列表
 ├── transcript.json               标准化转录（含 word 时间戳，供 QC）
 ├── segment/

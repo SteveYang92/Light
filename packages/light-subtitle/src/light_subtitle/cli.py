@@ -304,6 +304,9 @@ def _rename_outputs(work_dir: Path, slug: str) -> None:
     mapping = {
         "zh.srt": f"{slug}.zh.srt",
         "zh.vtt": f"{slug}.zh.vtt",
+        "en.srt": f"{slug}.en.srt",
+        "en.vtt": f"{slug}.en.vtt",
+        "bilingual.ass": f"{slug}.bilingual.ass",
         "cues.json": f"{slug}.cues.json",
         "annotations.ass": f"{slug}.annotations.ass",
         "annotations.vtt": f"{slug}.annotations.vtt",
@@ -357,9 +360,15 @@ def pack(
 ):
     """Burn subtitles into video — produce a self-contained MP4.
 
-    Discovers .zh.srt and optional .annotations.ass from OUTPUT_DIR,
-    hard-burns both subtitle tracks into the video stream, and writes
+    Auto-detects the main subtitle from OUTPUT_DIR: prefers ``bilingual.ass``
+    (self-styled, 中上英下) when present, otherwise falls back to ``zh.srt``.
+    Optional ``.annotations.ass`` is overlaid as a secondary track.  Writes
     ``{slug}_pack.mp4`` alongside the original video.
+
+    Run a bilingual pipeline first to get ``bilingual.ass``::
+
+        uv run light-subtitle -i input.mp4 --target-lang zh --bilingual -o output
+        uv run light-subtitle pack output
     """
     from .pack import PackConfig, run_pack
 

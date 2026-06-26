@@ -228,8 +228,14 @@ def _merge_multi(output_dir: Path, seg_dirs: list[Path], slug: str, overlap: flo
     _copy_original_video(output_dir, slug)
 
     # ── Merge subtitle / data files ──
-    _merge_srt(output_dir, seg_dirs, offsets, durations, split_points, slug)
-    _merge_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug)
+    # zh track (translation target) — always attempted.
+    _merge_srt(output_dir, seg_dirs, offsets, durations, split_points, slug, lang="zh")
+    _merge_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug, lang="zh")
+    # en track (source) — present in bilingual runs; no-op if en.srt/en.vtt absent.
+    _merge_srt(output_dir, seg_dirs, offsets, durations, split_points, slug, lang="en")
+    _merge_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug, lang="en")
+    # bilingual.ass (merged ZH+EN display) — present in bilingual runs.
+    _merge_bilingual_ass(output_dir, seg_dirs, offsets, durations, split_points, slug)
     _merge_cues_json(output_dir, seg_dirs, offsets, durations, split_points, slug)
     _merge_transcript(output_dir, seg_dirs, offsets, durations, split_points, slug)
     _merge_annotations_ass(output_dir, seg_dirs, offsets, durations, split_points, slug)
@@ -248,6 +254,9 @@ def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
     mapping = {
         "zh.srt": f"{slug}.zh.srt",
         "zh.vtt": f"{slug}.zh.vtt",
+        "en.srt": f"{slug}.en.srt",
+        "en.vtt": f"{slug}.en.vtt",
+        "bilingual.ass": f"{slug}.bilingual.ass",
         "transcript.json": f"{slug}.transcript.json",
         "cues.json": f"{slug}.cues.json",
         "annotations.ass": f"{slug}.annotations.ass",
@@ -385,13 +394,14 @@ def _merge_srt(
     durations: list[float],
     split_points: list[float] | None,
     slug: str,
+    lang: str = "zh",
 ) -> None:
     all_cues: list[tuple[float, float, str]] = []
     N = len(seg_dirs)
     skipped_invalid = 0
 
     for k, seg in enumerate(seg_dirs):
-        cues = _parse_srt(seg / "zh.srt")
+        cues = _parse_srt(seg / f"{lang}.srt")
         offset = offsets[k]
         seg_dur = durations[k]
         for start, end, text in cues:
@@ -417,9 +427,12 @@ def _merge_srt(
     if skipped_invalid:
         print(f"  ⚠ Skipped {skipped_invalid} cues with backwards timestamps (end < start)", file=sys.stderr)
 
+    if not all_cues:
+        return  # language track absent in all segments (e.g. en.srt only in bilingual runs)
+
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_srt_overlaps(all_cues)
-    out = output_dir / f"{slug}.zh.srt"
+    out = output_dir / f"{slug}.{lang}.srt"
     _write_srt(all_cues, out)
     print(f"  Merged SRT: {len(all_cues)} cues → {out.name}", file=sys.stderr)
 
@@ -476,13 +489,14 @@ def _merge_vtt(
     durations: list[float],
     split_points: list[float] | None,
     slug: str,
+    lang: str = "zh",
 ) -> None:
     all_cues: list[tuple[float, float, str, str]] = []
     N = len(seg_dirs)
     skipped_invalid = 0
 
     for k, seg in enumerate(seg_dirs):
-        cues = _parse_vtt(seg / "zh.vtt")
+        cues = _parse_vtt(seg / f"{lang}.vtt")
         offset = offsets[k]
         seg_dur = durations[k]
         for start, end, text, settings in cues:
@@ -506,9 +520,12 @@ def _merge_vtt(
     if skipped_invalid:
         print(f"  ⚠ Skipped {skipped_invalid} cues with backwards timestamps (end < start)", file=sys.stderr)
 
+    if not all_cues:
+        return  # language track absent in all segments
+
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_vtt_overlaps(all_cues)
-    out = output_dir / f"{slug}.zh.vtt"
+    out = output_dir / f"{slug}.{lang}.vtt"
     _write_vtt(all_cues, out)
     print(f"  Merged VTT: {len(all_cues)} cues → {out.name}", file=sys.stderr)
 
@@ -703,6 +720,98 @@ def _dedup_annotation_terms(cues: list[tuple]) -> list[tuple]:
     if removed:
         print(f"    Deduplicated {removed} annotation(s) by term", file=sys.stderr)
     return deduped
+
+
+def _dedup_bilingual_ass_overlaps(
+    events: list[tuple[float, float, str, list[str]]],
+) -> list[tuple[float, float, str, list[str]]]:
+    """Remove adjacent overlapping ASS Dialogue events (main subtitle stream).
+
+    Mirrors ``_dedup_srt_overlaps``: when two adjacent events overlap (prev.end
+    > cur.start + tol), keep the later one — bilingual main cues from
+    overlapping segments should not double-display.
+    """
+    if len(events) < 2:
+        return events
+    deduped: list[tuple[float, float, str, list[str]]] = [events[0]]
+    for event in events[1:]:
+        if deduped[-1][1] > event[0] + 0.001:
+            deduped[-1] = event
+        else:
+            deduped.append(event)
+    return deduped
+
+
+def _merge_bilingual_ass(
+    output_dir: Path,
+    seg_dirs: list[Path],
+    offsets: list[float],
+    durations: list[float],
+    split_points: list[float] | None,
+    slug: str,
+) -> None:
+    """Merge per-segment ``bilingual.ass`` into ``{slug}.bilingual.ass``.
+
+    Mirrors ``_merge_annotations_ass`` (ASS Dialogue time-shift via
+    ``split(",", 9)``) but applies main-subtitle semantics: split-point
+    boundary filtering like the SRT/VTT mergers, and overlap dedup via
+    ``_dedup_bilingual_ass_overlaps`` (keep later cue on overlap) rather than
+    annotation term dedup.
+    """
+    has_any = any((seg / "bilingual.ass").exists() for seg in seg_dirs)
+    if not has_any:
+        return
+
+    N = len(seg_dirs)
+    header_lines: list[str] = []
+    all_events: list[tuple[float, float, str, list[str]]] = []
+    in_header = True
+
+    for k, seg in enumerate(seg_dirs):
+        ass_path = seg / "bilingual.ass"
+        if not ass_path.exists():
+            continue
+        offset = offsets[k]
+        seg_dur = durations[k]
+        for line in ass_path.read_text(encoding="utf-8").splitlines(keepends=True):
+            if not line.startswith("Dialogue:"):
+                if in_header:
+                    header_lines.append(line)
+                continue
+            in_header = False
+            fields = line.strip().split(",", 9)
+            if len(fields) < 10:
+                continue
+            try:
+                start = _ass_to_seconds(fields[1])
+            except ValueError:
+                continue
+            global_start = start + offset
+            if split_points and N == len(split_points) - 1:
+                if k > 0 and global_start < split_points[k] - _EPS:
+                    continue
+                if k < N - 1 and global_start > split_points[k + 1] + _EPS:
+                    continue
+            else:
+                if k > 0 and start < 12:
+                    continue
+                if k < N - 1 and start > seg_dur - 12:
+                    continue
+            end = _ass_to_seconds(fields[2]) + offset
+            fields[1] = _seconds_to_ass(global_start)
+            fields[2] = _seconds_to_ass(end)
+            all_events.append((global_start, end, fields[9], fields))
+
+    if not all_events:
+        return
+
+    all_events.sort(key=lambda e: e[0])
+    all_events = _dedup_bilingual_ass_overlaps(all_events)
+    event_lines = [",".join(fields) + "\n" for _, _, _, fields in all_events]
+
+    out = output_dir / f"{slug}.bilingual.ass"
+    out.write_text("".join(header_lines + event_lines), encoding="utf-8")
+    print(f"  Merged bilingual.ass: {len(event_lines)} cues → {out.name}", file=sys.stderr)
 
 
 def _merge_annotations_ass(

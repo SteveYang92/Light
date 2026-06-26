@@ -60,9 +60,11 @@ class PackConfig:
 def run_pack(config: PackConfig) -> None:
     """Burn subtitles into a video and write a self-contained MP4.
 
-    Discovers the video, main subtitle (``.zh.srt``), and optional annotation
-    subtitle (``.annotations.ass``) from *config.output_dir*, then encodes
-    with ffmpeg-full using the parameters specified in *config*.
+    Discovers the video, main subtitle, and optional annotation subtitle from
+    *config.output_dir*, then encodes with ffmpeg-full.  The main subtitle is
+    auto-detected: ``bilingual.ass`` (self-styled, burned via ``ass=``) is
+    preferred when present; otherwise falls back to ``zh.srt`` (burned via
+    ``subtitles=`` with ``force_style``).
     """
     output_dir = Path(config.output_dir).resolve()
     if not output_dir.is_dir():
@@ -72,7 +74,8 @@ def run_pack(config: PackConfig) -> None:
     ffmpeg_bin, ffprobe_bin = _find_ffmpeg_full()
 
     # ── Discover media files ─────────────────────────
-    video_path, sub_path, annot_path = _discover_files(output_dir, config.video)
+    video_path, sub_path, sub_kind, annot_path = _discover_files(output_dir, config.video)
+    logger.info(f"  主字幕: {sub_path.name} ({'双语 ASS' if sub_kind == 'bilingual' else 'SRT'})")
 
     # ── Probe original bitrate ───────────────────────
     original_bitrate = _probe_video_bitrate(ffprobe_bin, video_path)
@@ -83,8 +86,21 @@ def run_pack(config: PackConfig) -> None:
     output_path = output_dir / f"{slug}{OUTPUT_SUFFIX}.mp4"
 
     # ── Build filter chain ───────────────────────────
-    filters = [f"ass={annot_path}"] if annot_path else []
-    filters.append(f"subtitles={sub_path}:force_style='Fontsize={FONT_SIZE},Fontname={config.font},MarginV={MARGIN_V}'")
+    filters: list[str] = []
+    if annot_path:
+        # Annotation副图层：样式自带，用 ass= 直烧。
+        filters.append(f"ass={annot_path}")
+
+    if sub_kind == "bilingual":
+        # bilingual.ass 自带完整样式（PingFangSC-Regular/白/底部对齐/fs14 行内标签），
+        # 用 ass= 直烧，不用 force_style 覆盖——否则会破坏合并 Dialogue 和 fs14 标签。
+        filters.append(f"ass={sub_path}")
+        logger.info("  使用 bilingual.ass 内嵌样式，--font 不生效")
+    else:
+        # 单语 SRT：沿用现状，用 force_style 设字体/字号/MarginV。
+        filters.append(
+            f"subtitles={sub_path}:force_style='Fontsize={FONT_SIZE},Fontname={config.font},MarginV={MARGIN_V}'"
+        )
     filter_complex = ",".join(filters)
 
     # ── Run ffmpeg ───────────────────────────────────
@@ -118,7 +134,8 @@ def run_pack(config: PackConfig) -> None:
 
     # ── Report ───────────────────────────────────────
     size_mb = output_path.stat().st_size / (1024 * 1024)
-    logger.info(f"  打包完成: {output_path.name} ({size_mb:.0f} MB)")
+    mode_label = "双语 ASS" if sub_kind == "bilingual" else "中文字幕 SRT"
+    logger.info(f"  打包完成: {output_path.name} ({size_mb:.0f} MB, {mode_label})")
     print(f"\n  ✅ {output_path}")
 
 
@@ -155,8 +172,14 @@ def _find_bin(paths: list[str], name: str) -> Path | None:
     return Path(found) if found else None
 
 
-def _discover_files(output_dir: Path, video_override: str | None) -> tuple[Path, Path, Path | None]:
-    """Discover video, .zh.srt, and optional .annotations.ass in *output_dir*."""
+def _discover_files(output_dir: Path, video_override: str | None) -> tuple[Path, Path, str, Path | None]:
+    """Discover video, main subtitle, subtitle kind, and optional annotation.
+
+    Returns ``(video, sub_path, sub_kind, annot_path)`` where *sub_kind* is
+    ``"bilingual"`` (ASS, self-styled — burn with ``ass=``) or ``"srt"``
+    (needs ``force_style``).  Bilingual ASS is preferred when present; falls
+    back to monolingual ``zh.srt`` for non-bilingual runs.
+    """
     # ── Video ─────────────────────────────────────────
     if video_override:
         video_path = Path(video_override).resolve()
@@ -171,16 +194,6 @@ def _discover_files(output_dir: Path, video_override: str | None) -> tuple[Path,
             raise RuntimeError(f"找到多个视频文件:\n{names}\n  请使用 --video 参数指定要打包的视频。")
         video_path = mp4_files[0]
 
-    # ── Main subtitle (.zh.srt) ──────────────────────
-    sub_path = output_dir / f"{video_path.stem}.zh.srt"
-    if not sub_path.is_file():
-        # Try bare zh.srt (before slug-prefix rename)
-        sub_path = output_dir / "zh.srt"
-    if not sub_path.is_file():
-        raise FileNotFoundError(
-            f"未找到中文字幕文件: {output_dir}/zh.srt 或 .zh.srt。\n  请确认已运行翻译管线 (--target-lang zh)。"
-        )
-
     # ── Annotation subtitle (.annotations.ass) ───────
     annot_path = output_dir / f"{video_path.stem}.annotations.ass"
     if not annot_path.is_file():
@@ -188,7 +201,22 @@ def _discover_files(output_dir: Path, video_override: str | None) -> tuple[Path,
     if not annot_path.is_file():
         annot_path = None
 
-    return video_path, sub_path, annot_path
+    # ── Main subtitle — bilingual.ass preferred, then zh.srt ──
+    # Try slug-prefixed names first (post _rename_outputs / merge_all), then
+    # bare names (pre-rename or import-style layouts).
+    for name in (f"{video_path.stem}.bilingual.ass", "bilingual.ass"):
+        sub_path = output_dir / name
+        if sub_path.is_file():
+            return video_path, sub_path, "bilingual", annot_path
+    for name in (f"{video_path.stem}.zh.srt", "zh.srt"):
+        sub_path = output_dir / name
+        if sub_path.is_file():
+            return video_path, sub_path, "srt", annot_path
+
+    raise FileNotFoundError(
+        "未找到双语字幕 (bilingual.ass) 或中文字幕 (zh.srt) 文件。\n"
+        "  请确认已运行翻译管线 (--target-lang zh)，双语运行加 --bilingual。"
+    )
 
 
 def _probe_video_bitrate(ffprobe_bin: Path, video_path: Path) -> int:
