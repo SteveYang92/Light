@@ -25,7 +25,7 @@ def test_build_step_plan_source_only():
     plan = build_step_plan(_config())
     ids = [s.id for s in plan]
     assert ids[0] == "asr.extract"
-    assert "translate.compose" not in ids
+    assert "translate.compose" in ids  # shared compose runs even for source-only
     assert ids[-2:] == ["subtitle", "export"]
 
 
@@ -156,7 +156,7 @@ def test_hydrate_state_replays_plan_prefix(tmp_path: Path):
     class _Orch:
         state = PipelineState()
         asr_ctx = type("ctx", (), {"audio_path": "", "words": []})()
-        tx_ctx = type("ctx", (), {"translation_segments": [], "translated_cues": [], "usage": None})()
+        tx_ctx = type("ctx", (), {"translated_cues": [], "usage": None})()
 
     orch = _Orch()
     orch.config = config

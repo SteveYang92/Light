@@ -32,6 +32,11 @@ class PipelineState:
 
     words: list[Word] = field(default_factory=list)
     segments: list[Segment] = field(default_factory=list)
+    # Composed translation units — shared between English source formatting
+    # and the translate pipeline.  Built by the compose step from
+    # ``segments`` (raw pause-based units) so both tracks share the same
+    # ``unit_id`` graph (``m…`` / ``mu…_N``) for bilingual alignment.
+    composed_segments: list[Segment] = field(default_factory=list)
     source_lang: str = "en"
     raw_source_cues: list[SubtitleCue] = field(default_factory=list)
     translated_cues: list[SubtitleCue] = field(default_factory=list)

@@ -108,34 +108,122 @@ def export_ass(cues: list[SubtitleCue], output_path: str) -> None:
             f.write(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}\n")
 
 
-def export_bilingual_ass(zh_cues: list[SubtitleCue], en_cues: list[SubtitleCue], output_path: str) -> None:
+def export_bilingual_ass(en_cues: list[SubtitleCue], zh_cues: list[SubtitleCue], output_path: str) -> None:
+    """Export bilingual ASS by merging EN/ZH into one Dialogue per semantic unit.
+
+    Each bilingual pair is emitted as a **single** ASS Dialogue whose text is
+    the ZH line(s) followed by the EN line(s), joined with ``\\N``.  Using one
+    Dialogue (one style, bottom-aligned, ``MarginV=0``) lets ASS treat the
+    whole block as one unit that grows upward as lines are added — so ZH and
+    EN are always vertically adjacent with **no gap and no overlap**,
+    regardless of how many lines each track takes.  This is the only layout
+    that handles arbitrary line-count combinations cleanly, because ASS
+    ``MarginV`` is static and cannot adapt to per-cue line counts.
+
+    Pairing is by ``effective_unit_ids`` (head ``unit_id`` + ``merged_from``
+    chain), not by positional index, so it copes with:
+
+    * EN fan-out — one composed English unit may split into several display
+      cues (karaoke-style); all sub-cues share the parent unit_id and are
+      grouped with the one matching ZH cue.  Their texts are concatenated in
+      time order as the EN portion.
+    * ZH display-merge — one ZH cue whose ``merged_from`` lists absorbed unit
+      ids; it groups with every EN cue whose unit_id intersects.
+    * combined fan-out + merge.
+    * unmatched cues (no shared unit ids) — emitted as a solo ZH or EN line.
+
+    Note: parameter order is ``(en_cues, zh_cues)`` to match the call site
+    ``export_bilingual_ass(source_fmt, target_fmt, ...)`` where source is
+    the EN track and target is the ZH translation.
+    """
+    from light_models import seconds_to_ass
+    from light_models.cue_utils import effective_unit_ids
+
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
+
+    # ── Group cues by shared effective unit ids ───────────────────────────
+    # A group = all display cues (EN + ZH) that belong to one semantic unit.
+    # EN fan-out sub-cues share the parent unit_id → same group.  A ZH
+    # display-merge cue intersects several EN cues via merged_from → all in
+    # one group.  We group by "any unit-id overlap" which is correct because
+    # unit ids are unique per composed unit and merges only chain adjacent
+    # ids, so overlap is an equivalence relation in practice.
+    en_sets = [effective_unit_ids(c) for c in en_cues]
+    zh_sets = [effective_unit_ids(c) for c in zh_cues]
+
+    # Assign each EN cue to a group keyed by the first ZH cue it intersects.
+    # EN cues that match no ZH cue get their own group; ZH cues with no EN
+    # match also get their own group.  Order groups by ZH cue order first
+    # (so the file reads top-to-bottom in ZH/semantic order), then append
+    # leftover EN-only groups at the end in EN order.
+    en_grouped: list[bool] = [False] * len(en_cues)
+    groups: list[tuple[list[SubtitleCue], list[SubtitleCue]]] = []  # (zh, en)
+    for zi, zc in enumerate(zh_cues):
+        zs = zh_sets[zi]
+        matching_en = [ec for ei, ec in enumerate(en_cues) if not en_grouped[ei] and en_sets[ei] & zs]
+        for ei in range(len(en_cues)):
+            if not en_grouped[ei] and en_sets[ei] & zs:
+                en_grouped[ei] = True
+        groups.append(([zc], matching_en))
+    # Leftover EN cues with no ZH match → EN-only groups.
+    for ei, ec in enumerate(en_cues):
+        if not en_grouped[ei]:
+            groups.append(([], [ec]))
+
+    # ── Write one Dialogue per group ──────────────────────────────────────
+    # ZH lines first (top), EN lines after (bottom), joined with \N.  Within
+    # each track, cues are already in time order from the pipeline; we sort
+    # the EN members of a group by start to be safe for fan-out sub-cues.
     with open(output, "w", encoding="utf-8") as f:
         f.write("[Script Info]\n")
         f.write("ScriptType: v4.00+\n\n")
         f.write("[V4+ Styles]\n")
         f.write("Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, Bold, Italic, Alignment\n")
-        f.write("Style: ZH,Arial,20,&H00FFFFFF,&H00000000,0,0,2\n")
-        f.write("Style: EN,Arial,18,&H00FFFF00,&H00000000,0,0,2\n\n")
+        # One unified style for the merged bilingual block.  Both languages
+        # share PingFangSC-Regular + white primary so the pair reads as one
+        # consistent subtitle (movie convention: translation on top, smaller
+        # original below).  Bottom-aligned (Alignment=2), MarginV=0 → ASS
+        # grows the whole block upward as lines are added, so ZH and EN stay
+        # vertically adjacent with no gap and no overlap for any line count.
+        # A single Fontsize is required by ASS per style; the within-block
+        # size contrast (ZH larger, EN smaller) is achieved with the ``fs``
+        # override tag on the EN portion of each Dialogue line.
+        f.write("Style: Bilingual,PingFangSC-Regular,20,&H00FFFFFF,&H00000000,0,0,2\n\n")
         f.write("[Events]\n")
         f.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
-        from light_models import seconds_to_ass
 
-        max_cues = max(len(zh_cues), len(en_cues))
-        for i in range(max_cues):
-            if i < len(zh_cues):
-                zc = zh_cues[i]
-                start = seconds_to_ass(zc.start)
-                end = seconds_to_ass(zc.end)
-                text = zc.text.replace("\n", "\\N")
-                f.write(f"Dialogue: 0,{start},{end},ZH,,0,0,0,,{text}\n")
-            if i < len(en_cues):
-                ec = en_cues[i]
-                start = seconds_to_ass(ec.start)
-                end = seconds_to_ass(ec.end)
-                text = ec.text.replace("\n", "\\N")
-                f.write(f"Dialogue: 1,{start},{end},EN,,0,0,10,,{text}\n")
+        for zh_members, en_members in groups:
+            # Time window = union of all cues in the group, so the whole
+            # bilingual block is shown for the full span of its components.
+            all_cues = zh_members + en_members
+            if not all_cues:
+                continue
+            start_s = min(c.start for c in all_cues)
+            end_s = max(c.end for c in all_cues)
+            start = seconds_to_ass(start_s)
+            end = seconds_to_ass(end_s)
+
+            parts: list[str] = []
+            for zc in zh_members:
+                parts.append(zc.text.replace("\n", "\\N"))
+            # EN portion: smaller font via {fs14}, sorted by start for fan-out order.
+            if en_members:
+                en_sorted = sorted(en_members, key=lambda c: c.start)
+                # Force EN to a single display line: drop all newlines from every
+                # EN cue (intra-cue \n and any inter-cue separators) and join the
+                # per-cue texts with a space.  Fan-out sub-cues concatenate in
+                # time order on one line.  ASS will word-wrap if the line is wider
+                # than the screen, but the logical cue text stays one line so the
+                # bilingual block is at most ZH lines + 1 EN line.
+                en_words: list[str] = []
+                for ec in en_sorted:
+                    en_words.extend(ec.text.split())
+                en_text = " ".join(en_words)
+                parts.append(f"{{\\fs14}}{en_text}")
+            text = "\\N".join(parts)
+
+            f.write(f"Dialogue: 0,{start},{end},Bilingual,,0,0,0,,{text}\n")
 
 
 def export_transcript(

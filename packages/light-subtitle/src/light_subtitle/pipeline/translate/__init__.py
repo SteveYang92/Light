@@ -46,6 +46,14 @@ def _compose_and_split(
     """Compose fragments → split overlong units → save debug compose.json."""
     tx_dir.mkdir(parents=True, exist_ok=True)
     clear_partial_cache(tx_dir)
+    # Clear the translate-side partial cache too — compose and translate live in
+    # sibling dirs (compose/, translations/) but share unit ids.  When compose is
+    # re-run (e.g. after segmentation changes) any previously translated partial
+    # cues are stale against the new unit graph and must be dropped.
+    translate_partial = tx_dir.parent / "translations" / "partial.json"
+    if translate_partial.exists() and translate_partial.parent != tx_dir:
+        translate_partial.unlink()
+        logger.info("  Cleared stale translations/partial.json (re-compose)")
 
     translation_segments = compose_segments(segments)
     logger.info(f"  Compose: {len(segments)} segments → {len(translation_segments)} translation units")

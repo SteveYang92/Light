@@ -70,7 +70,6 @@ def hydrate_segments_from_disk(orch: Orchestrator) -> None:
         hydrate_words_after_punct(orch)
     orch.state.source_lang = detect_source_lang(orch.state.words)
     orch.state.segments = load_segments_from_json(out / "segment" / "segment.json", orch.state.words)
-    orch.state.raw_source_cues = build_source_cues(orch.state.segments, orch.state.source_lang)
 
 
 def hydrate_context_from_cache(orch: Orchestrator) -> None:
@@ -90,12 +89,40 @@ def hydrate_context_from_cache(orch: Orchestrator) -> None:
 
 
 def hydrate_compose_segments(orch: Orchestrator) -> None:
+    """Hydrate composed segments and rebuild ``raw_source_cues`` from them.
+
+    Reads ``compose/compose.json`` (re-running compose+split if absent) and
+    ``compose/segment_words.json`` for word-level timing.  The English
+    source cues are rebuilt from composed units so the EN track shares the
+    same ``unit_id`` graph as the translated track.
+    """
     hydrate_segments_from_disk(orch)
     hydrate_context_from_cache(orch)
-    tx_dir = _out(orch.config) / "translations"
-    orch.tx_ctx.translation_segments = translate_pipeline.load_compose_segments(
-        tx_dir, orch.state.segments, orch.config
+    compose_dir = _out(orch.config) / "compose"
+    orch.state.composed_segments = translate_pipeline.load_compose_segments(
+        compose_dir, orch.state.segments, orch.config
     )
+    _attach_segment_words(orch.state.composed_segments, compose_dir)
+    orch.state.raw_source_cues = build_source_cues(orch.state.composed_segments, orch.state.source_lang)
+
+
+def _attach_segment_words(segments: list[Segment], compose_dir: Path) -> None:
+    """Re-attach word timing from ``segment_words.json`` to composed segments.
+
+    ``load_compose_segments`` rebuilds ``Segment`` objects from
+    ``compose.json`` with ``words=[]``; this refills words so pace can do
+    word-boundary alignment.  Mirrors the logic in
+    ``translate.load_cached_translation``.
+    """
+    seg_words_path = compose_dir / "segment_words.json"
+    if not seg_words_path.exists():
+        return
+    with open(seg_words_path, encoding="utf-8") as f:
+        seg_words_map = json.load(f)
+    for seg in segments:
+        word_dicts = seg_words_map.get(seg.unit_id)
+        if word_dicts:
+            seg.words = [Word(**w) for w in word_dicts]
 
 
 def hydrate_partial_cues(orch: Orchestrator) -> None:
@@ -108,8 +135,7 @@ def hydrate_partial_cues(orch: Orchestrator) -> None:
 
 
 def hydrate_translated_cues(orch: Orchestrator) -> None:
-    hydrate_segments_from_disk(orch)
-    hydrate_context_from_cache(orch)
+    hydrate_compose_segments(orch)
     tx_dir = _out(orch.config) / "translations"
     orch.state.translated_cues, orch.state.translation_usage = translate_pipeline.load_cached_translation(
         tx_dir, orch.config
@@ -117,8 +143,7 @@ def hydrate_translated_cues(orch: Orchestrator) -> None:
 
 
 def hydrate_subtitle_export(orch: Orchestrator) -> None:
-    hydrate_segments_from_disk(orch)
-    hydrate_context_from_cache(orch)
+    hydrate_compose_segments(orch)
     raw = _out(orch.config) / "translations" / "raw.json"
     if raw.exists():
         hydrate_translated_cues(orch)
@@ -196,7 +221,7 @@ def hydrate_pipeline_state(state: Any, config: SubtitleConfig, start_step_id: st
     fake.state = state
     fake.config = config
     fake.asr_ctx = type("ctx", (), {"audio_path": "", "words": []})()
-    fake.tx_ctx = type("ctx", (), {"translation_segments": [], "translated_cues": [], "usage": None})()
+    fake.tx_ctx = type("ctx", (), {"translated_cues": [], "usage": None})()
 
     from .step_registry import StepId, build_enabled_definitions
 

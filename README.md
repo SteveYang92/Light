@@ -3,7 +3,7 @@
 视频/音频 → 高质量字幕全自动流水线。一条命令完成听写、矫正、断句、翻译与导出；也可通过 Web 界面提交链接、实时查看进度并播放。
 
 ```
-输入 → ASR → 矫正 → 标点 → 断句 → 翻译(可选) → 字幕格式化 → 导出(SRT/VTT/ASS/JSON) → QC
+输入 → ASR → 矫正 → 标点 → 断句 → compose+split(共享) → 翻译(可选) → 字幕格式化 → 导出(SRT/VTT/ASS/JSON) → QC
 ```
 
 ## 功能与特性
@@ -248,15 +248,17 @@ output/
 │   └── asr_whisperx.json         ASR 词级结果（引擎名随 --asr 变化）
 ├── en.srt / en.vtt               源语字幕
 ├── zh.srt / zh.vtt               译语字幕
-├── bilingual.ass                 双语 ASS
+├── bilingual.ass                 双语 ASS（双流写法：EN/ZH 各自独立成层，按 unit_id 对齐）
 ├── annotations.ass               副字幕注解（--annotate）
 ├── cues.json                     字幕 cue 列表
 ├── transcript.json               标准化转录（含 word 时间戳，供 QC）
 ├── segment/
-│   └── segment.json              语义断句单元
+│   └── segment.json              语义断句单元（pause-based 原始分段）
+├── compose/
+│   ├── compose.json              compose+split 翻译单元（单语/双语共享，对齐用 unit_id 图）
+│   └── segment_words.json        组合单元的词级时间戳（resume 重建用）
 ├── context/                      翻译上下文（glossary + summary）
 ├── translations/
-│   ├── compose.json              翻译单元（compose 调试输出）
 │   ├── partial.json              翻译中间结果
 │   ├── raw.json                  LLM 原始翻译输出
 │   ├── source.json               源语对照字幕

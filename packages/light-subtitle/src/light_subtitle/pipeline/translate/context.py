@@ -4,13 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from light_models import Segment, SubtitleCue
+from light_models import SubtitleCue
 
 
 @dataclass
 class TranslateContext:
-    """Shared state between translation sub-steps."""
+    """Shared state between translation sub-steps.
 
-    translation_segments: list[Segment] = field(default_factory=list)
+    Composed segments live on ``OrchestratorState.composed_segments`` so
+    they are shared with the English source formatting path; this context
+    only holds translation-specific outputs.
+    """
+
     translated_cues: list[SubtitleCue] = field(default_factory=list)
     usage: dict | None = None

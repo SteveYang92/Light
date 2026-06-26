@@ -84,10 +84,21 @@ def _tx_dir(config: SubtitleConfig) -> Path:
     return _out(config) / "translations"
 
 
+def _compose_dir(config: SubtitleConfig) -> Path:
+    return _out(config) / "compose"
+
+
 def _subtitle_artifact_paths(config: SubtitleConfig) -> tuple[Path, ...]:
     if config.target_lang:
-        return (_tx_dir(config) / "raw.json", _out(config) / "segment" / "segment.json")
-    return (_out(config) / "segment" / "segment.json",)
+        return (
+            _tx_dir(config) / "raw.json",
+            _out(config) / "segment" / "segment.json",
+            _compose_dir(config) / "compose.json",
+        )
+    return (
+        _out(config) / "segment" / "segment.json",
+        _compose_dir(config) / "compose.json",
+    )
 
 
 # ── ASR helpers ───────────────────────────────────────────────────────────────
@@ -194,15 +205,34 @@ def _translate_progress_end(orch: Orchestrator) -> None:
     orch._progress("translate", 1.0, f"翻译完成 ({len(orch.state.translated_cues)} 条)")
 
 
+def _compose_progress_start(orch: Orchestrator) -> None:
+    orch._progress("compose", 0.0, "组合翻译单元中...")
+
+
+def _compose_progress_end(orch: Orchestrator) -> None:
+    orch._progress(
+        "compose",
+        1.0,
+        f"组合完成 ({len(orch.state.composed_segments)} 个单元)",
+    )
+
+
 def _run_translate_compose(orch: Orchestrator) -> None:
-    if not _ensure_translate_ready(orch):
-        return
-    tx_dir = _tx_dir(orch.config)
-    if not orch.tx_ctx.translation_segments:
-        orch.tx_ctx.translation_segments = translate_pipeline.compose_and_split(
-            orch.state.segments, orch.config, tx_dir
+    """Shared compose+split step.
+
+    Runs for both monolingual English and bilingual runs.  Builds
+    ``orch.state.composed_segments`` from the pause-based ``segments`` and
+    rebuilds ``raw_source_cues`` from those composed units so the English
+    track shares the same ``unit_id`` graph as the translated track.
+    """
+    compose_dir = _compose_dir(orch.config)
+    compose_dir.mkdir(parents=True, exist_ok=True)
+    if not orch.state.composed_segments:
+        orch.state.composed_segments = translate_pipeline.compose_and_split(
+            orch.state.segments, orch.config, compose_dir
         )
-    translate_pipeline.save_segment_words(orch.tx_ctx.translation_segments, tx_dir)
+    translate_pipeline.save_segment_words(orch.state.composed_segments, compose_dir)
+    orch.state.raw_source_cues = build_source_cues(orch.state.composed_segments, orch.state.source_lang)
 
 
 def _run_translate_translate(orch: Orchestrator) -> None:
@@ -210,9 +240,7 @@ def _run_translate_translate(orch: Orchestrator) -> None:
         return
     tx_dir = _tx_dir(orch.config)
     logger.info("  Translating...")
-    orch.tx_ctx.translated_cues, orch.tx_ctx.usage = translate_live(
-        orch.tx_ctx.translation_segments, orch.config, tx_dir
-    )
+    orch.tx_ctx.translated_cues, orch.tx_ctx.usage = translate_live(orch.state.composed_segments, orch.config, tx_dir)
     logger.info(f"  Translation: {len(orch.tx_ctx.translated_cues)} translated cues")
     _sync_translate_state(orch)
 
@@ -222,7 +250,7 @@ def _run_translate_retry(orch: Orchestrator) -> None:
         return
     orch.tx_ctx.translated_cues, orch.tx_ctx.usage = translate_pipeline.retry_missing(
         orch.tx_ctx.translated_cues,
-        orch.tx_ctx.translation_segments,
+        orch.state.composed_segments,
         orch.config,
         orch.tx_ctx.usage,
     )
@@ -234,7 +262,7 @@ def _run_translate_evaluate(orch: Orchestrator) -> None:
         return
     orch.tx_ctx.translated_cues = translate_pipeline.evaluate_and_refine(
         orch.tx_ctx.translated_cues,
-        orch.tx_ctx.translation_segments,
+        orch.state.composed_segments,
         orch.config,
         _tx_dir(orch.config),
     )
@@ -333,8 +361,8 @@ def _run_segment(orch: Orchestrator) -> None:
         orch.state.segments,
         str(_out(orch.config) / "segment" / "segment.json"),
     )
-
-    orch.state.raw_source_cues = build_source_cues(orch.state.segments, orch.state.source_lang)
+    # raw_source_cues is built by the compose step from composed units so
+    # the English track shares the same unit graph as the translated track.
 
 
 def _run_context(orch: Orchestrator) -> None:
@@ -567,14 +595,16 @@ def build_step_definitions(config: SubtitleConfig) -> list[StepDefinition]:
         StepDefinition(
             id=StepId.TRANSLATE_COMPOSE,
             run=_run_translate_compose,
-            artifacts=lambda c: (_out(c) / "segment" / "segment.json",),
-            hydrate=hydrate_segments_from_disk,
-            enabled=lambda c: bool(c.target_lang and c.llm_api_key),
+            artifacts=lambda c: (_out(c) / "segment" / "segment.json", _compose_dir(c) / "compose.json"),
+            progress_start=_compose_progress_start,
+            progress_end=_compose_progress_end,
+            hydrate=hydrate_compose_segments,
+            enabled=lambda _c: True,
         ),
         StepDefinition(
             id=StepId.TRANSLATE_TRANSLATE,
             run=_run_translate_translate,
-            artifacts=lambda c: (_tx_dir(c) / "compose.json",),
+            artifacts=lambda c: (_compose_dir(c) / "compose.json",),
             progress_start=_translate_progress_start,
             hydrate=hydrate_compose_segments,
             enabled=lambda c: bool(c.target_lang and c.llm_api_key),
@@ -582,7 +612,7 @@ def build_step_definitions(config: SubtitleConfig) -> list[StepDefinition]:
         StepDefinition(
             id=StepId.TRANSLATE_RETRY,
             run=_run_translate_retry,
-            artifacts=lambda c: (_tx_dir(c) / "compose.json",),
+            artifacts=lambda c: (_compose_dir(c) / "compose.json",),
             hydrate=_hydrate_translate_mid,
             enabled=lambda c: bool(c.target_lang and c.llm_api_key),
         ),
