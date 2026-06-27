@@ -115,6 +115,69 @@ export function cueTextAt(cues: TimedCue[], time: number): string {
   return "";
 }
 
+/** Like ``cueTextAt`` but without annotation ※ formatting (main/bilingual subs). */
+export function cueTextAtRaw(cues: TimedCue[], time: number): string {
+  for (const cue of cues) {
+    if (time >= cue.start && time < cue.end) return normalizeSubtitleText(cue.text);
+  }
+  return "";
+}
+
+/** Marker line between ZH block and EN block in ``bilingual.vtt`` cues. */
+export const BILINGUAL_CUE_MARKER = "<<EN>>";
+
+function isPredominantlyLatin(text: string): boolean {
+  const stripped = text.replace(/\s/g, "");
+  if (!stripped) return false;
+  const latin = (stripped.match(/[A-Za-z]/g) ?? []).length;
+  return latin / stripped.length >= 0.5;
+}
+
+/** If the EN slot is actually Chinese (legacy mis-split), merge back into ZH. */
+function reconcileBilingualSplit(zh: string, en: string): { zh: string; en: string } {
+  if (en && !isPredominantlyLatin(en)) {
+    return { zh: [zh, en].filter(Boolean).join("\n"), en: "" };
+  }
+  return { zh, en };
+}
+
+function splitLegacyBilingualCue(normalized: string): { zh: string; en: string } {
+  const blank = normalized.indexOf("\n\n");
+  if (blank >= 0) {
+    return {
+      zh: normalized.slice(0, blank).trim(),
+      en: normalized.slice(blank + 2).trim(),
+    };
+  }
+  const lines = normalized.split("\n");
+  if (lines.length <= 1) {
+    return { zh: normalized.trim(), en: "" };
+  }
+  const last = lines[lines.length - 1]?.trim() ?? "";
+  if (isPredominantlyLatin(last)) {
+    return {
+      zh: lines.slice(0, -1).join("\n").trim(),
+      en: last,
+    };
+  }
+  return { zh: normalized.trim(), en: "" };
+}
+
+/** Split a bilingual VTT cue into ZH (first block) and EN (second block). */
+export function splitBilingualCue(text: string): { zh: string; en: string } {
+  const normalized = normalizeSubtitleText(text);
+  const marker = `\n${BILINGUAL_CUE_MARKER}\n`;
+  const idx = normalized.indexOf(marker);
+  if (idx >= 0) {
+    return reconcileBilingualSplit(
+      normalized.slice(0, idx).trim(),
+      normalized.slice(idx + marker.length).trim(),
+    );
+  }
+  const legacy = splitLegacyBilingualCue(normalized);
+  return reconcileBilingualSplit(legacy.zh, legacy.en);
+}
+
 /** Extract language code from a subtitle map key (zh.srt, video_p1.zh.vtt, …). */
 export function extractSubLang(key: string): string | null {
   if (key.includes(".annotations.") || key.startsWith("annotations.")) return null;

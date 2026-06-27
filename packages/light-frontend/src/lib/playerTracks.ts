@@ -5,6 +5,21 @@ export const MAIN_TRACK_LABEL = "light-main";
 
 type Player = ReturnType<typeof videojs>;
 
+/** True when chunk has a web-playable bilingual VTT track. */
+export function chunkHasBilingual(chunk: Chunk | null): boolean {
+  if (!chunk?.subtitles?.length) return false;
+  return chunk.subtitles.some((k) => k === "bilingual.vtt" || k.endsWith(".bilingual.vtt"));
+}
+
+/** Resolve bilingual VTT URL for custom overlay rendering. */
+export function resolveBilingualVttUrl(chunk: Chunk): string | null {
+  const subs = chunk.subtitles ?? [];
+  if (subs.includes("bilingual.vtt") || subs.some((k) => k.endsWith(".bilingual.vtt"))) {
+    return `/api/chunks/${chunk.id}/subtitles/bilingual.vtt`;
+  }
+  return null;
+}
+
 /** Resolve main subtitle URL — prefer VTT, fall back to SRT. */
 export function resolveMainSubUrl(chunk: Chunk, lang: string): string | null {
   const subs = chunk.subtitles ?? [];
@@ -58,16 +73,17 @@ function watchTrackLoad(track: TextTrack, onLoad: () => void): () => void {
   return () => track.removeEventListener("load", onLoad);
 }
 
-/** Sync Video.js remote text track for main subtitles only. */
+/** Sync Video.js remote text track for main subtitles only (single-language mode). */
 export function syncPlayerTextTracks(
   player: Player,
   chunk: Chunk,
   lang: string,
   mainEnabled: boolean,
+  useBilingualOverlay = false,
 ): () => void {
   removeManagedTracks(player);
 
-  if (mainEnabled) {
+  if (mainEnabled && !useBilingualOverlay) {
     const mainUrl = resolveMainSubUrl(chunk, lang);
     if (mainUrl) {
       player.addRemoteTextTrack(

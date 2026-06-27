@@ -2,6 +2,7 @@ const LANG_LABELS: Record<string, string> = {
   zh: "中文",
   en: "EN",
   ja: "JA",
+  bilingual: "双语",
 };
 
 function langLabel(code: string): string {
@@ -43,25 +44,32 @@ function Divider() {
 
 export default function SubtitleControls({
   languages,
-  subLang,
+  subMode,
   subEnabled,
+  hasBilingual,
   annotationsEnabled,
   hasAnnotations,
   onSubEnabledChange,
-  onSubLangChange,
+  onSubModeChange,
   onAnnotationsChange,
 }: {
   languages: string[];
-  subLang: string;
+  subMode: string;
   subEnabled: boolean;
+  hasBilingual: boolean;
   annotationsEnabled: boolean;
   hasAnnotations: boolean;
   onSubEnabledChange: (enabled: boolean) => void;
-  onSubLangChange: (lang: string) => void;
+  onSubModeChange: (mode: string) => void;
   onAnnotationsChange: (enabled: boolean) => void;
 }) {
-  const showSubtitles = languages.length > 0;
+  const showSubtitles = languages.length > 0 || hasBilingual;
   if (!showSubtitles && !hasAnnotations) return null;
+
+  const modeOptions = [
+    ...languages.map((lang) => ({ id: lang, label: langLabel(lang) })),
+    ...(hasBilingual ? [{ id: "bilingual", label: langLabel("bilingual") }] : []),
+  ];
 
   return (
     <div className="inline-flex items-center gap-2.5 flex-wrap rounded-lg border border-[#1f1f1f] bg-[#141414] px-2.5 py-1.5 text-xs">
@@ -72,22 +80,22 @@ export default function SubtitleControls({
             <ToggleSwitch checked={subEnabled} onChange={onSubEnabledChange} label="字幕" />
           </div>
 
-          {subEnabled && languages.length > 1 && (
+          {subEnabled && modeOptions.length > 1 && (
             <>
               <Divider />
               <div className="flex items-center gap-0.5" role="group" aria-label="字幕语言">
-                {languages.map((lang) => (
+                {modeOptions.map(({ id, label }) => (
                   <button
-                    key={lang}
+                    key={id}
                     type="button"
-                    onClick={() => onSubLangChange(lang)}
+                    onClick={() => onSubModeChange(id)}
                     className={`px-1.5 py-0.5 rounded transition-colors ${
-                      subLang === lang
+                      subMode === id
                         ? "bg-[#3b82f6]/20 text-[#3b82f6]"
                         : "text-[#6b7280] hover:text-[#e5e5e5]"
                     }`}
                   >
-                    {langLabel(lang)}
+                    {label}
                   </button>
                 ))}
               </div>

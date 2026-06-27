@@ -507,6 +507,12 @@ def _write_bilingual_exports(
             source_segments=orch.state.composed_segments,
             font=orch.config.font,
         )
+        export_module.export_bilingual_vtt(
+            source_fmt,
+            target_fmt,
+            str(out / "bilingual.vtt"),
+            source_segments=orch.state.composed_segments,
+        )
 
     export_module.export_json(source_fmt + target_fmt, str(out / "cues.json"))
 
@@ -525,11 +531,28 @@ def _write_bilingual_exports(
         )
 
 
+def _wants_bilingual_exports(orch: Orchestrator) -> bool:
+    """True when this run should emit en+zh bilingual artifacts."""
+    if orch.config.bilingual:
+        return True
+    if orch.config.target_lang is None:
+        return False
+    out = _out(orch.config)
+    slug = orch.config.slug or ""
+    names = ("bilingual.ass", "bilingual.vtt", "en.srt", "en.vtt")
+    for name in names:
+        if (out / name).exists():
+            return True
+        if slug and (out / f"{slug}.{name}").exists():
+            return True
+    return False
+
+
 def _run_subtitle(orch: Orchestrator) -> None:
     if orch.config.target_lang is None:
         orch._formatted_source = _format_source(orch)
         orch._formatted_target = None
-    elif orch.config.bilingual:
+    elif _wants_bilingual_exports(orch):
         orch._formatted_source = _format_source(orch)
         orch._formatted_target = _format_target(orch) if orch.state.translated_cues else []
     else:
@@ -542,7 +565,7 @@ def _run_export(orch: Orchestrator) -> None:
 
     if orch.config.target_lang is None:
         _write_source_exports(orch, out, orch._formatted_source or _format_source(orch))
-    elif orch.config.bilingual:
+    elif _wants_bilingual_exports(orch):
         _write_bilingual_exports(
             orch,
             out,

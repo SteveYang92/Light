@@ -13,8 +13,9 @@ import re
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from light_models import Segment, SubtitleCue, Word
-from light_subtitle.pipeline.export import export_bilingual_ass
+from light_subtitle.pipeline.export import export_bilingual_ass, export_bilingual_vtt
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,73 @@ def _write(tmp_path: Path, en: list[SubtitleCue], zh: list[SubtitleCue], segs: l
     out = tmp_path / "bilingual.ass"
     export_bilingual_ass(en, zh, str(out), source_segments=segs)
     return out
+
+
+def _write_both(
+    tmp_path: Path, en: list[SubtitleCue], zh: list[SubtitleCue], segs: list[Segment] | None = None
+) -> tuple[Path, Path]:
+    ass_path = tmp_path / "bilingual.ass"
+    vtt_path = tmp_path / "bilingual.vtt"
+    export_bilingual_ass(en, zh, str(ass_path), source_segments=segs)
+    export_bilingual_vtt(en, zh, str(vtt_path), source_segments=segs)
+    return ass_path, vtt_path
+
+
+def _parse_vtt_cues(path: Path) -> list[tuple[float, float, str]]:
+    """Return ``(start_s, end_s, text)`` per WebVTT cue."""
+    content = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    if not content.startswith("WEBVTT"):
+        return []
+    blocks = content.split("\n\n")[1:]
+    cues: list[tuple[float, float, str]] = []
+    for block in blocks:
+        lines = [ln for ln in block.strip().split("\n") if ln]
+        if len(lines) < 2:
+            continue
+        timing_idx = 0 if "-->" in lines[0] else 1
+        if timing_idx >= len(lines):
+            continue
+        timing = lines[timing_idx].split("-->")
+        if len(timing) != 2:
+            continue
+        start = _vtt_to_seconds(timing[0].strip())
+        end = _vtt_to_seconds(timing[1].strip())
+        text = "\n".join(lines[timing_idx + 1 :])
+        cues.append((start, end, text))
+    return cues
+
+
+def _vtt_to_seconds(timestamp: str) -> float:
+    hms, ms = timestamp.split(".")
+    parts = hms.split(":")
+    if len(parts) == 3:
+        return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2]) + int(ms) / 1000
+    return int(parts[0]) * 60 + int(parts[1]) + int(ms) / 1000
+
+
+def _vtt_expected_from_ass(ass_text: str) -> str:
+    """Map ASS Dialogue text to expected ``bilingual.vtt`` body."""
+    from light_subtitle.pipeline.export import BILINGUAL_VTT_MARKER
+
+    t = ass_text.replace("{\\fs14}", "")
+    if "\\N" not in t:
+        return t
+    idx = t.rfind("\\N")
+    zh = t[:idx].replace("\\N", "\n")
+    en = t[idx + 2 :].strip()
+    if en:
+        return f"{zh}\n{BILINGUAL_VTT_MARKER}\n{en}"
+    return zh
+
+
+def _assert_vtt_matches_ass(ass_path: Path, vtt_path: Path) -> None:
+    ass_rows = _parse_rows(ass_path)
+    vtt_cues = _parse_vtt_cues(vtt_path)
+    assert len(ass_rows) == len(vtt_cues)
+    for (start_cs, end_cs, _, ass_text), (vstart, vend, vtext) in zip(ass_rows, vtt_cues, strict=True):
+        assert vstart == pytest.approx(start_cs / 100, abs=0.05)
+        assert vend == pytest.approx(end_cs / 100, abs=0.05)
+        assert vtext == _vtt_expected_from_ass(ass_text)
 
 
 # ── tests ──────────────────────────────────────────────────────────────────────
@@ -584,3 +652,95 @@ def test_single_style_and_font(tmp_path: Path) -> None:
     assert int(fields[17]) >= 1  # Shadow depth
     # No per-language styles remain.
     assert not any("Style: ZH" in ln or "Style: EN" in ln for ln in text.splitlines())
+
+
+def test_bilingual_vtt_matches_ass_time_overlap_pairing(tmp_path: Path) -> None:
+    """VTT cue count, timing, and text match ASS for time-overlap pairing."""
+    en = [
+        SubtitleCue(
+            cue_id="en_0", unit_id="m0018_0_0", start=60.97, end=65.64, text="Now look this buzzword", lang="en"
+        ),
+    ]
+    zh = [
+        SubtitleCue(
+            cue_id="zh_0",
+            unit_id="m0018_0_1",
+            start=61.76,
+            end=65.64,
+            text="这个词现在在各种场合都被拿来用",
+            lang="zh",
+        ),
+    ]
+    ass_path, vtt_path = _write_both(tmp_path, en, zh)
+    _assert_vtt_matches_ass(ass_path, vtt_path)
+
+
+def test_bilingual_vtt_matches_ass_merged_from(tmp_path: Path) -> None:
+    """VTT includes EN from merged_from chain, same as ASS."""
+    segs = [
+        _seg("mu0045_0", 186.0, 188.0, "So underlying the humor"),
+        _seg("mu0045_1", 188.1, 193.6, "is an aspiration to truth"),
+    ]
+    en = [
+        SubtitleCue(
+            cue_id="en_0", unit_id="mu0045_0", start=186.0, end=188.0, text="So underlying the humor", lang="en"
+        ),
+        SubtitleCue(
+            cue_id="en_1", unit_id="mu0045_1", start=188.1, end=193.6, text="is an aspiration to truth", lang="en"
+        ),
+    ]
+    zh = [
+        SubtitleCue(
+            cue_id="zh_0",
+            unit_id="mu0045_0",
+            start=186.0,
+            end=193.6,
+            text="所以在幽默的背后，是一种尽可能贴近宇宙真理的追求。",
+            lang="zh",
+            merged_from=["mu0045_1"],
+        ),
+    ]
+    ass_path, vtt_path = _write_both(tmp_path, en, zh, segs=segs)
+    _assert_vtt_matches_ass(ass_path, vtt_path)
+    vtt_cues = _parse_vtt_cues(vtt_path)
+    assert len(vtt_cues) == 1
+    assert "所以在幽默的背后" in vtt_cues[0][2]
+    assert "So underlying the humor" in vtt_cues[0][2]
+    assert "is an aspiration to truth" in vtt_cues[0][2]
+
+
+def test_bilingual_vtt_multiline_zh_block(tmp_path: Path) -> None:
+    """Multiline ZH must stay in the ZH block, not render as small EN text."""
+    en = [
+        SubtitleCue(cue_id="en_0", unit_id="u0", start=1.0, end=4.0, text="Hello world", lang="en"),
+    ]
+    zh = [
+        SubtitleCue(
+            cue_id="zh_0",
+            unit_id="u0",
+            start=1.0,
+            end=4.0,
+            text="第一行中文\n第二行中文",
+            lang="zh",
+        ),
+    ]
+    _, vtt_path = _write_both(tmp_path, en, zh)
+    vtt_cues = _parse_vtt_cues(vtt_path)
+    assert len(vtt_cues) == 1
+    assert vtt_cues[0][2] == "第一行中文\n第二行中文\n<<EN>>\nHello world"
+
+
+def test_bilingual_vtt_en_only_leftover(tmp_path: Path) -> None:
+    """EN-only leftover groups appear in VTT with the same timing as ASS."""
+    en = [
+        SubtitleCue(cue_id="en_0", unit_id="u0", start=1.0, end=2.0, text="hello", lang="en"),
+        SubtitleCue(cue_id="en_1", unit_id="u1", start=5.0, end=6.0, text="orphan", lang="en"),
+    ]
+    zh = [
+        SubtitleCue(cue_id="zh_0", unit_id="u0", start=1.0, end=2.0, text="你好", lang="zh"),
+    ]
+    ass_path, vtt_path = _write_both(tmp_path, en, zh)
+    _assert_vtt_matches_ass(ass_path, vtt_path)
+    vtt_cues = _parse_vtt_cues(vtt_path)
+    assert len(vtt_cues) == 2
+    assert vtt_cues[1][2] == "orphan"

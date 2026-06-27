@@ -118,7 +118,90 @@ body {
   white-space: pre-wrap;
 }
 
+/* Main subtitle typography — shared by Video.js tracks and bilingual overlay */
+.video-js {
+  /* Between Video.js default (~14px) and the previous bump (22–34px) */
+  --light-subtitle-zh: clamp(18px, 2.4vmin, 24px);
+  --light-subtitle-bottom: 2em;
+}
+
+.video-js.vjs-fullscreen {
+  --light-subtitle-bottom: calc(2em + 0.5vmin);
+}
+
+/* Desktop fullscreen only — phones in landscape exceed 641px width */
+@media (min-width: 641px) and (pointer: fine) {
+  .video-js.vjs-fullscreen {
+    --light-subtitle-zh: clamp(24px, 3.8vmin, 36px);
+  }
+}
+
+/* Touch devices stay compact in all modes (incl. landscape fullscreen) */
+@media (pointer: coarse) {
+  .video-js {
+    --light-subtitle-zh: clamp(16px, 3.6vmin, 21px);
+  }
+}
+
+.video-js .vjs-text-track {
+  font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--light-subtitle-zh) !important;
+  line-height: 1.4;
+}
+
+/* Fullscreen only — inline player position is already OK */
+.video-js.vjs-fullscreen .vjs-text-track-display {
+  bottom: var(--light-subtitle-bottom) !important;
+}
+
+.video-js.vjs-fullscreen.vjs-controls-disabled .vjs-text-track-display,
+.video-js.vjs-fullscreen.vjs-user-inactive.vjs-playing .vjs-text-track-display {
+  bottom: calc(1.5em + 0.3vmin) !important;
+}
+
+.vjs-light-bilingual-overlay {
+  position: absolute;
+  bottom: var(--light-subtitle-bottom);
+  /* 4% + 4% side insets → 92% width (max-width alone shrink-wraps on absolute boxes) */
+  left: 4%;
+  right: 4%;
+  z-index: 30;
+  text-align: center;
+  color: #fff;
+  font-size: var(--light-subtitle-zh);
+  font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.4;
+  pointer-events: none;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+.vjs-light-bilingual-zh {
+  font-size: 1em;
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.vjs-light-bilingual-en {
+  /* bilingual.ass uses fs20 + {\fs14} for EN → 70% of ZH */
+  margin-top: 0.15em;
+  font-size: 0.7em;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 640px) {
+  .video-js.vjs-fullscreen {
+    --light-subtitle-bottom: calc(2em + 0.6vmin);
+  }
+
   .vjs-light-annotation-overlay {
     top: 0.5rem;
     left: 0.5rem;

@@ -126,6 +126,118 @@ def export_ass(cues: list[SubtitleCue], output_path: str, font: str | None = Non
             f.write(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text}\n")
 
 
+# (zh_cue_or_None, en_text_or_None, start, end)
+BilingualGroup = tuple[SubtitleCue | None, str | None, float, float]
+
+
+def _build_bilingual_groups(
+    en_cues: list[SubtitleCue],
+    zh_cues: list[SubtitleCue],
+    source_segments: list[Segment] | None = None,
+) -> list[BilingualGroup]:
+    """Build ZH-anchored bilingual cue groups shared by ASS and VTT export.
+
+    Each group is ``(zh_cue | None, en_text | None, start, end)``.  ZH groups
+    keep the ZH cue window; EN-only leftovers are clamped to avoid overlapping
+    adjacent ZH groups.
+    """
+    seg_by_unit: dict[str, Segment] = {s.unit_id: s for s in source_segments} if source_segments else {}
+
+    def _en_text_for_zh(zc: SubtitleCue) -> str | None:
+        """Join EN words from the segment(s) matching this ZH cue's unit_id + merged_from."""
+        unit_ids = [zc.unit_id, *zc.merged_from]
+        chunks: list[str] = []
+        for uid in unit_ids:
+            seg = seg_by_unit.get(uid)
+            if seg and seg.words:
+                chunks.append("".join(w.text for w in seg.words).strip())
+        return " ".join(c for c in chunks if c) or None
+
+    def _overlap(a: SubtitleCue, b: SubtitleCue) -> float:
+        return max(0.0, min(a.end, b.end) - max(a.start, b.start))
+
+    used_seg_units: set[str] = set()
+    used_en_idx: set[int] = set()
+    zh_en_text: list[str | None] = [None] * len(zh_cues)
+
+    unresolved: list[int] = []
+    for zi, zc in enumerate(zh_cues):
+        en_text = _en_text_for_zh(zc)
+        if en_text is not None:
+            zh_en_text[zi] = en_text
+            used_seg_units.add(zc.unit_id)
+            used_seg_units.update(zc.merged_from)
+        else:
+            unresolved.append(zi)
+
+    if unresolved and en_cues:
+        candidates: list[tuple[float, int, int]] = []
+        for zi in unresolved:
+            zc = zh_cues[zi]
+            for ei, ec in enumerate(en_cues):
+                if ei in used_en_idx:
+                    continue
+                ov = _overlap(zc, ec)
+                if ov > 0:
+                    candidates.append((ov, zi, ei))
+        candidates.sort(key=lambda c: (-c[0], c[1]))
+        for _, zi, ei in candidates:
+            if zh_en_text[zi] is None and ei not in used_en_idx:
+                zh_en_text[zi] = " ".join(en_cues[ei].text.split())
+                used_en_idx.add(ei)
+
+    groups: list[BilingualGroup] = []
+    for zi, zc in enumerate(zh_cues):
+        groups.append((zc, zh_en_text[zi], zc.start, zc.end))
+
+    if source_segments:
+        for seg in source_segments:
+            if seg.unit_id in used_seg_units or not seg.words:
+                continue
+            en_text = "".join(w.text for w in seg.words).strip()
+            if en_text:
+                groups.append((None, en_text, seg.start, seg.end))
+    else:
+        for ei, ec in enumerate(en_cues):
+            if ei not in used_en_idx:
+                groups.append((None, " ".join(ec.text.split()), ec.start, ec.end))
+
+    groups.sort(key=lambda g: g[2])
+    _GAP = 0.01
+    clamped: list[BilingualGroup] = []
+    prev_end = -1.0
+    for i, (zc, en_text, s, e) in enumerate(groups):
+        if zc is None:
+            if prev_end > 0:
+                s = max(s, prev_end + _GAP)
+            if i + 1 < len(groups):
+                nxt_start = groups[i + 1][2]
+                if e > nxt_start - _GAP:
+                    e = max(s + _GAP, nxt_start - _GAP)
+            if s >= e:
+                continue
+        clamped.append((zc, en_text, s, e))
+        prev_end = e
+    return clamped
+
+
+# Single-line marker between ZH block (may contain ``\n``) and EN block.
+# Cannot use ``\n\n`` — that is the WebVTT cue delimiter.
+BILINGUAL_VTT_MARKER = "<<EN>>"
+
+
+def _bilingual_plain_text(zc: SubtitleCue | None, en_text: str | None) -> str:
+    """ZH block then EN block for text-based bilingual exports."""
+    parts: list[str] = []
+    if zc is not None:
+        parts.append(_normalize_plain_subtitle_text(zc.text))
+    if en_text:
+        parts.append(en_text)
+    if len(parts) == 2:
+        return f"{parts[0]}\n{BILINGUAL_VTT_MARKER}\n{parts[1]}"
+    return parts[0] if parts else ""
+
+
 def export_bilingual_ass(
     en_cues: list[SubtitleCue],
     zh_cues: list[SubtitleCue],
@@ -160,113 +272,19 @@ def export_bilingual_ass(
     font_name = _resolved_font(font)
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
+    groups = _build_bilingual_groups(en_cues, zh_cues, source_segments)
 
-    seg_by_unit: dict[str, Segment] = {s.unit_id: s for s in source_segments} if source_segments else {}
-
-    def _en_text_for_zh(zc: SubtitleCue) -> str | None:
-        """Join EN words from the segment(s) matching this ZH cue's unit_id + merged_from."""
-        unit_ids = [zc.unit_id, *zc.merged_from]
-        chunks: list[str] = []
-        for uid in unit_ids:
-            seg = seg_by_unit.get(uid)
-            if seg and seg.words:
-                chunks.append("".join(w.text for w in seg.words).strip())
-        return " ".join(c for c in chunks if c) or None
-
-    def _overlap(a: SubtitleCue, b: SubtitleCue) -> float:
-        """Time overlap in seconds between two cues (0 if disjoint)."""
-        return max(0.0, min(a.end, b.end) - max(a.start, b.start))
-
-    # ── Resolve EN text for each ZH cue ──────────────────────────────────
-    used_seg_units: set[str] = set()
-    used_en_idx: set[int] = set()
-    zh_en_text: list[str | None] = [None] * len(zh_cues)
-
-    # Primary: segment words via unit_id (+ merged_from).
-    unresolved: list[int] = []
-    for zi, zc in enumerate(zh_cues):
-        en_text = _en_text_for_zh(zc)
-        if en_text is not None:
-            zh_en_text[zi] = en_text
-            used_seg_units.add(zc.unit_id)
-            used_seg_units.update(zc.merged_from)
-        else:
-            unresolved.append(zi)
-
-    # Fallback: EN-anchored exclusive assignment by largest overlap.  Process
-    # candidate (overlap, zh, en) triples in descending overlap so each EN
-    # cue goes to the ZH it fits best; ties broken by earliest ZH.  This keeps
-    # EN from being repeated across ZH groups.
-    if unresolved and en_cues:
-        candidates: list[tuple[float, int, int]] = []
-        for zi in unresolved:
-            zc = zh_cues[zi]
-            for ei, ec in enumerate(en_cues):
-                if ei in used_en_idx:
-                    continue
-                ov = _overlap(zc, ec)
-                if ov > 0:
-                    candidates.append((ov, zi, ei))
-        candidates.sort(key=lambda c: (-c[0], c[1]))
-        for _, zi, ei in candidates:
-            if zh_en_text[zi] is None and ei not in used_en_idx:
-                zh_en_text[zi] = " ".join(en_cues[ei].text.split())
-                used_en_idx.add(ei)
-
-    # ── Build groups: one per ZH cue + leftover EN-only ──────────────────
-    # (zh_cue_or_None, en_text_or_None, start, end).  ZH groups use the ZH
-    # cue's window; EN-only groups use the segment/cue window.
-    groups: list[tuple[SubtitleCue | None, str | None, float, float]] = []
-    for zi, zc in enumerate(zh_cues):
-        groups.append((zc, zh_en_text[zi], zc.start, zc.end))
-
-    if source_segments:
-        for seg in source_segments:
-            if seg.unit_id in used_seg_units or not seg.words:
-                continue
-            en_text = "".join(w.text for w in seg.words).strip()
-            if en_text:
-                groups.append((None, en_text, seg.start, seg.end))
-    else:
-        for ei, ec in enumerate(en_cues):
-            if ei not in used_en_idx:
-                groups.append((None, " ".join(ec.text.split()), ec.start, ec.end))
-
-    # ── Write ASS ────────────────────────────────────────────────────────
-    # ZH groups keep their full window (anchor).  EN-only groups are clamped
-    # to avoid overlapping adjacent ZH groups, and dropped if fully covered.
     with open(output, "w", encoding="utf-8") as f:
         f.write("[Script Info]\n")
         f.write("ScriptType: v4.00+\n\n")
         f.write("[V4+ Styles]\n")
         f.write(ASS_V4_PLUS_STYLE_FORMAT)
-        # One unified style: resolved font, white primary, bottom-aligned
-        # (Alignment=2, MarginV=BILINGUAL_MARGIN_V).  EN uses a smaller font via
-        # the {fs14} inline override.  Black outline (2px) + soft shadow keep the
-        # white text legible on any background.
         f.write(bilingual_style_line(font_name))
         f.write("\n")
         f.write("[Events]\n")
         f.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
 
-        groups.sort(key=lambda g: g[2])
-        _GAP = 0.01
-        clamped: list[tuple[SubtitleCue | None, str | None, float, float]] = []
-        prev_end = -1.0
-        for i, (zc, en_text, s, e) in enumerate(groups):
-            if zc is None:
-                if prev_end > 0:
-                    s = max(s, prev_end + _GAP)
-                if i + 1 < len(groups):
-                    nxt_start = groups[i + 1][2]
-                    if e > nxt_start - _GAP:
-                        e = max(s + _GAP, nxt_start - _GAP)
-                if s >= e:
-                    continue
-            clamped.append((zc, en_text, s, e))
-            prev_end = e
-
-        for zc, en_text, start_s, end_s in clamped:
+        for zc, en_text, start_s, end_s in groups:
             parts: list[str] = []
             if zc is not None:
                 parts.append(zc.text.replace("\n", "\\N"))
@@ -274,6 +292,30 @@ def export_bilingual_ass(
                 parts.append(f"{{\\fs14}}{en_text}")
             text = "\\N".join(parts)
             f.write(f"Dialogue: 0,{seconds_to_ass(start_s)},{seconds_to_ass(end_s)},Bilingual,,0,0,0,,{text}\n")
+
+
+def export_bilingual_vtt(
+    en_cues: list[SubtitleCue],
+    zh_cues: list[SubtitleCue],
+    output_path: str,
+    source_segments: list[Segment] | None = None,
+) -> None:
+    """Export bilingual WebVTT for web playback (ZH line, then EN line per cue)."""
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    groups = _build_bilingual_groups(en_cues, zh_cues, source_segments)
+
+    with open(output, "w", encoding="utf-8") as f:
+        f.write("WEBVTT\n\n")
+        cue_idx = 1
+        for zc, en_text, start_s, end_s in groups:
+            text = _bilingual_plain_text(zc, en_text)
+            if not text:
+                continue
+            f.write(f"{cue_idx}\n")
+            f.write(f"{seconds_to_vtt(start_s)} --> {seconds_to_vtt(end_s)}\n")
+            f.write(f"{text}\n\n")
+            cue_idx += 1
 
 
 def export_transcript(

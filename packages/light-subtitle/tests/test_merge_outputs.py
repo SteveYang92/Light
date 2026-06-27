@@ -228,8 +228,11 @@ def test_copy_single_segment_overwrites_existing_slug_files(tmp_path: Path) -> N
     seg_dir = tmp_path / ".seg1"
     seg_dir.mkdir()
     (seg_dir / "bilingual.ass").write_text("new", encoding="utf-8")
+    (seg_dir / "bilingual.vtt").write_text("WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\n新\nnew\n\n", encoding="utf-8")
     (tmp_path / f"{slug}.bilingual.ass").write_text("old", encoding="utf-8")
+    (tmp_path / f"{slug}.bilingual.vtt").write_text("old", encoding="utf-8")
 
     _copy_single_segment(tmp_path, seg_dir, slug)
 
     assert (tmp_path / f"{slug}.bilingual.ass").read_text(encoding="utf-8") == "new"
+    assert "新" in (tmp_path / f"{slug}.bilingual.vtt").read_text(encoding="utf-8")

@@ -6,12 +6,14 @@ import type videojs from "video.js";
 import { fetchJSON, listenSSE, postJSON } from "../api/client";
 import ProgressStepper from "../components/ProgressStepper";
 import SubtitleControls from "../components/SubtitleControls";
-import { extractSubLang, cueTextAt, parseVtt, type TimedCue } from "../lib/vtt";
+import { extractSubLang, cueTextAt, cueTextAtRaw, parseVtt, splitBilingualCue, type TimedCue } from "../lib/vtt";
 import { attachMobilePlayerGestures } from "../lib/mobilePlayerGestures";
 import { attachPauseIconOverlay } from "../lib/pauseIconOverlay";
 import {
   chunkHasAnnotations,
+  chunkHasBilingual,
   resolveAnnotationUrl,
+  resolveBilingualVttUrl,
   syncPlayerTextTracks,
 } from "../lib/playerTracks";
 import type { Video } from "../types";
@@ -24,6 +26,7 @@ interface SavedPlaybackPosition {
   muted: boolean;
   volume: number;
   wasPlaying: boolean;
+  subMode?: string;
   updatedAt: number;
 }
 
@@ -56,15 +59,18 @@ function readSavedPlaybackPosition(videoId: string | undefined): SavedPlaybackPo
       return null;
     }
 
-    const hasTrustedAudioState = parsed.version === 2 || parsed.version === 3;
+    const hasTrustedAudioState = parsed.version === 2 || parsed.version === 3 || parsed.version === 4;
     return {
-      version: 3,
+      version: 4,
       chunkId: parsed.chunkId,
       chunkIndex: Math.max(0, Math.floor(parsed.chunkIndex)),
       time: Math.max(0, parsed.time),
       muted: hasTrustedAudioState && typeof parsed.muted === "boolean" ? parsed.muted : false,
       volume: hasTrustedAudioState && typeof parsed.volume === "number" ? Math.min(1, Math.max(0, parsed.volume)) : 1,
-      wasPlaying: parsed.version === 3 && typeof parsed.wasPlaying === "boolean" ? parsed.wasPlaying : true,
+      wasPlaying: (parsed.version === 3 || parsed.version === 4) && typeof parsed.wasPlaying === "boolean"
+        ? parsed.wasPlaying
+        : true,
+      subMode: parsed.version === 4 && typeof parsed.subMode === "string" ? parsed.subMode : undefined,
       updatedAt: parsed.updatedAt,
     };
   } catch {
@@ -118,24 +124,27 @@ export default function Player() {
   );
 
   const [currentChunkIdx, setCurrentChunkIdx] = useState(0);
-  const [subLang, setSubLang] = useState<string>("zh");
+  const [subMode, setSubMode] = useState<string>("zh");
   const [subEnabled, setSubEnabled] = useState(true);
   const [annotationsEnabled, setAnnotationsEnabled] = useState(false);
   const [playerEpoch, setPlayerEpoch] = useState(0);
   const [annotationText, setAnnotationText] = useState("");
+  const [bilingualLines, setBilingualLines] = useState<{ zh: string; en: string } | null>(null);
   const [annotationOverlayEl, setAnnotationOverlayEl] = useState<HTMLDivElement | null>(null);
+  const [bilingualOverlayEl, setBilingualOverlayEl] = useState<HTMLDivElement | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<ReturnType<typeof videojs> | null>(null);
   const trackCleanupRef = useRef<(() => void) | null>(null);
   const annotationCuesRef = useRef<TimedCue[]>([]);
-  const subSettingsRef = useRef({ subLang, subEnabled });
+  const bilingualCuesRef = useRef<TimedCue[]>([]);
+  const subSettingsRef = useRef({ subMode, subEnabled });
   const savedPlaybackRef = useRef<SavedPlaybackPosition | null>(null);
   const pendingSeekRef = useRef<{ chunkId: string; time: number } | null>(null);
   const restoredVideoIdRef = useRef<string | null>(null);
   const lastPlaybackSaveAtRef = useRef(0);
   const shouldAutoPlayRef = useRef(true);
 
-  subSettingsRef.current = { subLang, subEnabled };
+  subSettingsRef.current = { subMode, subEnabled };
 
   // Restore local playback position when navigating to a video.
   useEffect(() => {
@@ -147,6 +156,7 @@ export default function Player() {
     shouldAutoPlayRef.current = saved?.wasPlaying ?? true;
     setCurrentChunkIdx(saved?.chunkIndex ?? 0);
     setSubEnabled(true);
+    if (saved?.subMode) setSubMode(saved.subMode);
   }, [id]);
 
   const chunks = video?.chunks ?? [];
@@ -177,19 +187,47 @@ export default function Player() {
     setAnnotationsEnabled(chunkHasAnnotations(currentChunk));
   }, [id, currentChunk?.id, currentChunk?.subtitles]);
 
-  // Pick default language when opening a video
+  // Pick default subtitle mode when opening a video
   useEffect(() => {
     if (!video?.chunks?.length) return;
     const langs = new Set<string>();
+    let anyBilingual = false;
     for (const c of video.chunks) {
+      if (chunkHasBilingual(c)) anyBilingual = true;
       for (const k of c.subtitles ?? []) {
         const lang = extractSubLang(k);
         if (lang) langs.add(lang);
       }
     }
-    if (langs.size === 0) return;
-    setSubLang(langs.has("zh") ? "zh" : Array.from(langs)[0]);
+    if (langs.size === 0 && !anyBilingual) return;
+
+    const saved = savedPlaybackRef.current;
+    if (saved?.subMode) {
+      if (saved.subMode === "bilingual" && anyBilingual) {
+        setSubMode("bilingual");
+        return;
+      }
+      if (saved.subMode !== "bilingual" && langs.has(saved.subMode)) {
+        setSubMode(saved.subMode);
+        return;
+      }
+    }
+
+    if (anyBilingual && langs.has("zh")) {
+      setSubMode("bilingual");
+    } else if (langs.has("zh")) {
+      setSubMode("zh");
+    } else {
+      setSubMode(Array.from(langs)[0]);
+    }
   }, [id, video?.id]);
+
+  // Fall back when the current chunk lacks bilingual.vtt
+  useEffect(() => {
+    if (subMode === "bilingual" && !chunkHasBilingual(currentChunk)) {
+      setSubMode("zh");
+    }
+  }, [currentChunk?.id, currentChunk?.subtitles, subMode]);
 
   const syncTracks = useCallback(() => {
     const player = playerRef.current;
@@ -197,8 +235,10 @@ export default function Player() {
     if (!player || !chunk) return;
 
     trackCleanupRef.current?.();
-    const { subLang: lang, subEnabled: mainOn } = subSettingsRef.current;
-    trackCleanupRef.current = syncPlayerTextTracks(player, chunk, lang, mainOn);
+    const { subMode: mode, subEnabled: mainOn } = subSettingsRef.current;
+    const useBilingualOverlay = mode === "bilingual";
+    const trackLang = useBilingualOverlay ? "zh" : mode;
+    trackCleanupRef.current = syncPlayerTextTracks(player, chunk, trackLang, mainOn, useBilingualOverlay);
   }, [currentChunk]);
 
   const savePlaybackPosition = useCallback((chunkIdx = currentChunkIdx, time?: number, wasPlaying?: boolean) => {
@@ -209,13 +249,14 @@ export default function Player() {
 
     const player = playerRef.current;
     const position: SavedPlaybackPosition = {
-      version: 3,
+      version: 4,
       chunkId: chunk.id,
       chunkIndex: chunkIdx,
       time: Math.max(0, time ?? player?.currentTime() ?? 0),
       muted: player?.muted() ?? savedPlaybackRef.current?.muted ?? false,
       volume: player?.volume() ?? savedPlaybackRef.current?.volume ?? 1,
       wasPlaying: wasPlaying ?? (player ? !player.paused() : savedPlaybackRef.current?.wasPlaying ?? false),
+      subMode: subSettingsRef.current.subMode,
       updatedAt: Date.now(),
     };
     savedPlaybackRef.current = position;
@@ -292,6 +333,7 @@ export default function Player() {
       trackCleanupRef.current?.();
       trackCleanupRef.current = null;
       setAnnotationOverlayEl(null);
+      setBilingualOverlayEl(null);
 
       if (playerRef.current) {
         playerRef.current.dispose();
@@ -344,6 +386,11 @@ export default function Player() {
       const annotationOverlay = document.createElement("div");
       player.el().appendChild(annotationOverlay);
       setAnnotationOverlayEl(annotationOverlay);
+
+      const bilingualOverlay = document.createElement("div");
+      bilingualOverlay.className = "vjs-light-bilingual-overlay";
+      player.el().appendChild(bilingualOverlay);
+      setBilingualOverlayEl(bilingualOverlay);
 
       let autoPlayAttempted = false;
 
@@ -412,6 +459,7 @@ export default function Player() {
         autoPlayFallbackTimer = null;
       }
       setAnnotationOverlayEl(null);
+      setBilingualOverlayEl(null);
     };
   }, [currentChunkIdx, currentChunk?.id]);
 
@@ -422,7 +470,7 @@ export default function Player() {
       trackCleanupRef.current?.();
       trackCleanupRef.current = null;
     };
-  }, [subLang, subEnabled, playerEpoch, syncTracks]);
+  }, [subMode, subEnabled, playerEpoch, syncTracks]);
 
   // ── Annotation overlay (top-left) — independent of Video.js text tracks ──
   useEffect(() => {
@@ -481,6 +529,67 @@ export default function Player() {
     };
   }, [annotationsEnabled, playerEpoch, currentChunk?.id]);
 
+  // ── Bilingual overlay (bottom-center) — independent of Video.js text tracks ──
+  useEffect(() => {
+    const useBilingual = subMode === "bilingual" && subEnabled;
+    if (!useBilingual || !currentChunk) {
+      bilingualCuesRef.current = [];
+      setBilingualLines(null);
+      return;
+    }
+
+    const url = resolveBilingualVttUrl(currentChunk);
+    if (!url) {
+      bilingualCuesRef.current = [];
+      setBilingualLines(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetch(url)
+      .then((res) => (res.ok ? res.text() : Promise.reject(new Error(String(res.status)))))
+      .then((text) => {
+        if (cancelled) return;
+        bilingualCuesRef.current = parseVtt(text);
+        const t = playerRef.current?.currentTime() ?? 0;
+        const raw = cueTextAtRaw(bilingualCuesRef.current, t);
+        setBilingualLines(raw ? splitBilingualCue(raw) : null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          bilingualCuesRef.current = [];
+          setBilingualLines(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [subMode, subEnabled, currentChunk?.id, currentChunk?.subtitles]);
+
+  useEffect(() => {
+    const player = playerRef.current;
+    const useBilingual = subMode === "bilingual" && subEnabled;
+    if (!player || !useBilingual) {
+      setBilingualLines(null);
+      return;
+    }
+
+    const onTime = () => {
+      const raw = cueTextAtRaw(bilingualCuesRef.current, player.currentTime());
+      setBilingualLines(raw ? splitBilingualCue(raw) : null);
+    };
+
+    player.on("timeupdate", onTime);
+    player.on("seeked", onTime);
+    onTime();
+
+    return () => {
+      player.off("timeupdate", onTime);
+      player.off("seeked", onTime);
+    };
+  }, [subMode, subEnabled, playerEpoch, currentChunk?.id]);
+
   // Persist playback position so mobile tab discard/background restores correctly.
   useEffect(() => {
     const player = playerRef.current;
@@ -524,6 +633,7 @@ export default function Player() {
     return () => {
       trackCleanupRef.current?.();
       setAnnotationOverlayEl(null);
+      setBilingualOverlayEl(null);
       if (playerRef.current) {
         playerRef.current.dispose();
         playerRef.current = null;
@@ -569,6 +679,7 @@ export default function Player() {
   const isProcessing = video.status === "processing" || video.status === "pending";
   const hasNoChunks = chunks.length === 0;
   const hasAnnotations = chunkHasAnnotations(currentChunk);
+  const hasBilingual = chunkHasBilingual(currentChunk);
 
   if (isProcessing && hasNoChunks) {
     return (
@@ -653,16 +764,31 @@ export default function Player() {
               annotationOverlayEl,
             )
           )}
+          {bilingualOverlayEl && subMode === "bilingual" && subEnabled && bilingualLines
+            && (bilingualLines.zh || bilingualLines.en) && (
+            createPortal(
+              <>
+                {bilingualLines.zh && (
+                  <div className="vjs-light-bilingual-zh">{bilingualLines.zh}</div>
+                )}
+                {bilingualLines.en && (
+                  <div className="vjs-light-bilingual-en">{bilingualLines.en}</div>
+                )}
+              </>,
+              bilingualOverlayEl,
+            )
+          )}
 
           <div className="mt-3">
             <SubtitleControls
               languages={Array.from(subLangs)}
-              subLang={subLang}
+              subMode={subMode}
               subEnabled={subEnabled}
+              hasBilingual={hasBilingual}
               annotationsEnabled={annotationsEnabled}
               hasAnnotations={hasAnnotations}
               onSubEnabledChange={setSubEnabled}
-              onSubLangChange={setSubLang}
+              onSubModeChange={setSubMode}
               onAnnotationsChange={setAnnotationsEnabled}
             />
           </div>
