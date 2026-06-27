@@ -38,7 +38,7 @@ def test_evaluate_uses_covered_source_for_merged_cue(monkeypatch):
 
     def fake_evaluate_batch(pairs, config, batch_num):
         captured.extend(src for _, src in pairs)
-        return []
+        return [], {}
 
     monkeypatch.setattr(
         "light_subtitle.pipeline.translate.evaluate._evaluate_batch",
@@ -52,7 +52,7 @@ def test_evaluate_uses_covered_source_for_merged_cue(monkeypatch):
         evaluate_enabled=True,
         llm_api_key="test-key",
     )
-    evaluate_translations(cues, segments, config)
+    scores, _usage = evaluate_translations(cues, segments, config)
     assert captured == ["First second"]
 
 

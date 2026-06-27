@@ -14,6 +14,7 @@ from ... import logger
 from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
+from ...usage.tracker import merge_token_usage
 from .merge_apply import apply_display_merges, covered_unit_ids
 from .merge_review import MergeHint, log_merge_hints, review_merge_hints
 
@@ -287,7 +288,8 @@ def _translate_batch(
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
             cues, parsed_texts = _parse_response(response, segments, config, all_segments)
-            merge_hints = review_merge_hints(client, segments, parsed_texts, config)
+            merge_hints, review_usage = review_merge_hints(client, segments, parsed_texts, config)
+            merge_token_usage(usage, review_usage)
             log_merge_hints(merge_hints)
             return cues, usage, merge_hints
         except (json.JSONDecodeError, ValueError) as e:
@@ -650,7 +652,9 @@ def translate_missing(
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
             cues, parsed_texts = _parse_response(response, [s], config, segments)
-            log_merge_hints(review_merge_hints(client, [s], parsed_texts, config))
+            merge_hints, review_usage = review_merge_hints(client, [s], parsed_texts, config)
+            merge_token_usage(usage, review_usage)
+            log_merge_hints(merge_hints)
             all_cues.extend(cues)
             for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
                 total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)

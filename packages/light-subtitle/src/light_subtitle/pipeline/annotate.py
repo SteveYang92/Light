@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from light_models import Segment, SubtitleCue, covered_source_text
 
@@ -15,6 +16,7 @@ from .. import logger
 from ..config import SubtitleConfig
 from ..llm.client import OpenAIClient
 from ..llm.prompts import render_prompt
+from ..usage.tracker import merge_token_usage, save_step_usage
 
 BATCH_SIZE = 20
 
@@ -23,7 +25,8 @@ def generate_annotations(
     translated_cues: list[SubtitleCue],
     source_segments: list[Segment],
     config: SubtitleConfig,
-) -> list[SubtitleCue]:
+    output_dir: str | Path | None = None,
+) -> tuple[list[SubtitleCue], dict | None]:
     """Annotate translated cues with LLM-generated explanatory notes.
 
     Returns the same cue list with ``annotation`` fields populated
@@ -34,7 +37,7 @@ def generate_annotations(
     A post-hoc dedup step catches any remaining duplicates.
     """
     if not config.llm_api_key or not translated_cues:
-        return translated_cues
+        return translated_cues, None
 
     source_map: dict[str, str] = {s.unit_id: s.source_text for s in source_segments}
 
@@ -76,8 +79,7 @@ def generate_annotations(
             logger.warning(f"    ⚠ Annotation batch failed, skipping {len(batch)} cues")
             continue
 
-        for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
-            total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)
+        merge_token_usage(total_usage, usage)
 
         data = _extract_json(response)
         if data is None:
@@ -104,8 +106,10 @@ def generate_annotations(
     _dedup_annotations(translated_cues)
 
     logger.info(f"    Annotation tokens: {total_usage.get('total_tokens', 0)}")
+    if output_dir is not None and total_usage:
+        save_step_usage(Path(output_dir) / "annotations" / "usage.json", total_usage)
 
-    return translated_cues
+    return translated_cues, total_usage or None
 
 
 def _extract_json(response: str) -> list | None:

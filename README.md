@@ -281,9 +281,22 @@ output/
 │   ├── partial.json              翻译中间结果
 │   ├── raw.json                  LLM 原始翻译输出
 │   ├── source.json               源语对照字幕
-│   └── usage.json                Token 消耗统计
+│   └── usage.json                翻译环节 token 消耗（含 breakdown）
+├── usage_report.json             管线级 token 汇总与费用估算（见下方说明）
 └── qc_report.html                QC 报告（light-qc 生成，本地文件）
 ```
+
+### Token 消耗统计（`usage_report.json`）
+
+管线结束后在 output 根目录生成 `usage_report.json`，按步骤汇总 LLM token 消耗（`correct` / `punct` / `context` / `translate.*` / `annotate`）。各步骤还会在对应 artifact 目录写入 `usage.json`（如 `punct_restore/usage.json`）。
+
+- **Token 字段**：优先使用 API 返回的完整 usage（含 `prompt_cache_hit_tokens` / `prompt_cache_miss_tokens`）。
+- **费用 `cost.source`**：
+  - `api`：响应含直接费用字段（如 `cost_usd`）
+  - `api_buckets`：用 API 分桶 token × fallback 单价推算（DeepSeek 默认路径）
+  - `fallback`：仅 flat prompt/completion token 时的推算
+  - `unknown`：无法估算（仍含 token 统计）
+- **长视频**：各 `.seg*` 分段各自生成 report，合并后根目录写入汇总 report。
 
 ## 关键约束
 

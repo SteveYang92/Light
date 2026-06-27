@@ -18,6 +18,7 @@ from .run_state import RunStateManager
 from .state_hydrate import hydrate_state
 from .step_plan import build_step_plan, resolve_start_index, validate_artifacts
 from .step_registry import ASR_STEP_IDS
+from .usage.tracker import UsageTracker
 
 # ── Progress callback type ─────────────────────────────
 
@@ -95,6 +96,7 @@ class Orchestrator:
         )
         logger.info(f"{tag}[{mode}] Processing {self.config.input_path}")
 
+        self.usage_tracker = UsageTracker(model=self.config.llm_model)
         self._state_mgr = RunStateManager(self.config.output_dir)
         plan = build_step_plan(self.config)
         run_state = self._state_mgr.load() if (self.config.resume or self.config.resume_from) else None
@@ -108,6 +110,7 @@ class Orchestrator:
             hydrate_state(self, plan, start_idx)
             if run_state is None:
                 self._state_mgr.begin(self.config.input_path, self.config.output_dir)
+            self.usage_tracker.load_from_dir(self.config.output_dir)
 
         self._install_interrupt_handler()
 
@@ -122,6 +125,7 @@ class Orchestrator:
             self._on_asr_complete()
             if not remaining:
                 logger.info(f"{tag}Done (already complete).")
+                self._finalize_usage_report(tag)
                 return
 
         logger.info(f"{tag}── Steps ({len(remaining)} to run) ──")
@@ -154,7 +158,18 @@ class Orchestrator:
                     self._on_asr_complete()
 
         self._state_mgr.mark_run_completed()
+        self._finalize_usage_report(tag)
         logger.info(f"{tag}Done.")
+
+    def _finalize_usage_report(self, tag: str) -> None:
+        """Write usage_report.json and log a summary."""
+        if not self.usage_tracker._steps:
+            self.usage_tracker.load_from_dir(self.config.output_dir)
+        if not self.usage_tracker._steps:
+            return
+        self.usage_tracker.save_report(self.config.output_dir)
+        for line in self.usage_tracker.format_summary().splitlines():
+            logger.info(f"{tag}{line}")
 
     def _install_interrupt_handler(self) -> None:
         """Install SIGINT/SIGTERM handlers (main thread only)."""

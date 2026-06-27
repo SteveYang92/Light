@@ -18,3 +18,4 @@ class TranslateContext:
 
     translated_cues: list[SubtitleCue] = field(default_factory=list)
     usage: dict | None = None
+    usage_breakdown: dict[str, dict] = field(default_factory=dict)

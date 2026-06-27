@@ -36,6 +36,7 @@ from .state_hydrate import (
     hydrate_words_after_correct,
     hydrate_words_after_punct,
 )
+from .usage.tracker import merge_token_usage, usage_delta
 
 if TYPE_CHECKING:
     from .orchestrator import Orchestrator
@@ -228,9 +229,11 @@ def _run_translate_compose(orch: Orchestrator) -> None:
     compose_dir = _compose_dir(orch.config)
     compose_dir.mkdir(parents=True, exist_ok=True)
     if not orch.state.composed_segments:
-        orch.state.composed_segments = translate_pipeline.compose_and_split(
+        orch.state.composed_segments, split_usage = translate_pipeline.compose_and_split(
             orch.state.segments, orch.config, compose_dir
         )
+        if split_usage:
+            orch.usage_tracker.record("translate.compose_split", split_usage)
     translate_pipeline.save_segment_words(orch.state.composed_segments, compose_dir)
     orch.state.raw_source_cues = build_source_cues(orch.state.composed_segments, orch.state.source_lang)
 
@@ -241,6 +244,9 @@ def _run_translate_translate(orch: Orchestrator) -> None:
     tx_dir = _tx_dir(orch.config)
     logger.info("  Translating...")
     orch.tx_ctx.translated_cues, orch.tx_ctx.usage = translate_live(orch.state.composed_segments, orch.config, tx_dir)
+    if orch.tx_ctx.usage:
+        orch.tx_ctx.usage_breakdown["translate.translate"] = dict(orch.tx_ctx.usage)
+        orch.usage_tracker.record("translate.translate", orch.tx_ctx.usage)
     logger.info(f"  Translation: {len(orch.tx_ctx.translated_cues)} translated cues")
     _sync_translate_state(orch)
 
@@ -248,24 +254,34 @@ def _run_translate_translate(orch: Orchestrator) -> None:
 def _run_translate_retry(orch: Orchestrator) -> None:
     if not _ensure_translate_ready(orch):
         return
+    before_usage = dict(orch.tx_ctx.usage or {})
     orch.tx_ctx.translated_cues, orch.tx_ctx.usage = translate_pipeline.retry_missing(
         orch.tx_ctx.translated_cues,
         orch.state.composed_segments,
         orch.config,
         orch.tx_ctx.usage,
     )
+    retry_usage = usage_delta(before_usage, orch.tx_ctx.usage)
+    if retry_usage:
+        orch.tx_ctx.usage_breakdown["translate.retry"] = retry_usage
+        orch.usage_tracker.record("translate.retry", retry_usage)
     _sync_translate_state(orch)
 
 
 def _run_translate_evaluate(orch: Orchestrator) -> None:
     if not _ensure_translate_ready(orch):
         return
-    orch.tx_ctx.translated_cues = translate_pipeline.evaluate_and_refine(
+    orch.tx_ctx.translated_cues, eval_breakdown = translate_pipeline.evaluate_and_refine(
         orch.tx_ctx.translated_cues,
         orch.state.composed_segments,
         orch.config,
         _tx_dir(orch.config),
     )
+    if eval_breakdown:
+        orch.tx_ctx.usage_breakdown.update(eval_breakdown)
+        orch.usage_tracker.record_breakdown(eval_breakdown)
+        for step_usage in eval_breakdown.values():
+            merge_token_usage(orch.tx_ctx.usage, step_usage)
     _sync_translate_state(orch)
 
 
@@ -277,6 +293,7 @@ def _run_translate_save(orch: Orchestrator) -> None:
         orch.state.raw_source_cues,
         orch.tx_ctx.usage,
         _tx_dir(orch.config),
+        breakdown=orch.tx_ctx.usage_breakdown or None,
     )
     _sync_translate_state(orch)
 
@@ -342,11 +359,15 @@ def _format_progress_end(orch: Orchestrator) -> None:
 
 
 def _run_correct(orch: Orchestrator) -> None:
-    orch.state.words = correct_transcript(orch.state.words, orch.config, orch.config.output_dir)
+    orch.state.words, usage = correct_transcript(orch.state.words, orch.config, orch.config.output_dir)
+    if usage and isinstance(usage.get("breakdown"), dict):
+        orch.usage_tracker.record_breakdown(usage["breakdown"])
 
 
 def _run_punct(orch: Orchestrator) -> None:
-    orch.state.words = restore_punctuation(orch.state.words, orch.config, orch.config.output_dir)
+    orch.state.words, usage = restore_punctuation(orch.state.words, orch.config, orch.config.output_dir)
+    if usage:
+        orch.usage_tracker.record("punct", usage)
 
 
 def _run_segment(orch: Orchestrator) -> None:
@@ -367,13 +388,15 @@ def _run_segment(orch: Orchestrator) -> None:
 
 def _run_context(orch: Orchestrator) -> None:
     if orch.config.context_prep_enabled:
-        result = context_prep_pipeline.prepare_context(
+        result, usage = context_prep_pipeline.prepare_context(
             orch.state.segments,
             orch.config,
             orch.config.output_dir,
         )
         orch.state.auto_glossary = result.glossary
         orch.state.content_summary = result.summary
+        if usage:
+            orch.usage_tracker.record("context", usage)
 
     orch.state.merged_glossary = context_prep_pipeline.merge_glossary(
         orch.state.auto_glossary,
@@ -395,11 +418,14 @@ def _run_annotate(orch: Orchestrator) -> None:
         return
 
     logger.info("  Generating annotations...")
-    orch.state.translated_cues = annotate_pipeline.generate_annotations(
+    orch.state.translated_cues, usage = annotate_pipeline.generate_annotations(
         orch.state.translated_cues,
-        orch.state.segments,
+        orch.state.composed_segments or orch.state.segments,
         orch.config,
+        orch.config.output_dir,
     )
+    if usage:
+        orch.usage_tracker.record("annotate", usage)
     orch.state.annotations = {c.unit_id: c.annotation for c in orch.state.translated_cues if c.annotation}
     logger.info(f"  Annotations: {len(orch.state.annotations)} terms annotated")
 

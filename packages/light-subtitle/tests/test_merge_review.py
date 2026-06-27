@@ -161,7 +161,7 @@ class TestGapFilters:
             json.dumps([{"batch_index": 0, "merge_with_next": True}, {"batch_index": 1, "merge_with_next": False}]),
             {},
         )
-        hints = review_merge_hints(client, segments, texts, _config())
+        hints, _usage = review_merge_hints(client, segments, texts, _config())
         assert hints == []
 
 
@@ -174,7 +174,7 @@ class TestReviewMergeHints:
             json.dumps([{"batch_index": 0, "merge_with_next": True}, {"batch_index": 1, "merge_with_next": False}]),
             {},
         )
-        hints = review_merge_hints(client, segments, texts, _config())
+        hints, _usage = review_merge_hints(client, segments, texts, _config())
         assert len(hints) == 1
         assert hints[0][2] == "这家工厂生产的"
         assert "外壳" in hints[0][3]
@@ -198,7 +198,7 @@ class TestReviewMergeHints:
 
     def test_single_segment_skips_review(self):
         client = MagicMock()
-        hints = review_merge_hints(client, [_seg("u0", "a")], {0: "单独一句。"}, _config())
+        hints, _usage = review_merge_hints(client, [_seg("u0", "a")], {0: "单独一句。"}, _config())
         assert hints == []
         client.chat.assert_not_called()
 

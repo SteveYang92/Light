@@ -30,6 +30,7 @@ from light_models.punctuation import CJK_CLAUSE_PUNCT, SENTENCE_ENDS
 
 from ... import logger
 from ...config import SubtitleConfig
+from ...llm.client import OpenAIClient, merge_token_usage
 from ...llm.prompts import render_prompt
 from .evaluate import QualityScore
 
@@ -51,7 +52,7 @@ def refine_translations(
     all_segments: list[Segment],
     quality_scores: list[QualityScore],
     config: SubtitleConfig,
-) -> list[SubtitleCue]:
+) -> tuple[list[SubtitleCue], dict | None]:
     """Re-translate low-quality translations with diagnostic feedback.
 
     For each low-scoring segment, includes up to CONTEXT_WINDOW neighbouring
@@ -63,7 +64,7 @@ def refine_translations(
     the main cue list.
     """
     if not config.llm_api_key or not low_score_ids:
-        return []
+        return [], None
 
     # Build lookup maps.
     cue_map: dict[str, SubtitleCue] = {c.unit_id: c for c in all_cues}
@@ -76,7 +77,7 @@ def refine_translations(
             tasks.append((idx, seg.unit_id, seg))
 
     if not tasks:
-        return []
+        return [], None
 
     # ── Group consecutive low-scoring segments for coherent refinement ──
     groups = _group_consecutive(tasks)
@@ -86,8 +87,6 @@ def refine_translations(
         f" in {len(groups)} group(s) (threshold < {config.quality_threshold})..."
     )
 
-    from ...llm.client import OpenAIClient
-
     client = OpenAIClient(
         base_url=config.llm_base_url,
         api_key=config.llm_api_key,
@@ -95,18 +94,20 @@ def refine_translations(
     )
 
     refined_cues: list[SubtitleCue] = []
+    total_usage: dict = {}
 
     # Process in small batches to amortize LLM overhead.
     for batch_idx in range(0, len(groups), REFINE_BATCH_SIZE):
         batch = groups[batch_idx : batch_idx + REFINE_BATCH_SIZE]
-        batch_cues = _refine_batch(batch, all_segments, cue_map, score_map, client, config)
+        batch_cues, usage = _refine_batch(batch, all_segments, cue_map, score_map, client, config)
         refined_cues.extend(batch_cues)
+        merge_token_usage(total_usage, usage)
 
     failed = len(low_score_ids) - len(refined_cues)
     if failed > 0:
         logger.warning(f"    ⚠ {failed} refinement(s) failed, keeping originals")
 
-    return refined_cues
+    return refined_cues, total_usage or None
 
 
 # ── Consecutive grouping ────────────────────────────────────────────────────
@@ -138,19 +139,19 @@ def _refine_batch(
     score_map: dict[str, QualityScore],
     client,
     config: SubtitleConfig,
-) -> list[SubtitleCue]:
+) -> tuple[list[SubtitleCue], dict]:
     """Refine a batch of low-quality translation groups."""
     prompt = _build_refine_prompt(groups, all_segments, cue_map, score_map, config)
 
     messages = [{"role": "user", "content": prompt}]
 
     try:
-        response, _ = client.chat(messages, temperature=0.2)
+        response, usage = client.chat(messages, temperature=0.2)
     except Exception as e:
         logger.warning(f"      ⚠ Refine batch failed: {e}")
-        return []
+        return [], {}
 
-    return _parse_refine_response(response, groups, cue_map, config)
+    return _parse_refine_response(response, groups, cue_map, config), usage
 
 
 # ── Prompt construction ──────────────────────────────────────────────────────

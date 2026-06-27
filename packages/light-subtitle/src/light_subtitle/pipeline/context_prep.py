@@ -16,8 +16,9 @@ from light_models import Segment
 
 from .. import logger
 from ..config import SubtitleConfig
-from ..llm.client import OpenAIClient, format_token_usage
+from ..llm.client import OpenAIClient
 from ..llm.prompts import render_prompt
+from ..usage.tracker import format_token_usage, save_step_usage
 
 
 @dataclass
@@ -41,10 +42,10 @@ def prepare_context(
     segments: list[Segment],
     config: SubtitleConfig,
     output_dir: str | Path,
-) -> ContextPrepResult:
+) -> tuple[ContextPrepResult, dict | None]:
     """Extract glossary and content summary from *segments* via LLM."""
     if not segments or not config.llm_api_key or not config.context_prep_enabled:
-        return ContextPrepResult()
+        return ContextPrepResult(), None
 
     output_dir = Path(output_dir)
     context_dir = output_dir / "context"
@@ -53,10 +54,15 @@ def prepare_context(
     glossary_path = context_dir / "glossary.json"
     summary_path = context_dir / "summary.json"
 
+    usage_path = context_dir / "usage.json"
+
     if glossary_path.exists() and summary_path.exists():
         result = _load_cached_context(glossary_path, summary_path)
         logger.info(f"  Context prep (cached): {len(result.glossary)} glossary terms")
-        return result
+        cached_usage: dict | None = None
+        if usage_path.exists():
+            cached_usage = json.loads(usage_path.read_text(encoding="utf-8"))
+        return result, cached_usage
 
     transcript_text = build_transcript_text(segments)
     (context_dir / "transcript.txt").write_text(transcript_text, encoding="utf-8")
@@ -76,16 +82,17 @@ def prepare_context(
         response, usage = client.chat([{"role": "user", "content": prompt}], temperature=0.1)
     except Exception as e:
         logger.warning(f"  Context prep failed: {e}")
-        return ContextPrepResult()
+        return ContextPrepResult(), None
 
     result = _parse_context_response(response)
     _save_context(context_dir, result)
+    save_step_usage(usage_path, usage)
     logger.info(
         f"  Context prep: {len(segments)} segments, {len(transcript_text)} chars, "
         f"{len(result.glossary)} glossary terms, summary={'yes' if result.summary else 'no'}, "
         f"{format_token_usage(usage)}"
     )
-    return result
+    return result, usage
 
 
 def load_cached_context(output_dir: str | Path) -> ContextPrepResult:

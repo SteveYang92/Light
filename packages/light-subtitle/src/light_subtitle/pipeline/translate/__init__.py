@@ -18,6 +18,7 @@ from light_models import Segment, SubtitleCue, Word
 
 from ... import logger
 from ...config import SubtitleConfig
+from ...usage.tracker import merge_token_usage, save_step_usage
 from .. import export
 from .compose import compose_segments
 from .context import TranslateContext as TranslateContext
@@ -42,7 +43,7 @@ def _compose_and_split(
     segments: list[Segment],
     config: SubtitleConfig,
     tx_dir: Path,
-) -> list[Segment]:
+) -> tuple[list[Segment], dict | None]:
     """Compose fragments → split overlong units → save debug compose.json."""
     tx_dir.mkdir(parents=True, exist_ok=True)
     clear_partial_cache(tx_dir)
@@ -58,8 +59,10 @@ def _compose_and_split(
     translation_segments = compose_segments(segments)
     logger.info(f"  Compose: {len(segments)} segments → {len(translation_segments)} translation units")
 
-    translation_segments = split_overlong_units(translation_segments, config)
+    translation_segments, split_usage = split_overlong_units(translation_segments, config)
     logger.info(f"  Split overlong: → {len(translation_segments)} units after splitting")
+    if split_usage:
+        save_step_usage(tx_dir / "usage.json", split_usage)
 
     # Debug: save compose results (after splitting).
     compose_out = [
@@ -75,7 +78,7 @@ def _compose_and_split(
     ]
     (tx_dir / "compose.json").write_text(json.dumps(compose_out, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    return translation_segments
+    return translation_segments, split_usage
 
 
 def load_cached_translation(
@@ -128,17 +131,21 @@ def _save_translation_artifacts(
     source_cues: list[SubtitleCue],
     usage: dict | None,
     tx_dir: Path,
+    breakdown: dict[str, dict] | None = None,
 ) -> None:
     """Save raw.json, source.json, and usage.json artifacts."""
     export.export_raw_cues(translated_cues, str(tx_dir / "raw.json"))
     export.export_raw_cues(source_cues, str(tx_dir / "source.json"))
     if usage:
+        payload = dict(usage)
+        if breakdown:
+            payload["breakdown"] = breakdown
         logger.info(
-            f"  Tokens: {usage.get('total_tokens', '?')} "
-            f"(prompt: {usage.get('prompt_tokens', '?')}, "
-            f"completion: {usage.get('completion_tokens', '?')})"
+            f"  Tokens: {payload.get('total_tokens', '?')} "
+            f"(prompt: {payload.get('prompt_tokens', '?')}, "
+            f"completion: {payload.get('completion_tokens', '?')})"
         )
-        export.export_json_file(usage, str(tx_dir / "usage.json"))
+        export.export_json_file(payload, str(tx_dir / "usage.json"))
 
 
 def _save_translation_segment_words(translation_segments: list[Segment], tx_dir: Path) -> None:
@@ -158,19 +165,22 @@ def _evaluate_and_refine(
     translation_segments: list[Segment],
     config: SubtitleConfig,
     tx_dir: Path,
-) -> list[SubtitleCue]:
+) -> tuple[list[SubtitleCue], dict[str, dict] | None]:
     """Evaluate translation quality and refine low-scoring cues.
 
-    Returns the (possibly refined) list of translated cues.
+    Returns the (possibly refined) list of translated cues and per-step usage.
     """
     if not config.evaluate_enabled or not translated_cues:
-        return translated_cues
+        return translated_cues, None
 
     logger.info("  Evaluating translation quality...")
-    quality_scores = evaluate_translations(translated_cues, translation_segments, config)
+    quality_scores, eval_usage = evaluate_translations(translated_cues, translation_segments, config)
+    breakdown: dict[str, dict] = {}
+    if eval_usage:
+        breakdown["translate.evaluate"] = eval_usage
 
     if not quality_scores:
-        return translated_cues
+        return translated_cues, breakdown or None
 
     avg_score = sum(s.overall for s in quality_scores) / len(quality_scores)
     low_count = len([s for s in quality_scores if s.overall < config.quality_threshold])
@@ -188,7 +198,11 @@ def _evaluate_and_refine(
         for round_num in range(config.max_refine_rounds):
             logger.info(f"    Refine round {round_num + 1}/{config.max_refine_rounds}...")
 
-            refined = refine_translations(low_ids, translated_cues, translation_segments, quality_scores, config)
+            refined, refine_usage = refine_translations(
+                low_ids, translated_cues, translation_segments, quality_scores, config
+            )
+            if refine_usage:
+                merge_token_usage(breakdown.setdefault("translate.refine", {}), refine_usage)
 
             if not refined:
                 break
@@ -199,7 +213,9 @@ def _evaluate_and_refine(
 
             # Re-evaluate refined cues for next round.
             if round_num < config.max_refine_rounds - 1:
-                quality_scores = evaluate_translations(translated_cues, translation_segments, config)
+                quality_scores, round_eval_usage = evaluate_translations(translated_cues, translation_segments, config)
+                if round_eval_usage:
+                    merge_token_usage(breakdown.setdefault("translate.evaluate", {}), round_eval_usage)
                 low_ids = get_low_score_cues(quality_scores, config.quality_threshold)
                 if not low_ids:
                     logger.info("    All translations now above threshold.")
@@ -219,7 +235,7 @@ def _evaluate_and_refine(
         str(tx_dir / "quality.json"),
     )
 
-    return translated_cues
+    return translated_cues, breakdown or None
 
 
 def _retry_missing_translations(
@@ -360,7 +376,7 @@ def load_compose_segments(tx_dir: Path, segments: list[Segment], config: Subtitl
     """Rebuild translation segments from compose.json when resuming mid-translate."""
     compose_path = tx_dir / "compose.json"
     if not compose_path.exists():
-        return _compose_and_split(segments, config, tx_dir)
+        return _compose_and_split(segments, config, tx_dir)[0]
 
     with open(compose_path, encoding="utf-8") as f:
         compose_data = json.load(f)
@@ -409,7 +425,8 @@ def run(
 
     # ── Step 1: Compose → split overlong ───────────────────────────
 
-    translation_segments = _compose_and_split(segments, config, tx_dir)
+    compose_dir = output_dir / "compose"
+    translation_segments, _split_usage = _compose_and_split(segments, config, compose_dir)
 
     # Persist word-level timing for resume / pace re-attachment.
     _save_translation_segment_words(translation_segments, tx_dir)
@@ -426,11 +443,21 @@ def run(
 
     # ── Step 3: Evaluate + refine ────────────────────────────────────
 
-    translated_cues = _evaluate_and_refine(translated_cues, translation_segments, config, tx_dir)
+    translated_cues, eval_breakdown = _evaluate_and_refine(translated_cues, translation_segments, config, tx_dir)
+
+    usage_breakdown: dict[str, dict] = {}
+    if usage:
+        usage_breakdown["translate.translate"] = {
+            k: usage.get(k) for k in ("prompt_tokens", "completion_tokens", "total_tokens", "calls") if k in usage
+        }
+    if eval_breakdown:
+        usage_breakdown.update(eval_breakdown)
+        for step_usage in eval_breakdown.values():
+            merge_token_usage(usage, step_usage)
 
     # ── Step 4: Save artifacts (final cues) ──────────────────────────
 
-    _save_translation_artifacts(translated_cues, source_cues, usage, tx_dir)
+    _save_translation_artifacts(translated_cues, source_cues, usage, tx_dir, breakdown=usage_breakdown or None)
 
     return TranslateResult(
         translated_cues=translated_cues,

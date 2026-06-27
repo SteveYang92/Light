@@ -17,6 +17,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .usage.report import load_usage_from_dir, merge_reports, write_usage_report
+from .usage.tracker import USAGE_REPORT_FILENAME
+
 # ── Time utilities ──────────────────────────────────────
 
 _SRT_TIME_RE = re.compile(r"(\d{2}):(\d{2}):(\d{2})[,.](\d{3})")
@@ -127,9 +130,11 @@ def merge_all(output_dir: Path, slug: str, overlap: float = 10) -> None:
 
     if len(seg_dirs) == 1:
         _copy_single_segment(output_dir, seg_dirs[0], slug)
+        _merge_usage_reports(output_dir, seg_dirs)
         return
 
     _merge_multi(output_dir, seg_dirs, slug, overlap)
+    _merge_usage_reports(output_dir, seg_dirs)
 
 
 # ── Multi-segment merge ─────────────────────────────────
@@ -274,6 +279,13 @@ def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
             dst.unlink()
         shutil.copy2(src, dst)
 
+    usage_src = seg_dir / USAGE_REPORT_FILENAME
+    if usage_src.exists():
+        usage_dst = output_dir / USAGE_REPORT_FILENAME
+        if usage_dst.exists():
+            usage_dst.unlink()
+        shutil.copy2(usage_src, usage_dst)
+
     # Copy video
     video_file = _find_video_file(seg_dir)
     if video_file:
@@ -282,6 +294,20 @@ def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
             shutil.copy2(video_file, dst)
 
     print(f"  Single segment: copied from {seg_dir.name}/ → {slug}.*", file=sys.stderr)
+
+
+def _merge_usage_reports(output_dir: Path, seg_dirs: list[Path]) -> None:
+    """Aggregate per-segment usage_report.json into the output root."""
+    reports = []
+    for seg_dir in seg_dirs:
+        report = load_usage_from_dir(seg_dir)
+        if report is not None:
+            reports.append(report)
+    if not reports:
+        return
+    merged = merge_reports(reports)
+    write_usage_report(merged, output_dir / USAGE_REPORT_FILENAME)
+    print(f"  Merged usage report → {USAGE_REPORT_FILENAME}", file=sys.stderr)
 
 
 # ── Video: reuse original ───────────────────────────────

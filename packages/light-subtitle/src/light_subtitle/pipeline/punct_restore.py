@@ -29,8 +29,9 @@ from light_models.punctuation import SENTENCE_ENDS
 
 from .. import logger
 from ..config import SubtitleConfig
-from ..llm.client import OpenAIClient, format_token_usage, merge_token_usage
+from ..llm.client import OpenAIClient
 from ..llm.prompts import render_prompt
+from ..usage.tracker import format_token_usage, merge_token_usage, save_step_usage
 from ._word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
 
 # ── Constants ──────────────────────────────────────────────────────
@@ -54,10 +55,10 @@ def restore_punctuation(
     words: list[Word],
     config: SubtitleConfig,
     output_dir: str | Path,
-) -> list[Word]:
+) -> tuple[list[Word], dict | None]:
     """Add punctuation to *words* via LLM."""
     if not words or not config.llm_api_key:
-        return words
+        return words, None
 
     output_dir = Path(output_dir)
     punct_dir = output_dir / "punct_restore"
@@ -70,12 +71,12 @@ def restore_punctuation(
     _save_segments(segments, str(punct_dir / "pre_punct.json"))
 
     if not segments:
-        return words
+        return words, None
 
     if _has_sufficient_punctuation(segments):
         logger.info("  Punct restore skipped (already punctuated)")
         _save_segments_restored(segments, str(punct_dir / "punct_restore.json"))
-        return words
+        return words, None
 
     client = OpenAIClient(
         base_url=config.llm_base_url,
@@ -112,8 +113,9 @@ def restore_punctuation(
 
     _save_segments_restored(segments, str(punct_dir / "punct_restore.json"))
     logger.info(f"  Punct restored: {len(segments)} segments, {format_token_usage(total_usage)}")
+    save_step_usage(punct_dir / "usage.json", total_usage)
 
-    return words
+    return words, total_usage
 
 
 # ── Punctuation sufficiency check ──────────────────────────────────

@@ -1,0 +1,11 @@
+# Fallback USD rates per 1M tokens — used only when API usage lacks direct cost fields.
+# Source: DeepSeek API pricing page, 2026-04 (deepseek-v4-flash tiered input).
+models:
+  deepseek-v4-flash:
+    cache_hit_per_1m: 0.0028
+    cache_miss_per_1m: 0.14
+    output_per_1m: 0.28
+  deepseek-v4-pro:
+    cache_hit_per_1m: 0.003625
+    cache_miss_per_1m: 0.435
+    output_per_1m: 0.87

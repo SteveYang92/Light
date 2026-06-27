@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from openai import OpenAI, Timeout
 
+from ..usage.tracker import format_token_usage, merge_token_usage, parse_api_usage
+
 # ── Client defaults ─────────────────────────────────────
 
 _DEFAULT_TIMEOUT = 300  # seconds — long enough for translation batches
@@ -30,8 +32,8 @@ class OpenAIClient:
     def chat(self, messages: list[dict], temperature: float = 0.3) -> tuple[str, dict]:
         """Return ``(content, usage_dict)``.
 
-        ``usage_dict`` contains: ``prompt_tokens``, ``completion_tokens``,
-        ``total_tokens``.
+        ``usage_dict`` includes standard token counts plus API-provided cache
+        buckets, reasoning tokens, and direct cost fields when available.
         """
         response = self._client.chat.completions.create(
             model=self.model,
@@ -40,35 +42,8 @@ class OpenAIClient:
             extra_body={"thinking": {"type": "disabled"}},
         )
         content = response.choices[0].message.content or ""
-        usage = response.usage
-        if usage:
-            usage_dict = {
-                "prompt_tokens": usage.prompt_tokens,
-                "completion_tokens": usage.completion_tokens,
-                "total_tokens": usage.total_tokens,
-            }
-        else:
-            usage_dict = {}
-        return content, usage_dict
+        return content, parse_api_usage(response.usage)
 
 
-# ── Token accounting helpers (unchanged API) ─────────────
-
-
-def format_token_usage(usage: dict | None) -> str:
-    """Format token usage for log output."""
-    if not usage:
-        return "tokens: ?"
-    return (
-        f"tokens: {usage.get('total_tokens', '?')} "
-        f"(prompt: {usage.get('prompt_tokens', '?')}, "
-        f"completion: {usage.get('completion_tokens', '?')})"
-    )
-
-
-def merge_token_usage(total: dict[str, int], usage: dict | None) -> None:
-    """Accumulate token counts from a single LLM call into *total*."""
-    if not usage:
-        return
-    for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
-        total[key] = total.get(key, 0) + usage.get(key, 0)
+# Re-export helpers for backward compatibility.
+__all__ = ["OpenAIClient", "format_token_usage", "merge_token_usage"]

@@ -155,10 +155,10 @@ def review_merge_hints(
     segments: list[Segment],
     parsed_texts: dict[int, str],
     config: SubtitleConfig,
-) -> list[MergeHint]:
+) -> tuple[list[MergeHint], dict]:
     """Run LLM merge review on one batch of translated texts."""
     if len(segments) <= 1:
-        return []
+        return [], {}
 
     system_prompt = _render_merge_review_prompt()
     max_true = max(1, (len(segments) + 23) // 24)
@@ -175,17 +175,17 @@ def review_merge_hints(
     last_error: Exception | None = None
     for attempt in range(_MERGE_REVIEW_RETRIES):
         try:
-            response, _usage = client.chat(messages, temperature=config.llm_temperature)
+            response, usage = client.chat(messages, temperature=config.llm_temperature)
             flags = _parse_merge_review_response(response, len(segments))
             flags = _apply_gap_filters(flags, segments, parsed_texts)
-            return _hints_from_flags(segments, parsed_texts, flags)
+            return _hints_from_flags(segments, parsed_texts, flags), usage
         except (json.JSONDecodeError, ValueError) as e:
             last_error = e
             if attempt < _MERGE_REVIEW_RETRIES - 1:
                 logger.warning(f"    Merge review retry {attempt + 1}/{_MERGE_REVIEW_RETRIES}: {e}")
 
     logger.warning(f"    Merge review failed, skipping hints: {last_error}")
-    return []
+    return [], {}
 
 
 def _duration_ms(segment: Segment) -> int:

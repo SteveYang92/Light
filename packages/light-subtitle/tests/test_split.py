@@ -284,7 +284,7 @@ class TestWordBoundaryFallback:
             _word(" ever.", 97.462, 97.683),
         ]
 
-        result = split_overlong_units([_seg("mu0019_u0020", words, text)], _config())
+        result, _split_usage = split_overlong_units([_seg("mu0019_u0020", words, text)], _config())
 
         assert [s.source_text for s in result] == [
             "and it's always tricky as a game designer",
@@ -308,7 +308,7 @@ class TestWordBoundaryFallback:
             _word("india", 8.0, 8.5),
         ]
 
-        result = split_overlong_units([_seg("plain", words)], _config(max_duration=4.0))
+        result, _split_usage = split_overlong_units([_seg("plain", words)], _config(max_duration=4.0))
 
         assert len(result) > 1
         assert all(s.source_text == _words_text(s.words) for s in result)
@@ -322,7 +322,7 @@ class TestWordBoundaryFallback:
         )
         words = [_word(word, float(i), float(i) + 0.45) for i, word in enumerate(text.split())]
 
-        result = split_overlong_units([_seg("prep_start", words, text)], _config(max_duration=5.0))
+        result, _split_usage = split_overlong_units([_seg("prep_start", words, text)], _config(max_duration=5.0))
 
         assert len(result) > 1
         _assert_no_stranded_preposition_chunks(result)
@@ -331,7 +331,7 @@ class TestWordBoundaryFallback:
         text = "we went to the store and then we continued working on the project for several more weeks"
         words = [_word(word, float(i), float(i) + 0.5) for i, word in enumerate(text.split())]
 
-        result = split_overlong_units([_seg("prep_end", words, text)], _config(max_duration=4.0))
+        result, _split_usage = split_overlong_units([_seg("prep_end", words, text)], _config(max_duration=4.0))
 
         assert len(result) > 1
         _assert_no_stranded_preposition_chunks(result)
@@ -342,7 +342,7 @@ class TestWordBoundaryFallback:
         )
         words = [_word(word, float(i), float(i) + 0.4) for i, word in enumerate(text.split())]
 
-        result = split_overlong_units([_seg("prep_ok", words, text)], _config(max_duration=4.0))
+        result, _split_usage = split_overlong_units([_seg("prep_ok", words, text)], _config(max_duration=4.0))
 
         assert len(result) > 1
         assert _first_word(result[0].source_text) == "at"
@@ -447,7 +447,7 @@ class TestLlmSinglePartFallback:
 
         monkeypatch.setattr(split_module, "OpenAIClient", FakeClient)
 
-        result = split_overlong_units([_seg("llm_single", words, text)], _config(api_key="test-key"))
+        result, _split_usage = split_overlong_units([_seg("llm_single", words, text)], _config(api_key="test-key"))
 
         assert calls["count"] == 3
         assert len(result) > 1
@@ -493,7 +493,9 @@ class TestLlmSinglePartFallback:
 
         monkeypatch.setattr(split_module, "OpenAIClient", FakeClient)
 
-        result = split_overlong_units([_seg("retry_ok", words, text)], _config(api_key="test-key", max_duration=4.0))
+        result, _split_usage = split_overlong_units(
+            [_seg("retry_ok", words, text)], _config(api_key="test-key", max_duration=4.0)
+        )
 
         assert [segment.source_text for segment in result] == [
             "alpha bravo charlie delta",
@@ -522,7 +524,9 @@ class TestLlmSinglePartFallback:
 
         monkeypatch.setattr(split_module, "OpenAIClient", FakeClient)
 
-        result = split_overlong_units([_seg("bad_prep", words, text)], _config(api_key="test-key", max_duration=4.0))
+        result, _split_usage = split_overlong_units(
+            [_seg("bad_prep", words, text)], _config(api_key="test-key", max_duration=4.0)
+        )
 
         assert [segment.source_text for segment in result] != bad_response["results"][0]["parts"]
         _assert_no_stranded_preposition_chunks(result)
@@ -565,7 +569,9 @@ class TestLlmSinglePartFallback:
 
         monkeypatch.setattr(split_module, "OpenAIClient", FakeClient)
 
-        result = split_overlong_units([_seg("prep_fix", words, text)], _config(api_key="test-key", max_duration=5.5))
+        result, _split_usage = split_overlong_units(
+            [_seg("prep_fix", words, text)], _config(api_key="test-key", max_duration=5.5)
+        )
 
         assert calls["count"] == 3
         assert result[0].source_text == good_response["results"][0]["parts"][0]
@@ -587,7 +593,7 @@ class TestTranslationFriendlyBoundaries:
         assert _chunk_ends_with_auxiliary(left)
         assert _chunk_starts_with_participle_after_auxiliary(left, right)
 
-        result = split_overlong_units([_seg("being_prep", words, text)], _config(max_duration=4.0))
+        result, _split_usage = split_overlong_units([_seg("being_prep", words, text)], _config(max_duration=4.0))
         assert len(result) > 1
         assert not any(
             s.source_text.rstrip().endswith("being") and result[i + 1].source_text.lstrip().startswith("corrupted")
@@ -602,7 +608,7 @@ class TestTranslationFriendlyBoundaries:
         assert _chunk_ends_with_auxiliary(left)
         assert _chunk_starts_with_participle_after_auxiliary(left, right)
 
-        result = split_overlong_units([_seg("isnt_agree", words, text)], _config(max_duration=3.0))
+        result, _split_usage = split_overlong_units([_seg("isnt_agree", words, text)], _config(max_duration=3.0))
         assert len(result) > 1
         assert not any(s.source_text.rstrip().endswith("isn't") for s in result[:-1])
 
@@ -617,7 +623,7 @@ class TestLocalPrepTailMerge:
         )
         words = [_word(word, float(i), float(i) + 0.5) for i, word in enumerate(text.split())]
 
-        result = split_overlong_units([_seg("tail_prep", words, text)], _config(max_duration=4.0))
+        result, _split_usage = split_overlong_units([_seg("tail_prep", words, text)], _config(max_duration=4.0))
 
         assert len(result) > 1
         _assert_no_stranded_preposition_chunks(result)
@@ -629,7 +635,7 @@ class TestLocalPrepTailMerge:
         )
         words = [_word(word, float(i), float(i) + 0.4) for i, word in enumerate(text.split())]
 
-        result = split_overlong_units([_seg("so_on", words, text)], _config(max_duration=5.0))
+        result, _split_usage = split_overlong_units([_seg("so_on", words, text)], _config(max_duration=5.0))
 
         assert len(result) > 1
         assert any(segment.source_text.rstrip(".,").endswith("and so on") for segment in result)

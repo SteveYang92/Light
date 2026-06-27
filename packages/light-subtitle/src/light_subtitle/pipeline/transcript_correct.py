@@ -30,8 +30,9 @@ from light_models import Word
 
 from .. import logger
 from ..config import SubtitleConfig
-from ..llm.client import OpenAIClient, format_token_usage, merge_token_usage
+from ..llm.client import OpenAIClient
 from ..llm.prompts import render_prompt
+from ..usage.tracker import format_token_usage, merge_token_usage, save_step_usage
 from ._word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
 
 _CHUNK_SIZE = 50
@@ -48,10 +49,10 @@ def correct_transcript(
     words: list[Word],
     config: SubtitleConfig,
     output_dir: str | Path,
-) -> list[Word]:
+) -> tuple[list[Word], dict | None]:
     """Fix ASR errors in *words* via LLM while preserving timestamps."""
     if not words or not config.llm_api_key or not config.correct_enabled:
-        return words
+        return words, None
 
     output_dir = Path(output_dir)
     correct_dir = output_dir / "transcript_correct"
@@ -64,7 +65,7 @@ def correct_transcript(
     )
 
     # Step 0: extract domain context from the full transcript
-    domain_context = _extract_domain_context(client, words, correct_dir)
+    domain_context, domain_usage = _extract_domain_context(client, words, correct_dir)
 
     # Step 1: group words into pause-based segments
     segments = group_words_by_gap(words)
@@ -74,7 +75,7 @@ def correct_transcript(
     _save_segments(segments, str(correct_dir / "pre_correct.json"), include_changed=False)
 
     if not segments:
-        return words
+        return words, None
 
     # Step 2: build system prompt with domain context injected
     domain_str = _format_domain_context(domain_context)
@@ -86,7 +87,7 @@ def correct_transcript(
         chunks.append(segments[i : i + _CHUNK_SIZE])
 
     all_results: dict[int, str] = {}
-    total_usage: dict[str, int] = {}
+    batch_usage: dict[str, int] = {}
 
     with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, len(chunks))) as executor:
         futures = {
@@ -97,7 +98,7 @@ def correct_transcript(
             idx = futures[future]
             response_str, usage = future.result()
             all_results[idx] = response_str
-            merge_token_usage(total_usage, usage)
+            merge_token_usage(batch_usage, usage)
 
     changed_words = 0
     for chunk_idx in range(len(chunks)):
@@ -117,13 +118,21 @@ def correct_transcript(
     _save_segments(segments, str(correct_dir / "post_correct.json"), include_changed=True)
     logger.info(
         f"  Transcript corrected: {changed_words} word(s) changed across {len(segments)} segments, "
-        f"{format_token_usage(total_usage)}"
+        f"{format_token_usage(batch_usage)}"
     )
+
+    breakdown: dict[str, dict] = {"correct": batch_usage}
+    if domain_usage:
+        breakdown["correct.domain_context"] = domain_usage
+    usage_payload: dict = {"breakdown": breakdown}
+    merge_token_usage(usage_payload, domain_usage)
+    merge_token_usage(usage_payload, batch_usage)
+    save_step_usage(correct_dir / "usage.json", usage_payload)
 
     rebuilt: list[Word] = []
     for seg in segments:
         rebuilt.extend(seg.words)
-    return rebuilt
+    return rebuilt, usage_payload
 
 
 def preserve_leading_space(old: str, new: str) -> str:
@@ -262,16 +271,22 @@ def _extract_domain_context(
     client: OpenAIClient,
     words: list[Word],
     correct_dir: Path,
-) -> dict:
+) -> tuple[dict, dict | None]:
     """Extract domain, topics, and terminology from the full transcript via LLM.
 
     Returns cached result if ``domain_context.json`` already exists.
     """
     cache_path = correct_dir / "domain_context.json"
+    usage_path = correct_dir / "usage.json"
     if cache_path.exists():
         data = json.loads(cache_path.read_text(encoding="utf-8"))
         logger.info(f"  Transcript correct: using cached domain context ({len(data.get('terminology', []))} terms)")
-        return data
+        cached_usage: dict | None = None
+        if usage_path.exists():
+            saved = json.loads(usage_path.read_text(encoding="utf-8"))
+            breakdown = saved.get("breakdown") or {}
+            cached_usage = breakdown.get("correct.domain_context")
+        return data, cached_usage
 
     full_text = join_word_text(words)
     prompt = render_prompt("correct_context.j2", full_text=full_text)
@@ -280,7 +295,7 @@ def _extract_domain_context(
         response, usage = client.chat([{"role": "user", "content": prompt}], temperature=0.1)
     except Exception as e:
         logger.warning(f"  Domain context extraction failed: {e}")
-        return {"domain": "", "topics": [], "terminology": []}
+        return {"domain": "", "topics": [], "terminology": []}, None
 
     context = _parse_domain_context(response)
     cache_path.write_text(json.dumps(context, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -288,7 +303,7 @@ def _extract_domain_context(
         f"  Transcript correct: extracted domain context "
         f"({len(context.get('terminology', []))} terms, {format_token_usage(usage)})"
     )
-    return context
+    return context, usage
 
 
 def _parse_domain_context(response: str) -> dict:

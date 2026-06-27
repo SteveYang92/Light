@@ -28,6 +28,7 @@ from ...config import SubtitleConfig
 from ...language import SENTENCE_END
 from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
+from ...usage.tracker import merge_token_usage
 
 # ── Public entry point ─────────────────────────────────────────────────────
 
@@ -145,13 +146,13 @@ class _BatchAttempt:
     rejection_reasons: dict[str, str]
 
 
-def split_overlong_units(segments: list[Segment], config: SubtitleConfig) -> list[Segment]:
+def split_overlong_units(segments: list[Segment], config: SubtitleConfig) -> tuple[list[Segment], dict | None]:
     """Split segments whose duration exceeds ``config.max_duration``.
 
     See module docstring for strategy details.
     """
     if config.max_duration <= 0:
-        return segments
+        return segments, None
 
     # Phase 1: Collect overlong segments for batch LLM split.
     llm_candidates: list[Segment] = []
@@ -162,8 +163,9 @@ def split_overlong_units(segments: list[Segment], config: SubtitleConfig) -> lis
 
     # Phase 2: Batch LLM split.
     batch_splits: dict[str, list[Segment]] = {}
+    split_usage: dict | None = None
     if llm_candidates:
-        batch_splits = _llm_split_batch(llm_candidates, config)
+        batch_splits, split_usage = _llm_split_batch(llm_candidates, config)
 
     # Phase 3: Process segments in original order — substitute LLM splits
     # or fall back to semantic word-boundary splitting.
@@ -180,7 +182,7 @@ def split_overlong_units(segments: list[Segment], config: SubtitleConfig) -> lis
 
         result.extend(_split_single(seg, config.max_duration))
 
-    return result
+    return result, split_usage
 
 
 def _split_single(seg: Segment, max_duration: float) -> list[Segment]:
@@ -205,7 +207,9 @@ def _verify_or_split(splits: list[Segment], config: SubtitleConfig) -> list[Segm
 # ── LLM-based split ────────────────────────────────────────────────────────
 
 
-def _llm_split_batch(overlong_segments: list[Segment], config: SubtitleConfig) -> dict[str, list[Segment]]:
+def _llm_split_batch(
+    overlong_segments: list[Segment], config: SubtitleConfig
+) -> tuple[dict[str, list[Segment]], dict | None]:
     """Split multiple overlong segments in a single LLM batch request.
 
     Returns dict mapping unit_id -> list[Segment] (sub-segments).
@@ -214,7 +218,7 @@ def _llm_split_batch(overlong_segments: list[Segment], config: SubtitleConfig) -
     semantic word-boundary splitting.
     """
     if not overlong_segments:
-        return {}
+        return {}, None
 
     client = OpenAIClient(
         base_url=config.llm_base_url,
@@ -223,11 +227,13 @@ def _llm_split_batch(overlong_segments: list[Segment], config: SubtitleConfig) -
     )
 
     result: dict[str, list[Segment]] = {}
+    total_usage: dict = {}
 
     for batch_start in range(0, len(overlong_segments), BATCH_SIZE):
         batch = overlong_segments[batch_start : batch_start + BATCH_SIZE]
         label = f"{batch_start + 1}-{batch_start + len(batch)}"
-        attempt = _run_llm_split_attempt(client, batch, config, label)
+        attempt, usage = _run_llm_split_attempt(client, batch, config, label)
+        merge_token_usage(total_usage, usage)
         result.update(attempt.splits)
 
         if attempt.unresolved:
@@ -237,7 +243,8 @@ def _llm_split_batch(overlong_segments: list[Segment], config: SubtitleConfig) -
                 f"mismatch={attempt.mismatch_count}, absent={attempt.absent_count}; "
                 f"retrying unresolved={len(attempt.unresolved)}"
             )
-            retry = _run_llm_split_attempt(client, attempt.unresolved, config, label)
+            retry, retry_usage = _run_llm_split_attempt(client, attempt.unresolved, config, label)
+            merge_token_usage(total_usage, retry_usage)
             result.update(retry.splits)
             logger.info(
                 f"  LLM batch retry ({label}): "
@@ -250,7 +257,8 @@ def _llm_split_batch(overlong_segments: list[Segment], config: SubtitleConfig) -
                 single_accepted = 0
                 for seg in retry.unresolved:
                     reason = retry.rejection_reasons.get(seg.unit_id, "")
-                    single = _run_llm_split_single(client, seg, config, reason)
+                    single, single_usage = _run_llm_split_single(client, seg, config, reason)
+                    merge_token_usage(total_usage, single_usage)
                     result.update(single.splits)
                     if seg.unit_id in single.splits:
                         single_accepted += 1
@@ -260,7 +268,7 @@ def _llm_split_batch(overlong_segments: list[Segment], config: SubtitleConfig) -
                     f"local fallback handles unresolved={still_unresolved}"
                 )
 
-    return result
+    return result, total_usage or None
 
 
 def _run_llm_split_single(
@@ -268,7 +276,7 @@ def _run_llm_split_single(
     seg: Segment,
     config: SubtitleConfig,
     rejection_reason: str,
-) -> _BatchAttempt:
+) -> tuple[_BatchAttempt, dict]:
     """Retry one unresolved unit with explicit feedback about the prior rejection."""
     item = _batch_payload([seg], config.max_duration)[0]
     system_prompt = render_prompt(
@@ -278,20 +286,20 @@ def _run_llm_split_single(
     )
 
     try:
-        response, _ = client.chat(
+        response, usage = client.chat(
             [{"role": "user", "content": system_prompt}],
             temperature=0.1,
         )
     except Exception:
         logger.warning(f"    ⚠ LLM single retry failed for {seg.unit_id}, local fallback")
-        return _BatchAttempt({}, [seg], 0, 0, 0, 0, {})
+        return _BatchAttempt({}, [seg], 0, 0, 0, 0, {}), {}
 
     data = _parse_batch_json(response)
     if data is None:
         logger.warning(f"    ⚠ LLM single retry JSON parse failed for {seg.unit_id}, local fallback")
-        return _BatchAttempt({}, [seg], 0, 0, 0, 0, {})
+        return _BatchAttempt({}, [seg], 0, 0, 0, 0, {}), usage
 
-    return _classify_llm_split_results([seg], data.get("results", []))
+    return _classify_llm_split_results([seg], data.get("results", [])), usage
 
 
 def _run_llm_split_attempt(
@@ -299,31 +307,31 @@ def _run_llm_split_attempt(
     batch: list[Segment],
     config: SubtitleConfig,
     label: str,
-) -> _BatchAttempt:
+) -> tuple[_BatchAttempt, dict]:
     """Run one LLM split attempt and classify unresolved items."""
     batch_json_str = json.dumps(_batch_payload(batch, config.max_duration), ensure_ascii=False)
     system_prompt = render_prompt("compose_split.j2", batch_json=batch_json_str)
 
     try:
-        response, _ = client.chat(
+        response, usage = client.chat(
             [{"role": "user", "content": system_prompt}],
             temperature=0.1,
         )
     except Exception:
         logger.warning(f"  ⚠ LLM batch failed ({label}), local fallback for {len(batch)} units")
-        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {})
+        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {}), {}
 
     data = _parse_batch_json(response)
     if data is None:
         logger.warning(f"  ⚠ LLM batch JSON parse failed ({label}), local fallback for {len(batch)} units")
-        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {})
+        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {}), usage
 
     raw_results = data.get("results", [])
     if not raw_results:
         logger.warning(f"  ⚠ LLM batch returned empty results ({label}), local fallback for {len(batch)} units")
-        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {})
+        return _BatchAttempt({}, batch, 0, 0, 0, len(batch), {}), usage
 
-    return _classify_llm_split_results(batch, raw_results)
+    return _classify_llm_split_results(batch, raw_results), usage
 
 
 def _classify_llm_split_results(batch: list[Segment], raw_results: list) -> _BatchAttempt:

@@ -23,6 +23,7 @@ from light_models import Segment, SubtitleCue, covered_source_text
 if TYPE_CHECKING:
     from ...config import SubtitleConfig
 from ... import logger
+from ...llm.client import OpenAIClient, merge_token_usage
 from ...llm.prompts import render_prompt
 
 # ── Data structures ────────────────────────────────────────────────────────
@@ -63,7 +64,7 @@ def evaluate_translations(
     translated_cues: list[SubtitleCue],
     source_segments: list[Segment],
     config: SubtitleConfig,
-) -> list[QualityScore]:
+) -> tuple[list[QualityScore], dict | None]:
     """Evaluate translation quality for all translated cues.
 
     Splits into batches of EVAL_BATCH_SIZE, sends source+translation pairs
@@ -72,7 +73,7 @@ def evaluate_translations(
     Returns empty list if evaluation is disabled or no LLM key is available.
     """
     if not config.evaluate_enabled or not config.llm_api_key:
-        return []
+        return [], None
 
     # Build lookup map: unit_id → source_text
     source_map: dict[str, str] = {s.unit_id: s.source_text for s in source_segments}
@@ -85,17 +86,19 @@ def evaluate_translations(
             pairs.append((cue, src))
 
     if not pairs:
-        return []
+        return [], None
 
     all_scores: list[QualityScore] = []
+    total_usage: dict = {}
 
     # Evaluate in batches.
     for batch_idx in range(0, len(pairs), EVAL_BATCH_SIZE):
         batch = pairs[batch_idx : batch_idx + EVAL_BATCH_SIZE]
-        batch_scores = _evaluate_batch(batch, config, batch_idx // EVAL_BATCH_SIZE)
+        batch_scores, usage = _evaluate_batch(batch, config, batch_idx // EVAL_BATCH_SIZE)
         all_scores.extend(batch_scores)
+        merge_token_usage(total_usage, usage)
 
-    return all_scores
+    return all_scores, total_usage or None
 
 
 # ── Batch evaluation ────────────────────────────────────────────────────────
@@ -105,10 +108,8 @@ def _evaluate_batch(
     pairs: list[tuple[SubtitleCue, str]],
     config: SubtitleConfig,
     batch_num: int,
-) -> list[QualityScore]:
+) -> tuple[list[QualityScore], dict]:
     """Send a batch of source+translation pairs for LLM quality scoring."""
-    from ...llm.client import OpenAIClient
-
     client = OpenAIClient(
         base_url=config.llm_base_url,
         api_key=config.llm_api_key,
@@ -119,12 +120,12 @@ def _evaluate_batch(
     messages = [{"role": "user", "content": prompt}]
 
     try:
-        response, _ = client.chat(messages, temperature=0.1)
+        response, usage = client.chat(messages, temperature=0.1)
     except Exception as e:
         logger.warning(f"    ⚠ Evaluation batch {batch_num} failed: {e}")
-        return []
+        return [], {}
 
-    return _parse_eval_response(response, pairs)
+    return _parse_eval_response(response, pairs), usage
 
 
 # ── Prompt construction ─────────────────────────────────────────────────────
