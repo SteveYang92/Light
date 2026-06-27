@@ -6,6 +6,7 @@ import tempfile
 from pathlib import Path
 
 from light_subtitle.merge_outputs import (
+    _copy_single_segment,
     _dedup_annotation_terms,
     _extract_annotation_term,
     _parse_srt,
@@ -219,3 +220,16 @@ class TestDedupAnnotationTerms:
         ]
         result = _dedup_annotation_terms(cues)
         assert len(result) == 1
+
+
+def test_copy_single_segment_overwrites_existing_slug_files(tmp_path: Path) -> None:
+    """Single-segment merge must refresh root slug files after segment re-export."""
+    slug = "demo"
+    seg_dir = tmp_path / ".seg1"
+    seg_dir.mkdir()
+    (seg_dir / "bilingual.ass").write_text("new", encoding="utf-8")
+    (tmp_path / f"{slug}.bilingual.ass").write_text("old", encoding="utf-8")
+
+    _copy_single_segment(tmp_path, seg_dir, slug)
+
+    assert (tmp_path / f"{slug}.bilingual.ass").read_text(encoding="utf-8") == "new"

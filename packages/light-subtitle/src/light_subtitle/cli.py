@@ -280,21 +280,34 @@ def run(
     # Rename generic outputs to slug-prefixed names for short videos.
     # Long videos are already named by the merge step.
     is_segment = work_dir.name.startswith((".seg", "chunk_"))
-    if not is_segment:
-        # Short video: outputs are zh.srt / cues.json etc.
-        # Check if merge already produced slug-prefixed names
-        slug_prefix = f"{slug}."
-        has_slug_prefix = any(
-            f.name.startswith(slug_prefix) and f.suffix in (".srt", ".vtt", ".json") for f in work_dir.iterdir()
-        )
-        if not has_slug_prefix:
-            _rename_outputs(work_dir, slug)
+    if not is_segment and _has_generic_outputs(work_dir):
+        # Always rename when bare names exist — e.g. after ``--resume-from
+        # subtitle`` export writes ``zh.srt`` / ``bilingual.ass`` even if an
+        # earlier run already created ``{slug}.zh.srt``.
+        _rename_outputs(work_dir, slug)
     _cleanup_temp(work_dir)
 
 
 # ═══════════════════════════════════════════════════════════
 #  Output helpers
 # ═══════════════════════════════════════════════════════════
+
+
+_GENERIC_OUTPUT_NAMES = (
+    "zh.srt",
+    "zh.vtt",
+    "en.srt",
+    "en.vtt",
+    "bilingual.ass",
+    "cues.json",
+    "annotations.ass",
+    "annotations.vtt",
+)
+
+
+def _has_generic_outputs(work_dir: Path) -> bool:
+    """True when the export step wrote bare filenames that need slug prefixing."""
+    return any((work_dir / name).exists() for name in _GENERIC_OUTPUT_NAMES)
 
 
 def _rename_outputs(work_dir: Path, slug: str) -> None:
@@ -323,6 +336,8 @@ def _rename_outputs(work_dir: Path, slug: str) -> None:
         src = work_dir / src_name
         dst = work_dir / dst_name
         if src.exists():
+            if dst.exists():
+                dst.unlink()
             shutil.move(str(src), str(dst))
 
     # Rename the downloaded video file as well.

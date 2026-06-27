@@ -265,8 +265,14 @@ def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
     for src_name, dst_name in mapping.items():
         src = seg_dir / src_name
         dst = output_dir / dst_name
-        if src.exists() and not dst.exists():
-            shutil.copy2(src, dst)
+        if not src.exists():
+            continue
+        # Overwrite stale root files — e.g. after ``--resume-from subtitle`` in
+        # ``.seg1/`` refreshes bare ``zh.srt`` / ``bilingual.ass`` but root
+        # ``{slug}.*`` already exists from an earlier merge.
+        if dst.exists():
+            dst.unlink()
+        shutil.copy2(src, dst)
 
     # Copy video
     video_file = _find_video_file(seg_dir)
