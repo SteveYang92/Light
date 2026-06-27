@@ -59,6 +59,7 @@ class SubtitleConfig:
 
     annotate: bool = False  # Generate secondary subtitle annotations
     annotation_width: int = 30  # Annotation box width (% of screen, 1–100)
+    font: str = "PingFang SC"  # ASS subtitle font (resolved via system fallback chain)
     optimize_entry_points: bool = False  # Auto-fix low-confidence entry points in pace
     transcript_words: list | None = None  # Runtime: word list for entry optimization
 

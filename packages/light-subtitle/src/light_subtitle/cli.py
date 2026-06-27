@@ -124,6 +124,11 @@ def run(
         max=100,
         help="Annotation box width as % of screen (default 30)",
     ),
+    font: str = typer.Option(
+        "PingFang SC",
+        "--font",
+        help="Subtitle font for ASS export (system fallback chain when unavailable)",
+    ),
     evaluate: bool = typer.Option(
         False,
         "--evaluate/--no-evaluate",
@@ -255,6 +260,7 @@ def run(
             context_prep_enabled=not no_context,
             annotate=annotate,
             annotation_width=annotation_width,
+            font=font,
             split_threshold=split_threshold,
         )
 
@@ -361,7 +367,11 @@ def _cleanup_temp(work_dir: Path) -> None:
 @app.command()
 def pack(
     output_dir: str = typer.Argument(..., help="Pipeline output directory containing video and subtitles"),
-    font: str = typer.Option("PingFang SC", "--font", help="Font for main subtitle overlay"),
+    font: str = typer.Option(
+        "PingFang SC",
+        "--font",
+        help="Subtitle font; ASS tracks are patched before burn, SRT uses force_style",
+    ),
     encoder: str = typer.Option(
         "h264_videotoolbox",
         "--encoder",
@@ -377,8 +387,10 @@ def pack(
 
     Auto-detects the main subtitle from OUTPUT_DIR: prefers ``bilingual.ass``
     (self-styled, 中上英下) when present, otherwise falls back to ``zh.srt``.
-    Optional ``.annotations.ass`` is overlaid as a secondary track.  Writes
-    ``{slug}_pack.mp4`` alongside the original video.
+    ``--font`` applies to all paths (ASS Style patch or SRT force_style) with
+    a built-in system fallback chain.  Optional ``.annotations.ass`` is
+    overlaid as a secondary track.  Writes ``{slug}_pack.mp4`` alongside the
+    original video.
 
     Run a bilingual pipeline first to get ``bilingual.ass``::
 

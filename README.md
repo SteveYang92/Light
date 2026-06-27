@@ -151,7 +151,7 @@ uv run light-subtitle -i input.mp4 --resume-from correct
 uv run light-subtitle -i input.mp4 --target-lang zh --resume-from subtitle
 ```
 
-完整参数见 `uv run light-subtitle --help`。
+完整参数见 `uv run light-subtitle --help`。`--font` 控制 ASS 导出字体（默认 `PingFang SC`，按系统字体链回退）；`pack` 子命令同样支持 `--font`。
 
 #### pack — 烧录字幕到视频
 
@@ -162,11 +162,11 @@ uv run light-subtitle -i input.mp4 --target-lang zh --resume-from subtitle
 uv run light-subtitle -i input.mp4 --target-lang zh -o output
 uv run light-subtitle pack output
 
-# 双语运行后烧双语字幕（中上英下，EN 单行 fs14）
-uv run light-subtitle -i input.mp4 --target-lang zh --bilingual -o output
+# 双语 + 指定字体
+uv run light-subtitle -i input.mp4 --target-lang zh --bilingual --font "PingFang SC" -o output
 uv run light-subtitle pack output
 
-# 指定编码器/字体/视频（单语 SRT 路径生效；bilingual.ass 用内嵌样式，--font 不生效）
+# 指定编码器/字体/视频（--font 对双语 ASS 与 SRT 均生效，含系统回退链）
 uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video path/to/video.mp4
 ```
 

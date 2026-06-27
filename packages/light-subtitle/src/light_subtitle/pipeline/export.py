@@ -5,6 +5,15 @@ from pathlib import Path
 
 from light_models import Segment, SubtitleCue, Word, is_cjk, seconds_to_srt, seconds_to_vtt
 
+from ..fonts import (
+    ASS_V4_PLUS_STYLE_FORMAT,
+    FontConfig,
+    annotation_style_line,
+    bilingual_style_line,
+    default_style_line,
+    resolve_font,
+)
+
 # Leading ※ markers (ASS export adds one; avoid duplicates from conversion or LLM)
 _ANNOTATION_MARKER_RE = re.compile(r"^\s*(?:※\s*)+")
 
@@ -20,6 +29,13 @@ def format_annotation_display(text: str) -> str:
     if not body:
         return ""
     return f"※ {body}"
+
+
+def _resolved_font(font: str | None) -> str:
+    """Resolve *font* through the system fallback chain."""
+    if font is None:
+        return resolve_font(FontConfig())
+    return resolve_font(FontConfig(primary=font))
 
 
 def _normalize_plain_subtitle_text(text: str) -> str:
@@ -87,8 +103,9 @@ def export_json(
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def export_ass(cues: list[SubtitleCue], output_path: str) -> None:
+def export_ass(cues: list[SubtitleCue], output_path: str, font: str | None = None) -> None:
     """Basic ASS export — mono-language."""
+    font_name = _resolved_font(font)
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     with open(output, "w", encoding="utf-8") as f:
@@ -96,7 +113,8 @@ def export_ass(cues: list[SubtitleCue], output_path: str) -> None:
         f.write("ScriptType: v4.00+\n\n")
         f.write("[V4+ Styles]\n")
         f.write("Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, Bold, Italic, Alignment\n")
-        f.write("Style: Default,Arial,20,&H00FFFFFF,&H00000000,0,0,2\n\n")
+        f.write(default_style_line(font_name))
+        f.write("\n")
         f.write("[Events]\n")
         f.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
         from light_models import seconds_to_ass
@@ -113,6 +131,7 @@ def export_bilingual_ass(
     zh_cues: list[SubtitleCue],
     output_path: str,
     source_segments: list[Segment] | None = None,
+    font: str | None = None,
 ) -> None:
     """Export bilingual ASS with ZH as the anchor and EN derived from segment words.
 
@@ -138,6 +157,7 @@ def export_bilingual_ass(
     """
     from light_models import seconds_to_ass
 
+    font_name = _resolved_font(font)
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -219,20 +239,13 @@ def export_bilingual_ass(
         f.write("[Script Info]\n")
         f.write("ScriptType: v4.00+\n\n")
         f.write("[V4+ Styles]\n")
-        f.write(
-            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour,"
-            " OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,"
-            " ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow,"
-            " Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        )
-        # One unified style: PingFangSC-Regular, white primary, bottom-aligned
+        f.write(ASS_V4_PLUS_STYLE_FORMAT)
+        # One unified style: resolved font, white primary, bottom-aligned
         # (Alignment=2, MarginV=0).  EN uses a smaller font via the {fs14}
         # inline override.  Black outline (2px) + soft shadow keep the white
         # text legible on any background.
-        f.write(
-            "Style: Bilingual,PingFangSC-Regular,20,&H00FFFFFF,&H00FFFFFF,"
-            "&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,0,1\n\n"
-        )
+        f.write(bilingual_style_line(font_name))
+        f.write("\n")
         f.write("[Events]\n")
         f.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
 
@@ -351,7 +364,7 @@ def export_raw_cues(cues: list[SubtitleCue], output_path: str) -> None:
 
 
 def export_annotation_ass(
-    cues: list[SubtitleCue], annotations: dict[str, str], output_path: str, width_pct: int = 30
+    cues: list[SubtitleCue], annotations: dict[str, str], output_path: str, width_pct: int = 30, font: str | None = None
 ) -> None:
     """Export secondary subtitle annotations as ASS with top-left positioning and dark background.
 
@@ -398,6 +411,8 @@ def export_annotation_ass(
         else:
             entries[i]["end"] = max(entries[i]["end"], extension_cap)
 
+    font_name = _resolved_font(font)
+
     # ── Phase 3: write ASS ──
     with open(output, "w", encoding="utf-8") as f:
         f.write("[Script Info]\n")
@@ -407,18 +422,10 @@ def export_annotation_ass(
         f.write("PlayResY: 1080\n\n")
 
         f.write("[V4+ Styles]\n")
-        f.write(
-            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour,"
-            " OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,"
-            " ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow,"
-            " Alignment, MarginL, MarginR, MarginV, Encoding\n"
-        )
+        f.write(ASS_V4_PLUS_STYLE_FORMAT)
         right_margin = max(10, 1920 * (100 - width_pct) // 100)
-        f.write(
-            "Style: Annotation,PingFangSC-Regular,40,&H00FFFFFF,&H00000000,"
-            "&H00000000,&H00000000,-1,0,0,0,100,100,0,0,"
-            f"1,3,2,7,10,{right_margin},10,1\n\n"
-        )
+        f.write(annotation_style_line(font_name, right_margin))
+        f.write("\n")
 
         f.write("[Events]\n")
         f.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")

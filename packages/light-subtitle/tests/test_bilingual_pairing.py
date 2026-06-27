@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from unittest.mock import patch
 
 from light_models import Segment, SubtitleCue, Word
 from light_subtitle.pipeline.export import export_bilingual_ass
@@ -499,16 +500,17 @@ def test_en_forced_to_single_line_all_newlines_dropped(tmp_path: Path) -> None:
 
 
 def test_single_style_and_font(tmp_path: Path) -> None:
-    """One unified Bilingual style with PingFangSC-Regular + white primary."""
+    """One unified Bilingual style with resolved font + white primary."""
     en = [SubtitleCue(cue_id="en_0", unit_id="u0", start=1.0, end=2.0, text="hi", lang="en")]
     zh = [SubtitleCue(cue_id="zh_0", unit_id="u0", start=1.0, end=2.0, text="嗨", lang="zh")]
-    text = _write(tmp_path, en, zh).read_text(encoding="utf-8")
+    out = tmp_path / "bilingual.ass"
+    with patch("light_subtitle.pipeline.export.resolve_font", return_value="CustomFont"):
+        export_bilingual_ass(en, zh, str(out), font="CustomFont")
+    text = out.read_text(encoding="utf-8")
 
-    # Exactly one Style line, using PingFangSC-Regular and white primary,
-    # with outline + shadow so white text stays legible on any background.
     style_lines = [ln for ln in text.splitlines() if ln.startswith("Style:")]
     assert len(style_lines) == 1
-    assert "PingFangSC-Regular" in style_lines[0]
+    assert "CustomFont" in style_lines[0]
     assert "&H00FFFFFF" in style_lines[0]
     assert "Bilingual" in style_lines[0]
     # BorderStyle=1, Outline>=1, Shadow>=1 (legibility on light backgrounds).

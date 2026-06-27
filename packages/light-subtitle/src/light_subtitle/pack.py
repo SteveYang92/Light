@@ -12,10 +12,12 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from . import logger
+from .fonts import FontConfig, resolve_font, write_patched_ass
 
 # ── Constants ───────────────────────────────────────────
 
@@ -45,7 +47,7 @@ class PackConfig:
     """Path to the pipeline output directory containing the video and subtitles."""
 
     font: str = "PingFang SC"
-    """Font name for the main (SRT) subtitle overlay."""
+    """Preferred subtitle font; resolved via system fallback chain before burn."""
 
     encoder: str = "h264_videotoolbox"
     """Video encoder.  ``h264_videotoolbox`` (Apple hardware) or ``libx264`` (software)."""
@@ -75,7 +77,12 @@ def run_pack(config: PackConfig) -> None:
 
     # ── Discover media files ─────────────────────────
     video_path, sub_path, sub_kind, annot_path = _discover_files(output_dir, config.video)
+    resolved_font = resolve_font(FontConfig(primary=config.font))
     logger.info(f"  主字幕: {sub_path.name} ({'双语 ASS' if sub_kind == 'bilingual' else 'SRT'})")
+    if resolved_font != config.font:
+        logger.info(f"  字体: {config.font} → {resolved_font}")
+    else:
+        logger.info(f"  字体: {resolved_font}")
 
     # ── Probe original bitrate ───────────────────────
     original_bitrate = _probe_video_bitrate(ffprobe_bin, video_path)
@@ -86,51 +93,55 @@ def run_pack(config: PackConfig) -> None:
     output_path = output_dir / f"{slug}{OUTPUT_SUFFIX}.mp4"
 
     # ── Build filter chain ───────────────────────────
-    filters: list[str] = []
-    if annot_path:
-        # Annotation副图层：样式自带，用 ass= 直烧。
-        filters.append(f"ass={annot_path}")
-
-    if sub_kind == "bilingual":
-        # bilingual.ass 自带完整样式（PingFangSC-Regular/白/底部对齐/fs14 行内标签），
-        # 用 ass= 直烧，不用 force_style 覆盖——否则会破坏合并 Dialogue 和 fs14 标签。
-        filters.append(f"ass={sub_path}")
-        logger.info("  使用 bilingual.ass 内嵌样式，--font 不生效")
-    else:
-        # 单语 SRT：沿用现状，用 force_style 设字体/字号/MarginV。
-        filters.append(
-            f"subtitles={sub_path}:force_style='Fontsize={FONT_SIZE},Fontname={config.font},MarginV={MARGIN_V}'"
-        )
-    filter_complex = ",".join(filters)
-
-    # ── Run ffmpeg ───────────────────────────────────
-    cmd = [
-        str(ffmpeg_bin),
-        "-i",
-        str(video_path),
-        "-filter_complex",
-        f"[0:v]{filter_complex}[outv]",
-        "-map",
-        "[outv]",
-        "-map",
-        "0:a",
-        "-c:v",
-        config.encoder,
-        "-b:v",
-        f"{original_bitrate}k",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "128k",
-        "-y",
-        str(output_path),
-    ]
-
-    logger.info(f"  编码中... (ffmpeg {' '.join(cmd[1:4])} ...)")
+    temp_dir = Path(tempfile.mkdtemp(prefix="light-pack-"))
     try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"ffmpeg 编码失败 (exit {e.returncode})") from e
+        filters: list[str] = []
+        if annot_path:
+            patched_annot = temp_dir / "annotations.patched.ass"
+            write_patched_ass(annot_path, resolved_font, patched_annot)
+            filters.append(f"ass={patched_annot}")
+
+        if sub_kind == "bilingual":
+            patched_sub = temp_dir / "bilingual.patched.ass"
+            write_patched_ass(sub_path, resolved_font, patched_sub)
+            filters.append(f"ass={patched_sub}")
+            logger.info(f"  双语 ASS 已应用 --font → {resolved_font}")
+        else:
+            filters.append(
+                f"subtitles={sub_path}:force_style='Fontsize={FONT_SIZE},Fontname={resolved_font},MarginV={MARGIN_V}'"
+            )
+        filter_complex = ",".join(filters)
+
+        # ── Run ffmpeg ───────────────────────────────────
+        cmd = [
+            str(ffmpeg_bin),
+            "-i",
+            str(video_path),
+            "-filter_complex",
+            f"[0:v]{filter_complex}[outv]",
+            "-map",
+            "[outv]",
+            "-map",
+            "0:a",
+            "-c:v",
+            config.encoder,
+            "-b:v",
+            f"{original_bitrate}k",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+            "-y",
+            str(output_path),
+        ]
+
+        logger.info(f"  编码中... (ffmpeg {' '.join(cmd[1:4])} ...)")
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"ffmpeg 编码失败 (exit {e.returncode})") from e
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     # ── Report ───────────────────────────────────────
     size_mb = output_path.stat().st_size / (1024 * 1024)
@@ -172,6 +183,19 @@ def _find_bin(paths: list[str], name: str) -> Path | None:
     return Path(found) if found else None
 
 
+def _find_subtitle_in_dir(output_dir: Path, video_stem: str, suffix: str) -> Path | None:
+    """Locate ``{stem}{suffix}``, bare ``{suffix}``, or a unique ``*{suffix}`` in *output_dir*."""
+    bare_name = suffix if suffix.startswith(".") else f".{suffix}"
+    for name in (f"{video_stem}{bare_name}", bare_name.lstrip(".")):
+        path = output_dir / name
+        if path.is_file():
+            return path
+    globbed = sorted(output_dir.glob(f"*{bare_name}"))
+    if len(globbed) == 1:
+        return globbed[0]
+    return None
+
+
 def _discover_files(output_dir: Path, video_override: str | None) -> tuple[Path, Path, str, Path | None]:
     """Discover video, main subtitle, subtitle kind, and optional annotation.
 
@@ -195,23 +219,15 @@ def _discover_files(output_dir: Path, video_override: str | None) -> tuple[Path,
         video_path = mp4_files[0]
 
     # ── Annotation subtitle (.annotations.ass) ───────
-    annot_path = output_dir / f"{video_path.stem}.annotations.ass"
-    if not annot_path.is_file():
-        annot_path = output_dir / "annotations.ass"
-    if not annot_path.is_file():
-        annot_path = None
+    annot_path = _find_subtitle_in_dir(output_dir, video_path.stem, ".annotations.ass")
 
     # ── Main subtitle — bilingual.ass preferred, then zh.srt ──
-    # Try slug-prefixed names first (post _rename_outputs / merge_all), then
-    # bare names (pre-rename or import-style layouts).
-    for name in (f"{video_path.stem}.bilingual.ass", "bilingual.ass"):
-        sub_path = output_dir / name
-        if sub_path.is_file():
-            return video_path, sub_path, "bilingual", annot_path
-    for name in (f"{video_path.stem}.zh.srt", "zh.srt"):
-        sub_path = output_dir / name
-        if sub_path.is_file():
-            return video_path, sub_path, "srt", annot_path
+    sub_path = _find_subtitle_in_dir(output_dir, video_path.stem, ".bilingual.ass")
+    if sub_path is not None:
+        return video_path, sub_path, "bilingual", annot_path
+    sub_path = _find_subtitle_in_dir(output_dir, video_path.stem, ".zh.srt")
+    if sub_path is not None:
+        return video_path, sub_path, "srt", annot_path
 
     raise FileNotFoundError(
         "未找到双语字幕 (bilingual.ass) 或中文字幕 (zh.srt) 文件。\n"

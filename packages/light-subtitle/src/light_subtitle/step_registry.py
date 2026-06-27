@@ -448,6 +448,7 @@ def _write_translated_exports(orch: Orchestrator, out: Path, formatted: list[Sub
             orch.state.annotations,
             str(out / "annotations.ass"),
             width_pct=orch.config.annotation_width,
+            font=orch.config.font,
         )
         export_module.export_annotation_vtt(
             formatted,
@@ -473,7 +474,11 @@ def _write_bilingual_exports(
         # Composed EN segments carry word-level timing; bilingual ASS uses them
         # to derive each ZH cue's EN text via the shared unit_id graph.
         export_module.export_bilingual_ass(
-            source_fmt, target_fmt, str(out / "bilingual.ass"), source_segments=orch.state.composed_segments
+            source_fmt,
+            target_fmt,
+            str(out / "bilingual.ass"),
+            source_segments=orch.state.composed_segments,
+            font=orch.config.font,
         )
 
     export_module.export_json(source_fmt + target_fmt, str(out / "cues.json"))
@@ -484,6 +489,7 @@ def _write_bilingual_exports(
             orch.state.annotations,
             str(out / "annotations.ass"),
             width_pct=orch.config.annotation_width,
+            font=orch.config.font,
         )
         export_module.export_annotation_vtt(
             target_fmt,
