@@ -420,6 +420,67 @@ def test_combined_zh_merge_and_en_fanout(tmp_path: Path) -> None:
     assert "world" in rows[0][3]
 
 
+def test_layout_conjunction_merge_pairs_full_en_segment(tmp_path: Path) -> None:
+    """Regression: ZH conjunction forward-merge must chain merged_from for export."""
+    from light_subtitle.config import SubtitleConfig
+    from light_subtitle.pipeline.subtitle.layout import prepare
+
+    config = SubtitleConfig(
+        input_path="test.mp4",
+        output_dir="./output",
+        max_lines=2,
+        max_lines_zh=1,
+        max_chars_per_line_zh=40,
+        max_chars_per_line_en=42,
+    )
+    raw_zh = [
+        SubtitleCue(
+            cue_id="zh_252",
+            unit_id="mu0288_u0288",
+            start=1108.713,
+            end=1109.213,
+            text="他们是被迫的。",
+            lang="zh",
+        ),
+        SubtitleCue(
+            cue_id="zh_253",
+            unit_id="mu0289_u0291_0_0",
+            start=1110.394,
+            end=1110.654,
+            text="所以，",
+            lang="zh",
+        ),
+        SubtitleCue(
+            cue_id="zh_254",
+            unit_id="mu0289_u0291_0_1",
+            start=1112.194,
+            end=1117.696,
+            text="有很多儿子再也回不到父母身边了，你知道。",
+            lang="zh",
+        ),
+    ]
+    zh = prepare(raw_zh, config)
+    assert len(zh) == 2
+    merged = zh[1]
+    assert merged.merged_from == ["mu0289_u0291_0_1"]
+
+    segs = [
+        _seg("mu0289_u0291_0_0", 1110.394, 1110.654, "So,"),
+        _seg(
+            "mu0289_u0291_0_1",
+            1112.194,
+            1117.696,
+            "there's a lot of sons not coming back to their parents, you know,",
+        ),
+    ]
+    rows = _parse_rows(_write(tmp_path, [], [merged], segs))
+
+    assert len(rows) == 1
+    assert "有很多儿子" in rows[0][3]
+    assert "So," in rows[0][3]
+    assert "sons not coming back" in rows[0][3]
+
+
 def test_unmatched_cues_emitted_as_solo_dialogues(tmp_path: Path) -> None:
     """Cues with no time overlap and no shared unit ids become solo Dialogues.
 

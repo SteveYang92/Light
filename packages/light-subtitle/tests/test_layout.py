@@ -69,3 +69,32 @@ class TestPrepareIntegration:
         ]
         result = prepare(cues, _config())
         assert len(result) == 2
+
+    def test_forward_conjunction_merge_records_merged_from(self):
+        """Conjunction forward-merge must chain absorbed unit ids for bilingual export."""
+        cues = [
+            _cue("c_prev", "mu0288_u0288", 1108.713, 1109.213, "他们是被迫的。", lang="zh"),
+            _cue(
+                "c0",
+                "mu0289_u0291_0_0",
+                1110.394,
+                1110.654,
+                "所以，",
+                lang="zh",
+            ),
+            _cue(
+                "c1",
+                "mu0289_u0291_0_1",
+                1112.194,
+                1117.696,
+                "有很多儿子再也回不到父母身边了，你知道。",
+                lang="zh",
+            ),
+        ]
+        result = prepare(cues, _config())
+        assert len(result) == 2
+        merged = result[1]
+        assert merged.unit_id == "mu0289_u0291_0_0"
+        assert merged.merged_from == ["mu0289_u0291_0_1"]
+        assert "所以" in merged.text.replace("，", "")
+        assert "有很多儿子" in merged.text

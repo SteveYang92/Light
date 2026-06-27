@@ -38,6 +38,15 @@ def _split_cue(cue: SubtitleCue, config: SubtitleConfig) -> list[SubtitleCue]:
 _SENTENCE_ENDS = set("。？！.!?")
 
 
+def _absorbed_unit_ids(prev: SubtitleCue, curr: SubtitleCue) -> list[str]:
+    """``merged_from`` for *prev* after absorbing *curr*'s text/units."""
+    merged = list(prev.merged_from)
+    for uid in (curr.unit_id, *curr.merged_from):
+        if uid != prev.unit_id and uid not in merged:
+            merged.append(uid)
+    return merged
+
+
 def _try_merge(
     prev: SubtitleCue,
     curr: SubtitleCue,
@@ -101,7 +110,7 @@ def _try_merge(
         speaker=prev.speaker,
         words=(prev.words or []) + (curr.words or []),
         qc=prev.qc,
-        merged_from=list(prev.merged_from),
+        merged_from=_absorbed_unit_ids(prev, curr),
     )
     max_chars = config.max_chars_per_line_zh if prev.lang == "zh" else config.max_chars_per_line_en
     if max(len(ln) for ln in prev_lines) <= max_chars:
@@ -358,6 +367,7 @@ def _cosmetic_fix(prev: SubtitleCue, curr: SubtitleCue) -> bool:
         curr.text = _remove_first_char(curr.text, curr_text[0])
         if not curr.text.strip():
             prev.end = max(prev.end, curr.end)
+            prev.merged_from = _absorbed_unit_ids(prev, curr)
         return True
 
     # Case 2: single non-alpha orphan → append to prev
@@ -366,6 +376,7 @@ def _cosmetic_fix(prev: SubtitleCue, curr: SubtitleCue) -> bool:
         prev.text = "\n".join(prev_lines)
         prev.end = max(prev.end, curr.end)
         prev.words = (prev.words or []) + (curr.words or [])
+        prev.merged_from = _absorbed_unit_ids(prev, curr)
         curr.text = ""  # absorbed into prev
         return True
 
@@ -376,6 +387,7 @@ def _cosmetic_fix(prev: SubtitleCue, curr: SubtitleCue) -> bool:
         prev.text = "\n".join(prev_lines)
         prev.end = max(prev.end, curr.end)
         prev.words = (prev.words or []) + (curr.words or [])
+        prev.merged_from = _absorbed_unit_ids(prev, curr)
         curr.text = ""  # absorbed into prev
         return True
 
