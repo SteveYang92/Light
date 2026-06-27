@@ -24,6 +24,9 @@ DEFAULT_FALLBACKS: tuple[str, ...] = (
 
 DEFAULT_FONT = "PingFang SC"
 
+# Bottom margin for bottom-aligned bilingual subtitles (export + pack burn).
+BILINGUAL_MARGIN_V = 20
+
 # ASS V4+ style header shared by bilingual and annotation exports.
 ASS_V4_PLUS_STYLE_FORMAT = (
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour,"
@@ -126,11 +129,17 @@ def patch_ass_styles(
     text: str,
     font_name: str,
     style_names: set[str] | None = None,
+    margin_v: int | None = None,
+    margin_v_styles: set[str] | None = None,
 ) -> str:
     """Replace Fontname (field 2) on ``Style:`` lines in ASS *text*.
 
     When *style_names* is None, all ``Style:`` lines are patched.  Dialogue
     lines and inline override tags (e.g. ``{\\fs14}``) are left unchanged.
+
+    When *margin_v* is set, updates the MarginV field on styles listed in
+    *margin_v_styles* (defaults to the same set as *style_names* when that
+    is provided, otherwise all patched styles).
     """
     out_lines: list[str] = []
     for line in text.splitlines(keepends=True):
@@ -156,20 +165,39 @@ def patch_ass_styles(
             out_lines.append(line)
             continue
         fields[1] = font_name
+        if margin_v is not None and len(fields) > 21:
+            apply_margin = margin_v_styles if margin_v_styles is not None else style_names
+            if apply_margin is None or style_name in apply_margin:
+                fields[21] = str(margin_v)
         out_lines.append(",".join(fields) + newline)
     return "".join(out_lines)
 
 
-def write_patched_ass(src: Path, font_name: str, dst: Path) -> None:
-    """Read *src* ASS, patch Style Fontname fields, write to *dst*."""
-    dst.write_text(patch_ass_styles(src.read_text(encoding="utf-8"), font_name), encoding="utf-8")
+def write_patched_ass(
+    src: Path,
+    font_name: str,
+    dst: Path,
+    *,
+    margin_v: int | None = None,
+    margin_v_styles: set[str] | None = None,
+) -> None:
+    """Read *src* ASS, patch Style fields, write to *dst*."""
+    dst.write_text(
+        patch_ass_styles(
+            src.read_text(encoding="utf-8"),
+            font_name,
+            margin_v=margin_v,
+            margin_v_styles=margin_v_styles,
+        ),
+        encoding="utf-8",
+    )
 
 
-def bilingual_style_line(font_name: str) -> str:
+def bilingual_style_line(font_name: str, margin_v: int = BILINGUAL_MARGIN_V) -> str:
     """Return the Bilingual ASS style line for *font_name*."""
     return (
         f"Style: Bilingual,{font_name},20,&H00FFFFFF,&H00FFFFFF,"
-        "&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,0,1\n"
+        f"&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,{margin_v},1\n"
     )
 
 

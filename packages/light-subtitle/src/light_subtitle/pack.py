@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import logger
-from .fonts import FontConfig, resolve_font, write_patched_ass
+from .fonts import BILINGUAL_MARGIN_V, FontConfig, resolve_font, write_patched_ass
 
 # ── Constants ───────────────────────────────────────────
 
@@ -32,7 +32,6 @@ FFPROBE_FULL_PATHS = [
 ]
 
 FONT_SIZE = 20
-MARGIN_V = 10
 OUTPUT_SUFFIX = "_pack"
 
 
@@ -103,12 +102,19 @@ def run_pack(config: PackConfig) -> None:
 
         if sub_kind == "bilingual":
             patched_sub = temp_dir / "bilingual.patched.ass"
-            write_patched_ass(sub_path, resolved_font, patched_sub)
+            write_patched_ass(
+                sub_path,
+                resolved_font,
+                patched_sub,
+                margin_v=BILINGUAL_MARGIN_V,
+                margin_v_styles={"Bilingual"},
+            )
             filters.append(f"ass={patched_sub}")
             logger.info(f"  双语 ASS 已应用 --font → {resolved_font}")
         else:
             filters.append(
-                f"subtitles={sub_path}:force_style='Fontsize={FONT_SIZE},Fontname={resolved_font},MarginV={MARGIN_V}'"
+                f"subtitles={sub_path}:force_style="
+                f"'Fontsize={FONT_SIZE},Fontname={resolved_font},MarginV={BILINGUAL_MARGIN_V}'"
             )
         filter_complex = ",".join(filters)
 

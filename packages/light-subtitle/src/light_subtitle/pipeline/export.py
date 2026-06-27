@@ -241,9 +241,9 @@ def export_bilingual_ass(
         f.write("[V4+ Styles]\n")
         f.write(ASS_V4_PLUS_STYLE_FORMAT)
         # One unified style: resolved font, white primary, bottom-aligned
-        # (Alignment=2, MarginV=0).  EN uses a smaller font via the {fs14}
-        # inline override.  Black outline (2px) + soft shadow keep the white
-        # text legible on any background.
+        # (Alignment=2, MarginV=BILINGUAL_MARGIN_V).  EN uses a smaller font via
+        # the {fs14} inline override.  Black outline (2px) + soft shadow keep the
+        # white text legible on any background.
         f.write(bilingual_style_line(font_name))
         f.write("\n")
         f.write("[Events]\n")

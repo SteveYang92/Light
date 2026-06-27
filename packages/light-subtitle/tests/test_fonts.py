@@ -41,6 +41,18 @@ def test_patch_ass_styles_filters_by_style_name() -> None:
     assert "Style: Annotation,OldFont," in patched
 
 
+def test_patch_ass_styles_sets_margin_v_on_selected_styles() -> None:
+    patched = patch_ass_styles(
+        SAMPLE_ASS,
+        "NewFont",
+        margin_v=20,
+        margin_v_styles={"Bilingual"},
+    )
+    assert "Style: Bilingual,NewFont,20," in patched
+    assert ",2,10,10,20,1" in patched
+    assert ",2,7,10,500,10,1" in patched  # Annotation MarginV unchanged
+
+
 def test_write_patched_ass(tmp_path: Path) -> None:
     src = tmp_path / "in.ass"
     dst = tmp_path / "out.ass"
@@ -96,11 +108,12 @@ def test_fc_match_family_strips_comma_aliases() -> None:
 
 
 def test_bilingual_style_line_has_no_extra_commas_in_font_field() -> None:
-    from light_subtitle.fonts import bilingual_style_line
+    from light_subtitle.fonts import BILINGUAL_MARGIN_V, bilingual_style_line
 
     line = bilingual_style_line("PingFang SC")
     fields = line.removeprefix("Style:").split(",", 3)
     assert fields[1].strip() == "PingFang SC"
+    assert f",10,10,{BILINGUAL_MARGIN_V},1" in line
 
 
 def test_candidate_chain_deduplicates_primary_in_fallbacks() -> None:
