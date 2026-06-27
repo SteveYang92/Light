@@ -7,7 +7,6 @@ import json
 import pytest
 from light_models import Segment, Word
 from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate import compose_and_split
 from light_subtitle.pipeline.translate.translate import (
     _adjust_chunk_end,
     _build_payload,
@@ -17,7 +16,6 @@ from light_subtitle.pipeline.translate.translate import (
     _parse_response,
     _parse_split_part,
     _split_group_part_counts,
-    clear_partial_cache,
 )
 
 # ── Helpers ─────────────────────────────────────────────────────
@@ -284,33 +282,3 @@ class TestRosolieRegression:
         assert "闹鬼" in by_id["mu0194_u0194"]
         assert "秘鲁" in by_id["mu0195_u0196_0"]
         assert "大脚怪" in by_id["mu0193_u0193"]
-
-
-class TestClearPartialCache:
-    def test_removes_partial_when_present(self, tmp_path):
-        tx_dir = tmp_path / "translations"
-        tx_dir.mkdir()
-        partial = tx_dir / "partial.json"
-        partial.write_text("[]", encoding="utf-8")
-        assert clear_partial_cache(tx_dir) is True
-        assert not partial.exists()
-
-    def test_no_op_when_missing(self, tmp_path):
-        tx_dir = tmp_path / "translations"
-        tx_dir.mkdir()
-        assert clear_partial_cache(tx_dir) is False
-
-    def test_compose_and_split_clears_partial(self, tmp_path, monkeypatch):
-        tx_dir = tmp_path / "translations"
-        tx_dir.mkdir()
-        (tx_dir / "partial.json").write_text("[]", encoding="utf-8")
-
-        monkeypatch.setattr(
-            "light_subtitle.pipeline.translate.split.split_overlong_units",
-            lambda segments, _config: segments,
-        )
-
-        config = SubtitleConfig(input_path="", output_dir=str(tmp_path))
-        compose_and_split([_seg("u0", "hello world")], config, tx_dir)
-
-        assert not (tx_dir / "partial.json").exists()

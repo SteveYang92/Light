@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -68,7 +69,7 @@ def run(
     existing_cues: list[SubtitleCue] = []
     hint_records: list[dict[str, str]] = []
     if tx_dir is not None:
-        existing_cues, hint_records = load_partial(tx_dir, config)
+        existing_cues, hint_records = load_partial(tx_dir, config, segments)
 
     covered = covered_unit_ids(existing_cues)
     pending = [s for s in segments if s.unit_id not in covered]
@@ -93,7 +94,7 @@ def run(
         ordered_1_1 = _order_cues(segments, existing)
         hint_records = _dedupe_hint_records(hint_records + _hint_records_from_hints(hints))
         if tx_dir is not None:
-            _save_partial(tx_dir, ordered_1_1, hint_records)
+            _save_partial(tx_dir, ordered_1_1, hint_records, segments)
         ordered = _finalize_translated_cues(ordered_1_1, _hints_from_records(segments, hint_records), config)
         return ordered, usage
 
@@ -129,7 +130,7 @@ def run(
                 total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)
             ordered_1_1 = _order_cues(segments, existing)
             if tx_dir is not None:
-                _save_partial(tx_dir, ordered_1_1, hint_records)
+                _save_partial(tx_dir, ordered_1_1, hint_records, segments)
 
     ordered_1_1 = _order_cues(segments, existing)
     ordered = _finalize_translated_cues(
@@ -197,38 +198,74 @@ def _cue_dict_from_partial(cue: SubtitleCue) -> dict:
     }
 
 
-def _save_partial(tx_dir: Path, cues: list[SubtitleCue], hint_records: list[dict[str, str]]) -> None:
+def _segment_graph_fingerprint(segments: list[Segment]) -> str:
+    """Stable hash of the translation unit graph (ids + timing)."""
+    payload = [(s.unit_id, round(s.start, 3), round(s.end, 3)) for s in segments]
+    digest = hashlib.sha256(json.dumps(payload, ensure_ascii=False).encode()).hexdigest()
+    return digest[:16]
+
+
+def _partial_matches_segments(
+    cues: list[SubtitleCue],
+    hint_records: list[dict[str, str]],
+    segments: list[Segment],
+) -> bool:
+    """Heuristic for legacy partial files without a stored fingerprint."""
+    segment_ids = {s.unit_id for s in segments}
+    seg_by_id = {s.unit_id: s for s in segments}
+    for cue in cues:
+        if cue.unit_id not in segment_ids:
+            return False
+        seg = seg_by_id[cue.unit_id]
+        if abs(cue.start - seg.start) > 0.01 or abs(cue.end - seg.end) > 0.01:
+            return False
+    for record in hint_records:
+        if record.get("curr_unit_id") not in segment_ids:
+            return False
+        if record.get("next_unit_id") not in segment_ids:
+            return False
+    return True
+
+
+def _save_partial(
+    tx_dir: Path,
+    cues: list[SubtitleCue],
+    hint_records: list[dict[str, str]],
+    segments: list[Segment],
+) -> None:
     """Persist 1:1 translation checkpoint with merge hints."""
     tx_dir.mkdir(parents=True, exist_ok=True)
     data = {
         "version": _PARTIAL_VERSION,
+        "segments_fingerprint": _segment_graph_fingerprint(segments),
         "cues": [_cue_dict_from_partial(c) for c in cues],
         "merge_hints": hint_records,
     }
     (tx_dir / "partial.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _save_partial_cues(tx_dir: Path, cues: list[SubtitleCue]) -> None:
+def _save_partial_cues(tx_dir: Path, cues: list[SubtitleCue], segments: list[Segment]) -> None:
     """Backward-compatible alias — saves 1:1 cues with empty merge hints."""
-    _save_partial(tx_dir, cues, [])
+    _save_partial(tx_dir, cues, [], segments)
 
 
-def clear_partial_cache(tx_dir: Path) -> bool:
-    """Remove ``partial.json`` when compose/split is re-run.
-
-    Unit ids may be reused with different source text or timing; stale
-    partial entries would otherwise skip LLM translation.
-    """
+def _discard_partial_cache(tx_dir: Path, *, reason: str) -> None:
     path = tx_dir / "partial.json"
-    if not path.exists():
-        return False
-    path.unlink()
-    logger.info("  Cleared stale partial.json (re-compose)")
-    return True
+    if path.exists():
+        path.unlink()
+        logger.info(f"  Discarded stale partial.json ({reason})")
 
 
-def load_partial(tx_dir: Path, config: SubtitleConfig) -> tuple[list[SubtitleCue], list[dict[str, str]]]:
-    """Load 1:1 partial cues and persisted merge-hint records."""
+def load_partial(
+    tx_dir: Path,
+    config: SubtitleConfig,
+    segments: list[Segment] | None = None,
+) -> tuple[list[SubtitleCue], list[dict[str, str]]]:
+    """Load 1:1 partial cues and persisted merge-hint records.
+
+    When *segments* is provided (translate entry), discard the checkpoint if it
+    no longer matches the current translation unit graph.
+    """
     path = tx_dir / "partial.json"
     if not path.exists():
         return [], []
@@ -238,14 +275,27 @@ def load_partial(tx_dir: Path, config: SubtitleConfig) -> tuple[list[SubtitleCue
     if isinstance(raw, list):
         if any(c.get("merged_from") for c in raw if isinstance(c, dict)):
             logger.warning("  Legacy partial.json contains merged cues; delete partial.json for a clean resume.")
-        return [_cue_from_partial_dict(c, config) for c in raw], []
-
-    if isinstance(raw, dict):
+        cues = [_cue_from_partial_dict(c, config) for c in raw]
+        hint_records: list[dict[str, str]] = []
+    elif isinstance(raw, dict):
         cue_items = raw.get("cues", [])
-        hint_records = raw.get("merge_hints", [])
-        return [_cue_from_partial_dict(c, config) for c in cue_items], list(hint_records)
+        hint_records = list(raw.get("merge_hints", []))
+        cues = [_cue_from_partial_dict(c, config) for c in cue_items]
+    else:
+        return [], []
 
-    return [], []
+    if segments is not None and cues:
+        expected = _segment_graph_fingerprint(segments)
+        stored = raw.get("segments_fingerprint") if isinstance(raw, dict) else None
+        if stored is not None:
+            if stored != expected:
+                _discard_partial_cache(tx_dir, reason="segment graph changed")
+                return [], []
+        elif not _partial_matches_segments(cues, hint_records, segments):
+            _discard_partial_cache(tx_dir, reason="unit graph mismatch")
+            return [], []
+
+    return cues, hint_records
 
 
 def _cue_from_partial_dict(data: dict, config: SubtitleConfig) -> SubtitleCue:

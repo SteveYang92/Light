@@ -26,9 +26,9 @@ from .evaluate import evaluate_translations, get_low_score_cues, scores_to_dict
 from .merge_apply import covered_unit_ids
 from .refine import refine_translations
 from .split import split_overlong_units
-from .translate import clear_partial_cache, translate_missing
 from .translate import load_partial_cues as load_partial_cues
 from .translate import run as _translate_live
+from .translate import translate_missing
 
 
 @dataclass
@@ -42,19 +42,10 @@ class TranslateResult:
 def _compose_and_split(
     segments: list[Segment],
     config: SubtitleConfig,
-    tx_dir: Path,
+    compose_dir: Path,
 ) -> tuple[list[Segment], dict | None]:
     """Compose fragments → split overlong units → save debug compose.json."""
-    tx_dir.mkdir(parents=True, exist_ok=True)
-    clear_partial_cache(tx_dir)
-    # Clear the translate-side partial cache too — compose and translate live in
-    # sibling dirs (compose/, translations/) but share unit ids.  When compose is
-    # re-run (e.g. after segmentation changes) any previously translated partial
-    # cues are stale against the new unit graph and must be dropped.
-    translate_partial = tx_dir.parent / "translations" / "partial.json"
-    if translate_partial.exists() and translate_partial.parent != tx_dir:
-        translate_partial.unlink()
-        logger.info("  Cleared stale translations/partial.json (re-compose)")
+    compose_dir.mkdir(parents=True, exist_ok=True)
 
     translation_segments = compose_segments(segments)
     logger.info(f"  Compose: {len(segments)} segments → {len(translation_segments)} translation units")
@@ -62,7 +53,7 @@ def _compose_and_split(
     translation_segments, split_usage = split_overlong_units(translation_segments, config)
     logger.info(f"  Split overlong: → {len(translation_segments)} units after splitting")
     if split_usage:
-        save_step_usage(tx_dir / "usage.json", split_usage)
+        save_step_usage(compose_dir / "usage.json", split_usage)
 
     # Debug: save compose results (after splitting).
     compose_out = [
@@ -76,7 +67,7 @@ def _compose_and_split(
         }
         for s in translation_segments
     ]
-    (tx_dir / "compose.json").write_text(json.dumps(compose_out, ensure_ascii=False, indent=2), encoding="utf-8")
+    (compose_dir / "compose.json").write_text(json.dumps(compose_out, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return translation_segments, split_usage
 
@@ -87,9 +78,8 @@ def load_cached_translation(
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Load translated cues and usage from cached raw.json / usage.json.
 
-    If *segment_words.json* exists (saved during compose), word timing is
-    re-attached to each cue by matching ``unit_id``, enabling word-boundary
-    alignment in the pace step.
+    If ``compose/segment_words.json`` exists, word timing is re-attached to each
+    cue by matching ``unit_id``, enabling word-boundary alignment in the pace step.
     """
     raw_path = tx_dir / "raw.json"
     with open(raw_path) as f:
@@ -107,15 +97,7 @@ def load_cached_translation(
         for c in raw_data
     ]
 
-    # Re-attach word timing from segment_words.json (saved by compose phase).
-    seg_words_path = tx_dir / "segment_words.json"
-    if seg_words_path.exists():
-        with open(seg_words_path) as f:
-            seg_words_map = json.load(f)
-        for cue in translated_cues:
-            word_dicts = seg_words_map.get(cue.unit_id)
-            if word_dicts:
-                cue.words = [Word(**w) for w in word_dicts]
+    _attach_words_to_cues(translated_cues, tx_dir.parent / "compose")
 
     usage: dict | None = None
     usage_path = tx_dir / "usage.json"
@@ -148,8 +130,25 @@ def _save_translation_artifacts(
         export.export_json_file(payload, str(tx_dir / "usage.json"))
 
 
-def _save_translation_segment_words(translation_segments: list[Segment], tx_dir: Path) -> None:
-    """Save per-unit word-level timing so cached translation can re-attach words later."""
+def _segment_words_path(compose_dir: Path) -> Path:
+    return compose_dir / "segment_words.json"
+
+
+def _attach_words_to_cues(cues: list[SubtitleCue], compose_dir: Path) -> None:
+    """Re-attach word timing from ``compose/segment_words.json`` by ``unit_id``."""
+    seg_words_path = _segment_words_path(compose_dir)
+    if not seg_words_path.exists():
+        return
+    with open(seg_words_path, encoding="utf-8") as f:
+        seg_words_map = json.load(f)
+    for cue in cues:
+        word_dicts = seg_words_map.get(cue.unit_id)
+        if word_dicts:
+            cue.words = [Word(**w) for w in word_dicts]
+
+
+def _save_translation_segment_words(translation_segments: list[Segment], compose_dir: Path) -> None:
+    """Save per-unit word-level timing to ``compose/segment_words.json``."""
     data: dict[str, list[dict]] = {}
     for seg in translation_segments:
         if seg.words:
@@ -157,7 +156,8 @@ def _save_translation_segment_words(translation_segments: list[Segment], tx_dir:
                 {"text": w.text, "start": w.start, "end": w.end, "confidence": w.confidence, "speaker": w.speaker}
                 for w in seg.words
             ]
-    (tx_dir / "segment_words.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    compose_dir.mkdir(parents=True, exist_ok=True)
+    _segment_words_path(compose_dir).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _evaluate_and_refine(
@@ -429,7 +429,7 @@ def run(
     translation_segments, _split_usage = _compose_and_split(segments, config, compose_dir)
 
     # Persist word-level timing for resume / pace re-attachment.
-    _save_translation_segment_words(translation_segments, tx_dir)
+    _save_translation_segment_words(translation_segments, compose_dir)
 
     # Live translation.
     logger.info("  Translating...")
