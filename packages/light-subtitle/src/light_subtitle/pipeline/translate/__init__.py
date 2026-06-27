@@ -134,17 +134,32 @@ def _segment_words_path(compose_dir: Path) -> Path:
     return compose_dir / "segment_words.json"
 
 
+def _words_from_unit_chain(unit_ids: list[str], seg_words_map: dict[str, list[dict]]) -> list[Word]:
+    """Concatenate word timing for a cue's head unit + ``merged_from`` chain."""
+    words: list[Word] = []
+    for uid in unit_ids:
+        word_dicts = seg_words_map.get(uid)
+        if word_dicts:
+            words.extend(Word(**w) for w in word_dicts)
+    return words
+
+
 def _attach_words_to_cues(cues: list[SubtitleCue], compose_dir: Path) -> None:
-    """Re-attach word timing from ``compose/segment_words.json`` by ``unit_id``."""
+    """Re-attach word timing from ``compose/segment_words.json``.
+
+    Uses ``unit_id`` plus ``merged_from`` (in chain order) so display-merged
+    translation cues get the full ASR span, not just the head split part.
+    """
     seg_words_path = _segment_words_path(compose_dir)
     if not seg_words_path.exists():
         return
     with open(seg_words_path, encoding="utf-8") as f:
         seg_words_map = json.load(f)
     for cue in cues:
-        word_dicts = seg_words_map.get(cue.unit_id)
-        if word_dicts:
-            cue.words = [Word(**w) for w in word_dicts]
+        unit_chain = [cue.unit_id, *cue.merged_from]
+        words = _words_from_unit_chain(unit_chain, seg_words_map)
+        if words:
+            cue.words = words
 
 
 def _save_translation_segment_words(translation_segments: list[Segment], compose_dir: Path) -> None:
@@ -367,6 +382,7 @@ def _find_timestamp_mismatches(
 
 compose_and_split = _compose_and_split
 save_segment_words = _save_translation_segment_words
+attach_words_to_cues = _attach_words_to_cues
 retry_missing = _retry_missing_translations
 evaluate_and_refine = _evaluate_and_refine
 save_artifacts = _save_translation_artifacts

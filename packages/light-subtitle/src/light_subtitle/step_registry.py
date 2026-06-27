@@ -451,6 +451,7 @@ def _format_source(orch: Orchestrator) -> list[SubtitleCue]:
 def _format_target(orch: Orchestrator) -> list[SubtitleCue]:
     if not orch.state.translated_cues:
         return []
+    translate_pipeline.attach_words_to_cues(orch.state.translated_cues, _compose_dir(orch.config))
     orch.config.transcript_words = orch.state.words
     formatted = subtitle.run(orch.state.translated_cues, orch.config)
     return strip_punct.strip_chinese_punct(formatted)
