@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 import pytest
 from light_models import Segment, SubtitleCue, Word
+from light_subtitle.fonts import bilingual_ass_en_font_tag
 from light_subtitle.pipeline.export import export_bilingual_ass, export_bilingual_vtt
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -116,7 +117,7 @@ def _vtt_expected_from_ass(ass_text: str) -> str:
     """Map ASS Dialogue text to expected ``bilingual.vtt`` body."""
     from light_subtitle.pipeline.export import BILINGUAL_VTT_MARKER
 
-    t = ass_text.replace("{\\fs14}", "")
+    t = ass_text.replace(bilingual_ass_en_font_tag(), "")
     if "\\N" not in t:
         return t
     idx = t.rfind("\\N")
@@ -171,7 +172,7 @@ def test_split_subunit_id_mismatch_pairs_by_time(tmp_path: Path) -> None:
     _, _, style, text = rows[0]
     assert style == "Bilingual"
     assert "这个词现在在各种场合都被拿来用" in text
-    assert "{\\fs14}Now look this buzzword" in text
+    assert f"{bilingual_ass_en_font_tag()}Now look this buzzword" in text
 
 
 def test_same_unit_id_but_time_disjoint_not_grouped(tmp_path: Path) -> None:
@@ -318,7 +319,7 @@ def test_long_en_assigned_to_best_overlap_zh(tmp_path: Path) -> None:
     zh1_rows = [r for r in rows if "很多人都在想" in r[3]]
     assert len(zh0_rows) == 1 and len(zh1_rows) == 1
     # ZH0 is ZH-only (no EN portion).
-    assert "{\\fs14}" not in zh0_rows[0][3]
+    assert bilingual_ass_en_font_tag() not in zh0_rows[0][3]
     # ZH1 carries the EN text.
     assert "big unlock" in zh1_rows[0][3]
     # EN text appears exactly once across all Dialogues.
@@ -384,8 +385,8 @@ def test_equal_counts_one_to_one(tmp_path: Path) -> None:
     assert len(rows) == 2  # one merged Dialogue per unit
     assert all(r[2] == "Bilingual" for r in rows)
     # ZH windows preserved exactly (anchor, no inter-ZH clamping).
-    assert rows[0] == (100, 200, "Bilingual", "你好\\N{\\fs14}hello")
-    assert rows[1] == (200, 300, "Bilingual", "世界\\N{\\fs14}world")
+    assert rows[0] == (100, 200, "Bilingual", f"你好\\N{bilingual_ass_en_font_tag()}hello")
+    assert rows[1] == (200, 300, "Bilingual", f"世界\\N{bilingual_ass_en_font_tag()}world")
 
 
 def test_en_fanout_each_subcue_is_own_group(tmp_path: Path) -> None:
@@ -570,8 +571,8 @@ def test_unmatched_cues_emitted_as_solo_dialogues(tmp_path: Path) -> None:
     assert all(r[2] == "Bilingual" for r in rows)
     # ZH-only Dialogue: just the ZH line, no EN portion.
     assert rows[0][3] == "仅中文"
-    # EN-only Dialogue: just the EN portion with fs14.
-    assert rows[1][3] == "{\\fs14}only en"
+    # EN-only Dialogue: just the EN portion with bilingual EN font tag.
+    assert rows[1][3] == f"{bilingual_ass_en_font_tag()}only en"
 
 
 def test_empty_inputs(tmp_path: Path) -> None:
@@ -618,10 +619,10 @@ def test_en_forced_to_single_line_all_newlines_dropped(tmp_path: Path) -> None:
     assert len(rows) == 1
     _, _, style, text = rows[0]
     assert style == "Bilingual"
-    # ZH line first, then EN on a single line (all \n → space) under fs14.
+    # ZH line first, then EN on a single line (all \n → space) under bilingual EN font tag.
     expected = (
         "AI和机器学习中许多成功的方法 都是训练模型根据给定的输入X来预测某个输出Y"
-        "\\N{\\fs14}Many successful approaches in AI and "
+        f"\\N{bilingual_ass_en_font_tag()}Many successful approaches in AI and "
         "machine learning train models to predict "
         "some output Y given some input X."
     )

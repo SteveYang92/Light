@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import logger
-from .fonts import BILINGUAL_MARGIN_V, FontConfig, resolve_font, write_patched_ass
+from .fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, FontConfig, resolve_font, write_patched_ass
 
 # ── Constants ───────────────────────────────────────────
 
@@ -31,7 +31,7 @@ FFPROBE_FULL_PATHS = [
     "/usr/local/opt/ffmpeg-full/bin/ffprobe",
 ]
 
-FONT_SIZE = 20
+FONT_SIZE = BILINGUAL_ASS_ZH_FONT_SIZE
 OUTPUT_SUFFIX = "_pack"
 
 

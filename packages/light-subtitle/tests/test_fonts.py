@@ -6,7 +6,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from light_subtitle.fonts import (
+    BILINGUAL_ASS_ZH_FONT_SIZE,
     FontConfig,
+    bilingual_ass_en_font_tag,
     patch_ass_styles,
     resolve_font,
     write_patched_ass,
@@ -18,12 +20,12 @@ SAMPLE_ASS = (
     "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
     "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
     "Alignment, MarginL, MarginR, MarginV, Encoding\n"
-    "Style: Bilingual,OldFont,20,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
+    f"Style: Bilingual,OldFont,{BILINGUAL_ASS_ZH_FONT_SIZE},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
     "0,0,0,0,100,100,0,0,1,2,1,2,10,10,0,1\n"
     "Style: Annotation,OldFont,40,&H00FFFFFF,&H00000000,&H00000000,&H00000000,"
     "-1,0,0,0,100,100,0,0,1,3,2,7,10,500,10,1\n\n[Events]\n"
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
-    "Dialogue: 0,0:00:01.00,0:00:03.00,Bilingual,,0,0,0,,中文\\N{\\fs14}English\n"
+    f"Dialogue: 0,0:00:01.00,0:00:03.00,Bilingual,,0,0,0,,中文\\N{bilingual_ass_en_font_tag()}English\n"
 )
 
 
@@ -32,7 +34,7 @@ def test_patch_ass_styles_replaces_fontname() -> None:
     assert "Style: Bilingual,NewFont," in patched
     assert "Style: Annotation,NewFont," in patched
     assert "OldFont" not in patched
-    assert "{\\fs14}English" in patched
+    assert f"{bilingual_ass_en_font_tag()}English" in patched
 
 
 def test_patch_ass_styles_filters_by_style_name() -> None:
@@ -48,7 +50,7 @@ def test_patch_ass_styles_sets_margin_v_on_selected_styles() -> None:
         margin_v=20,
         margin_v_styles={"Bilingual"},
     )
-    assert "Style: Bilingual,NewFont,20," in patched
+    assert f"Style: Bilingual,NewFont,{BILINGUAL_ASS_ZH_FONT_SIZE}," in patched
     assert ",2,10,10,20,1" in patched
     assert ",2,7,10,500,10,1" in patched  # Annotation MarginV unchanged
 
@@ -108,11 +110,12 @@ def test_fc_match_family_strips_comma_aliases() -> None:
 
 
 def test_bilingual_style_line_has_no_extra_commas_in_font_field() -> None:
-    from light_subtitle.fonts import BILINGUAL_MARGIN_V, bilingual_style_line
+    from light_subtitle.fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, bilingual_style_line
 
     line = bilingual_style_line("PingFang SC")
     fields = line.removeprefix("Style:").split(",", 3)
     assert fields[1].strip() == "PingFang SC"
+    assert f",PingFang SC,{BILINGUAL_ASS_ZH_FONT_SIZE}," in line
     assert f",10,10,{BILINGUAL_MARGIN_V},1" in line
 
 

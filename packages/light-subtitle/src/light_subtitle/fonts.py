@@ -27,6 +27,15 @@ DEFAULT_FONT = "PingFang SC"
 # Bottom margin for bottom-aligned bilingual subtitles (export + pack burn).
 BILINGUAL_MARGIN_V = 20
 
+# Bilingual ASS typography: Style default = ZH; EN uses inline ``{\fsN}`` override.
+BILINGUAL_ASS_ZH_FONT_SIZE = 20
+BILINGUAL_ASS_EN_FONT_SIZE = 12
+
+
+def bilingual_ass_en_font_tag() -> str:
+    """Inline ASS override prefix for English text in bilingual Dialogue lines."""
+    return f"{{\\fs{BILINGUAL_ASS_EN_FONT_SIZE}}}"
+
 # ASS V4+ style header shared by bilingual and annotation exports.
 ASS_V4_PLUS_STYLE_FORMAT = (
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour,"
@@ -135,7 +144,7 @@ def patch_ass_styles(
     """Replace Fontname (field 2) on ``Style:`` lines in ASS *text*.
 
     When *style_names* is None, all ``Style:`` lines are patched.  Dialogue
-    lines and inline override tags (e.g. ``{\\fs14}``) are left unchanged.
+    lines and inline override tags (e.g. ``bilingual_ass_en_font_tag()``) are left unchanged.
 
     When *margin_v* is set, updates the MarginV field on styles listed in
     *margin_v_styles* (defaults to the same set as *style_names* when that
@@ -196,7 +205,7 @@ def write_patched_ass(
 def bilingual_style_line(font_name: str, margin_v: int = BILINGUAL_MARGIN_V) -> str:
     """Return the Bilingual ASS style line for *font_name*."""
     return (
-        f"Style: Bilingual,{font_name},20,&H00FFFFFF,&H00FFFFFF,"
+        f"Style: Bilingual,{font_name},{BILINGUAL_ASS_ZH_FONT_SIZE},&H00FFFFFF,&H00FFFFFF,"
         f"&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,{margin_v},1\n"
     )
 

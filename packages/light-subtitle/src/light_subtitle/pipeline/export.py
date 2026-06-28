@@ -9,6 +9,7 @@ from ..fonts import (
     ASS_V4_PLUS_STYLE_FORMAT,
     FontConfig,
     annotation_style_line,
+    bilingual_ass_en_font_tag,
     bilingual_style_line,
     default_style_line,
     resolve_font,
@@ -289,7 +290,7 @@ def export_bilingual_ass(
             if zc is not None:
                 parts.append(zc.text.replace("\n", "\\N"))
             if en_text:
-                parts.append(f"{{\\fs14}}{en_text}")
+                parts.append(f"{bilingual_ass_en_font_tag()}{en_text}")
             text = "\\N".join(parts)
             f.write(f"Dialogue: 0,{seconds_to_ass(start_s)},{seconds_to_ass(end_s)},Bilingual,,0,0,0,,{text}\n")
 

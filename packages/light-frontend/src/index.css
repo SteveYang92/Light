@@ -188,7 +188,7 @@ body {
 }
 
 .vjs-light-bilingual-en {
-  /* bilingual.ass uses fs20 + {\fs14} for EN → 70% of ZH */
+  /* Web EN line uses 0.7em (independent of ASS BILINGUAL_ASS_EN_FONT_SIZE) */
   margin-top: 0.15em;
   font-size: 0.7em;
   font-family: "Helvetica Neue", Arial, sans-serif;

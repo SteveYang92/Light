@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
-from light_subtitle.fonts import BILINGUAL_MARGIN_V
+from light_subtitle.fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, bilingual_ass_en_font_tag
 from light_subtitle.pack import PackConfig, run_pack
 
 BILINGUAL_ASS = (
@@ -14,10 +14,10 @@ BILINGUAL_ASS = (
     "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
     "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
     "Alignment, MarginL, MarginR, MarginV, Encoding\n"
-    "Style: Bilingual,EmbeddedFont,20,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
+    f"Style: Bilingual,EmbeddedFont,{BILINGUAL_ASS_ZH_FONT_SIZE},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
     "0,0,0,0,100,100,0,0,1,2,1,2,10,10,0,1\n\n[Events]\n"
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
-    "Dialogue: 0,0:00:01.00,0:00:03.00,Bilingual,,0,0,0,,你好\\N{\\fs14}Hello\n"
+    f"Dialogue: 0,0:00:01.00,0:00:03.00,Bilingual,,0,0,0,,你好\\N{bilingual_ass_en_font_tag()}Hello\n"
 )
 
 

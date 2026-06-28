@@ -267,7 +267,7 @@ output/
 │   └── asr_whisperx.json         ASR 词级结果（引擎名随 --asr 变化）
 ├── {slug}.en.srt / {slug}.en.vtt   源语字幕（短视频/合并后带 slug 前缀）
 ├── {slug}.zh.srt / {slug}.zh.vtt   译语字幕
-├── {slug}.bilingual.ass            双语 ASS（单 Dialogue 合并：ZH 行 + \N + EN 单行 fs14，按 unit_id 配对）
+├── {slug}.bilingual.ass            双语 ASS（单 Dialogue 合并：ZH 行 + \N + EN 单行，字号见 fonts.BILINGUAL_ASS_*）
 ├── {slug}.annotations.ass          副字幕注解（--annotate）
 ├── cues.json                     字幕 cue 列表
 ├── transcript.json               标准化转录（含 word 时间戳，供 QC）
