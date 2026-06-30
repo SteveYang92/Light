@@ -1,8 +1,9 @@
 {
   "case_name": "yt_first5min_scene_b",
   "baseline_run_id": "20260619T144405",
-  "latest_run_id": "20260619T144405",
+  "latest_run_id": "20260630T232104",
   "runs": [
-    "20260619T144405"
+    "20260619T144405",
+    "20260630T232104"
   ]
 }

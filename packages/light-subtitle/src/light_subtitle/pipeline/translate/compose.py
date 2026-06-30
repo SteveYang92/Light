@@ -28,10 +28,6 @@ from ...language import is_sentence_end
 # thoughts and should not be merged regardless of fragment status.
 _MERGE_GAP_MAX = 3.0  # seconds
 
-# Segments ≤ this many words that don't end with sentence-ending
-# punctuation are always merged forward (e.g. "Well,", "So,").
-_MIN_WORDS_FOR_AUTO_MERGE = 3
-
 
 # ── Fragment detection ──────────────────────────────────────────────
 
@@ -61,11 +57,6 @@ def _should_merge(buffer: list[Segment], candidate: Segment) -> bool:
 
     # Buffer's last segment is a fragment (no sentence-ending punct).
     if _is_fragment(buffer[-1]):
-        return True
-
-    # Candidate is very short and doesn't end a sentence (e.g. "Well,"
-    # as a standalone segment).  Merge it forward.
-    if len(candidate.source_text.split()) <= _MIN_WORDS_FOR_AUTO_MERGE and not is_sentence_end(candidate.source_text):
         return True
 
     return False

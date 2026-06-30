@@ -81,7 +81,7 @@ class TestFragmentMerge:
 
 
 class TestShortFragmentAutoMerge:
-    """Very short fragments (≤ 3 words, no sentence-end) always merge."""
+    """Short fragments merge only when the buffer ends incomplete."""
 
     def test_well_merged(self):
         """'Well,' (1 word, comma) → merge forward."""
@@ -94,7 +94,7 @@ class TestShortFragmentAutoMerge:
         assert len(result) == 1
 
     def test_short_fragment_not_sentence_end(self):
-        """3 words, no punct → merge despite prev being complete."""
+        """Short fragment after a complete sentence starts a new buffer."""
         result = compose_segments(
             [
                 _seg("u0000", 0.0, 1.0, "I agree."),
@@ -102,8 +102,9 @@ class TestShortFragmentAutoMerge:
                 _seg("u0002", 2.2, 4.0, "we should proceed."),
             ]
         )
-        assert len(result) == 1
-        assert "So then we should proceed." in result[0].source_text
+        assert len(result) == 2
+        assert result[0].source_text == "I agree."
+        assert "So then we should proceed." in result[1].source_text
 
     def test_short_but_sentence_end_stays(self):
         """3 words ending with . → NOT a fragment, stays separate."""
@@ -256,8 +257,7 @@ class TestEdgeCases:
         assert len(result) == 3
 
     def test_short_fragment_auto_merges_after_complete(self):
-        """Short fragment (≤3 words, no sentence-end) after a complete
-        sentence auto-merges forward."""
+        """Complete sentence stops the buffer; next fragment chain merges separately."""
         result = compose_segments(
             [
                 _seg("u0000", 0.0, 1.0, "first part"),
@@ -266,8 +266,9 @@ class TestEdgeCases:
                 _seg("u0003", 3.2, 4.0, "finished here."),
             ]
         )
-        # "next thought" (2 words, no sentence-end) triggers auto-merge
-        assert len(result) == 1
+        assert len(result) == 2
+        assert "first part second part. Done." in result[0].source_text
+        assert "next thought finished here." in result[1].source_text
 
 
 # ═══════════════════════════════════════════════════════════
@@ -412,3 +413,40 @@ class TestDiscourseFillers:
         assert result[1].source_text == "Hmm."
         assert result[2].unit_id == "mu0248_u0248"
         assert "Entities of sufficiently high complexity" in result[2].source_text
+
+
+# ═══════════════════════════════════════════════════════════
+# Complete sentence boundary (Hancock regression)
+# ═══════════════════════════════════════════════════════════
+
+
+class TestCompleteSentenceBoundary:
+    """A complete sentence must not pull in the next short fragment."""
+
+    def test_complete_sentence_does_not_pull_next_short_fragment(self):
+        """Hancock mu0098_u0102: five ASR segments → three translation units."""
+        result = compose_segments(
+            [
+                _seg("u0098", 304.651, 307.093, "Both of them are historically documented."),
+                _seg("u0099", 307.133, 307.514, "In fact,"),
+                _seg(
+                    "u0100",
+                    307.998,
+                    313.962,
+                    (
+                        "We've never watched a super volcano take over the world, "
+                        "but we've seen asteroids hit other planets."
+                    ),
+                ),
+                _seg("u0101", 314.062, 315.043, "We've actually watched"),
+                _seg("u0102", 315.383, 317.284, "Shoemaker-Levy, like you were talking about before."),
+            ]
+        )
+        assert len(result) == 3
+        assert result[0].unit_id == "mu0098_u0098"
+        assert result[0].source_text == "Both of them are historically documented."
+        assert "In fact," in result[1].source_text
+        assert "asteroids hit other planets." in result[1].source_text
+        assert result[1].unit_id == "mu0099_u0100"
+        assert "We've actually watched Shoemaker-Levy" in result[2].source_text
+        assert result[2].unit_id == "mu0101_u0102"
