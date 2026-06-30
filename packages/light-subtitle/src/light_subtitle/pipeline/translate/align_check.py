@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 
 from light_models import Segment
 
@@ -13,10 +14,38 @@ from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
 
 _ALIGN_CHECK_RETRIES = 3
-_CONFIDENCE_THRESHOLD = 0.85
+_CONFIDENCE_THRESHOLD = 0.90
 _CONTEXT_WINDOW = 2
+_LOG_SNIP_LIMIT = 48
 
-MisalignmentFailure = tuple[str, str, float]
+
+@dataclass(frozen=True)
+class AlignFailure:
+    """One high-confidence alignment failure on a sampled unit."""
+
+    unit_id: str
+    reason: str
+    confidence: float
+    source: str
+    translation: str
+
+
+def _snip(text: str, limit: int = _LOG_SNIP_LIMIT) -> str:
+    flat = text.replace("\n", " ").strip()
+    if len(flat) <= limit:
+        return flat
+    return flat[: limit - 1] + "…"
+
+
+def format_align_failures(failures: list[AlignFailure]) -> str:
+    """Format failures for logs — include the source/translation actually checked."""
+    parts: list[str] = []
+    for f in failures:
+        parts.append(
+            f"{f.unit_id} (conf={f.confidence:.2f}): {f.reason} "
+            f"| src='{_snip(f.source)}' trans='{_snip(f.translation)}'"
+        )
+    return "; ".join(parts)
 
 
 def _alignment_sample_indices(n: int) -> list[int]:
@@ -122,7 +151,8 @@ def _parse_align_response(
     expected_len: int,
     sample_indices: list[int],
     segments: list[Segment],
-) -> tuple[bool, list[MisalignmentFailure]]:
+    parsed_texts: dict[int, str],
+) -> tuple[bool, list[AlignFailure]]:
     """Parse alignment LLM response; conservative pass on parse/length errors."""
     response = response.strip()
     json_match = re.search(r"\[([\s\S]*)\]", response)
@@ -138,17 +168,25 @@ def _parse_align_response(
         )
         return True, []
 
-    failures: list[MisalignmentFailure] = []
+    failures: list[AlignFailure] = []
     for i, item in enumerate(data):
         if not isinstance(item, dict):
             continue
         if not _is_actionable_misaligned(item):
             continue
         seg_idx = sample_indices[i]
-        unit_id = segments[seg_idx].unit_id
+        seg = segments[seg_idx]
         reason = str(item.get("reason", "") or "")
         confidence = float(item["confidence"])
-        failures.append((unit_id, reason, confidence))
+        failures.append(
+            AlignFailure(
+                unit_id=seg.unit_id,
+                reason=reason,
+                confidence=confidence,
+                source=seg.source_text,
+                translation=parsed_texts.get(seg_idx, ""),
+            )
+        )
 
     return len(failures) == 0, failures
 
@@ -160,15 +198,15 @@ def check_batch_alignment(
     all_segments: list[Segment],
     batch_idx: int,
     config: SubtitleConfig,
-) -> tuple[bool, list[MisalignmentFailure], dict]:
+) -> tuple[bool, list[AlignFailure], dict]:
     """Check first/middle/last sampled units for source/translation alignment.
 
     Each check includes the target source/translation pair plus ``before`` /
     ``after`` neighbor context from *all_segments*. In-batch neighbors include
     translations; cross-batch neighbors are source-only.
 
-    Returns ``(aligned, failures, usage)`` where *failures* lists
-    ``(unit_id, reason, confidence)`` for high-confidence misalignments only.
+    Returns ``(aligned, failures, usage)`` where *failures* are
+    :class:`AlignFailure` records for high-confidence misalignments only.
     """
     if not segments:
         return True, [], {}
@@ -197,6 +235,7 @@ def check_batch_alignment(
                 len(sample_indices),
                 sample_indices,
                 segments,
+                parsed_texts,
             )
             return aligned, failures, usage
         except (json.JSONDecodeError, ValueError) as e:

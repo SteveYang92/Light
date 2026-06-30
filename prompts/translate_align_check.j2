@@ -18,13 +18,29 @@ JSON with a `checks` array. Each item:
 - `before` / `after`: neighboring cues in playback order (nearest neighbor first). Context entries may omit `translation` when unavailable — use their `source` only.
 - Judge whether **this item's** `translation` corresponds to **this item's** `source`. Use `before`/`after` to catch off-by-one errors (translation content matching a neighbor instead).
 
-## Rules (conservative)
+## Rules (conservative — false alarms are costly)
 
 1. **When unsure → `aligned: true`.**
-2. **`aligned: false` only** when highly confident the translation does not match the source.
-3. **Must align true** for: compression, omitted fillers, fragments, paraphrase, same meaning with different wording.
-4. `confidence` (0.0–1.0): confidence in your judgment. Clear mismatch → ≥ 0.85; uncertain → below 0.85.
-5. `reason`: brief note when misaligned; empty when aligned.
+2. **`aligned: false` only** when highly confident the translation belongs to a **different topic, entity, or cue** — not merely a different wording.
+3. **Must return `aligned: true`** for:
+   - Compression, omitted fillers, fragments, paraphrase
+   - Same topic and key entities/names/places preserved
+   - **Semantic narrowing or broadening** — a general source word rendered as a more specific target word, or vice versa, when the referent is the same
+   - **Interpretive but plausible** subtitle renderings — natural target-language phrasing over literal word-for-word mapping
+   - Wording a human subtitle editor would reasonably accept
+4. **Do NOT flag** because:
+   - The translation is more specific or less specific than the source but same referent
+   - A general source word maps to a narrower target word, or vice versa
+   - You would describe the issue as "could have been translated differently" rather than "wrong cue / wrong content"
+5. **`aligned: false` is for clear errors only**, such as:
+   - Wrong topic or subject matter
+   - Wrong named entity or number
+   - Off-by-one: translation clearly matches a neighbor's `source` in `before`/`after`, not the target `source`
+6. `confidence` (0.0–1.0): confidence in your judgment. Clear mismatch → ≥ 0.85; uncertain or stylistic difference → below 0.85 with `aligned: true`.
+7. `reason`: brief note when misaligned; empty when aligned.
+   - Describe only the **top-level** `source` vs `translation` pair.
+   - Do **not** attribute words/phrases to the target translation unless they literally appear in that `translation` field (not in `before`/`after`).
+   - For off-by-one: say the target translation better matches a neighbor's `source`.
 
 ## Output
 
@@ -33,7 +49,7 @@ JSON array, **same length and order** as input `checks` — one result per check
 ```json
 [
   {"aligned": true, "reason": "", "confidence": 0.95},
-  {"aligned": false, "reason": "Translation is about pricing; source is about scheduling", "confidence": 0.92}
+  {"aligned": false, "reason": "brief explanation of clear mismatch", "confidence": 0.92}
 ]
 ```
 

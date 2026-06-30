@@ -127,6 +127,22 @@ SCENARIOS: dict[str, Scenario] = {
         batch_idx=2,
         expect_actionable_misaligned=True,
     ),
+    "semantic_narrowing": Scenario(
+        name="semantic_narrowing",
+        description="stuff → 影像 is acceptable subtitle narrowing (Camas Prairie regression).",
+        sources=[
+            "Previous line about the region.",
+            "stuff from the Camas Prairie.",
+            "Next line continues.",
+        ],
+        translations=[
+            "关于那个地区的上一句。",
+            "卡马斯草原的影像。",
+            "下一句继续。",
+        ],
+        batch_idx=0,
+        expect_actionable_misaligned=False,
+    ),
 }
 
 

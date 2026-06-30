@@ -113,21 +113,26 @@ class TestParseAlignResponse:
                 {"aligned": True, "reason": "", "confidence": 0.90},
             ]
         )
-        aligned, failures = align_check._parse_align_response(response, 3, [0, 1, 2], segments)
+        parsed = {0: "a", 1: "b", 2: "c"}
+        aligned, failures = align_check._parse_align_response(response, 3, [0, 1, 2], segments, parsed)
         assert aligned is False
-        assert failures == [("u1", "wrong topic", 0.92)]
+        assert len(failures) == 1
+        assert failures[0].unit_id == "u1"
+        assert failures[0].reason == "wrong topic"
+        assert failures[0].confidence == 0.92
+        assert failures[0].translation == "b"
 
     def test_low_confidence_false_passes(self):
         segments = [_seg("u0")]
         response = json.dumps([{"aligned": False, "reason": "maybe wrong", "confidence": 0.60}])
-        aligned, failures = align_check._parse_align_response(response, 1, [0], segments)
+        aligned, failures = align_check._parse_align_response(response, 1, [0], segments, {0: "x"})
         assert aligned is True
         assert failures == []
 
     def test_length_mismatch_conservative_pass(self):
         segments = [_seg("u0"), _seg("u1")]
         response = json.dumps([{"aligned": False, "reason": "x", "confidence": 0.99}])
-        aligned, failures = align_check._parse_align_response(response, 2, [0, 1], segments)
+        aligned, failures = align_check._parse_align_response(response, 2, [0, 1], segments, {0: "a", 1: "b"})
         assert aligned is True
         assert failures == []
 
@@ -162,7 +167,21 @@ class TestCheckBatchAlignment:
             client, segments, {0: "价格讨论"}, segments, 0, _config()
         )
         assert aligned is False
-        assert failures == [("mid", "clear mismatch", 0.91)]
+        assert failures[0].unit_id == "mid"
+        assert failures[0].reason == "clear mismatch"
+
+    def test_format_align_failures_includes_source_and_translation(self):
+        failure = align_check.AlignFailure(
+            unit_id="u1",
+            reason="wrong topic",
+            confidence=0.91,
+            source="scheduling meeting",
+            translation="价格讨论",
+        )
+        text = align_check.format_align_failures([failure])
+        assert "u1" in text
+        assert "scheduling meeting" in text
+        assert "价格讨论" in text
 
 
 class TestTranslateBatchAlignmentRetry:

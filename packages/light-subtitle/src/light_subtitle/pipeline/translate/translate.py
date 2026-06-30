@@ -16,7 +16,7 @@ from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
 from ...usage.tracker import merge_token_usage
-from .align_check import check_batch_alignment
+from .align_check import check_batch_alignment, format_align_failures
 from .merge_apply import apply_display_merges, covered_unit_ids
 from .merge_review import MergeHint, log_merge_hints, review_merge_hints
 
@@ -345,14 +345,15 @@ def _translate_batch(
             )
             merge_token_usage(usage, align_usage)
             if not aligned:
-                detail = "; ".join(f"{uid} (conf={conf:.2f}): {reason}" for uid, reason, conf in failures)
+                detail = format_align_failures(failures)
                 logger.warning(
-                    f"    Batch {batch_idx} alignment failed (attempt {attempt + 1}/{max_retries}): {detail}"
+                    f"    Align check failed batch@{batch_idx} "
+                    f"(attempt {attempt + 1}/{max_retries}): {detail}"
                 )
                 if attempt < max_retries - 1:
                     continue
                 logger.warning(
-                    f"    Batch {batch_idx} alignment check failed after {max_retries} attempts; using last result"
+                    f"    Align check failed batch@{batch_idx} after {max_retries} attempts; using last result"
                 )
 
             merge_hints, review_usage = review_merge_hints(client, segments, parsed_texts, config)
