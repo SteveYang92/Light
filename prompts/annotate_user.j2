@@ -1,0 +1,13 @@
+{% if already_annotated %}
+## Already Annotated Terms (DO NOT repeat)
+
+{% for term in already_annotated %}
+- {{ term }}
+{% endfor %}
+{% endif %}
+
+## Input
+
+{{ batch_json }}
+
+Output ONLY valid JSON as described above.

@@ -20,6 +20,8 @@ from ..usage.tracker import merge_token_usage, save_step_usage
 
 BATCH_SIZE = 20
 
+_SUMMARY_KEYS = ("title", "domain", "overview", "key_topics")
+
 
 def generate_annotations(
     translated_cues: list[SubtitleCue],
@@ -47,6 +49,8 @@ def generate_annotations(
         model=config.llm_model,
     )
 
+    system_prompt = _render_annotate_system_prompt(config, output_dir)
+
     annotated_terms: list[str] = []  # Cross-batch dedup context
     total_usage: dict[str, int] = {}
 
@@ -64,15 +68,17 @@ def generate_annotations(
             )
 
         batch_json_str = json.dumps(batch_data, ensure_ascii=False)
-        system_prompt = render_prompt(
-            "annotate.j2",
-            batch_json=batch_json_str,
-            already_annotated=annotated_terms if annotated_terms else None,
+        user_prompt = _render_annotate_user_prompt(
+            batch_json_str,
+            annotated_terms if annotated_terms else None,
         )
 
         try:
             response, usage = client.chat(
-                [{"role": "user", "content": system_prompt}],
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
                 temperature=0.1,
             )
         except Exception:
@@ -110,6 +116,121 @@ def generate_annotations(
         save_step_usage(Path(output_dir) / "annotations" / "usage.json", total_usage)
 
     return translated_cues, total_usage or None
+
+
+# ── Context loading and filtering ───────────────────────────────────────────
+
+
+def _load_domain_context(output_dir: Path) -> dict | None:
+    """Load cached domain context from the correct step artifact."""
+    cache_path = output_dir / "transcript_correct" / "domain_context.json"
+    if not cache_path.exists():
+        return None
+    try:
+        data = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _filter_summary(raw: dict | None) -> dict | None:
+    """Keep title, domain, overview, key_topics; drop speakers."""
+    if not raw:
+        return None
+    filtered = {key: raw[key] for key in _SUMMARY_KEYS if raw.get(key)}
+    return filtered or None
+
+
+def _filter_terms(domain_context: dict | None) -> list[dict[str, str]] | None:
+    """Extract term + context from domain_context terminology."""
+    if not domain_context:
+        return None
+    terminology = domain_context.get("terminology")
+    if not isinstance(terminology, list):
+        return None
+
+    terms: list[dict[str, str]] = []
+    for entry in terminology:
+        if not isinstance(entry, dict):
+            continue
+        term = entry.get("term")
+        if not term:
+            continue
+        item: dict[str, str] = {"term": str(term)}
+        context = entry.get("context")
+        if context:
+            item["context"] = str(context)
+        terms.append(item)
+
+    return terms or None
+
+
+def _filter_glossary(raw: dict | None) -> dict[str, str] | None:
+    """Keep translated glossary entries; skip keep-as-is (src == tgt)."""
+    if not raw:
+        return None
+    filtered = {str(src): str(tgt) for src, tgt in raw.items() if str(src) != str(tgt)}
+    return filtered or None
+
+
+def _filter_annotate_context(
+    content_summary: dict | None,
+    domain_context: dict | None,
+    glossary: dict | None,
+) -> tuple[dict | None, list[dict[str, str]] | None, dict[str, str] | None]:
+    """Filter upstream context to annotate-specific fields."""
+    summary = _filter_summary(content_summary)
+    terms = _filter_terms(domain_context)
+    filtered_glossary = _filter_glossary(glossary)
+    return summary, terms, filtered_glossary
+
+
+def _render_annotate_system_prompt(
+    config: SubtitleConfig,
+    output_dir: str | Path | None,
+) -> str:
+    """Render system prompt once per video run (cache-friendly)."""
+    domain_context: dict | None = None
+    if output_dir is not None:
+        domain_context = _load_domain_context(Path(output_dir))
+
+    raw_glossary = config.glossary or None
+    summary, terms, filtered_glossary = _filter_annotate_context(
+        config.content_summary,
+        domain_context,
+        raw_glossary,
+    )
+
+    raw_glossary_count = len(raw_glossary) if raw_glossary else 0
+    filtered_glossary_count = len(filtered_glossary) if filtered_glossary else 0
+    logger.info(
+        "    Annotate context: "
+        f"summary={'yes' if summary else 'no'}, "
+        f"terms={len(terms) if terms else 0}, "
+        f"glossary={filtered_glossary_count}/{raw_glossary_count}"
+    )
+
+    return render_prompt(
+        "annotate_system.j2",
+        summary=summary,
+        terms=terms,
+        glossary=filtered_glossary,
+    )
+
+
+def _render_annotate_user_prompt(
+    batch_json: str,
+    already_annotated: list[str] | None,
+) -> str:
+    """Render per-batch user prompt with cue data and dedup list."""
+    return render_prompt(
+        "annotate_user.j2",
+        batch_json=batch_json,
+        already_annotated=already_annotated,
+    )
+
+
+# ── Response parsing and dedup ──────────────────────────────────────────────
 
 
 def _extract_json(response: str) -> list | None:

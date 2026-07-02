@@ -7,6 +7,33 @@ A JSON array. Each object has:
 - "source": English original (may span multiple merged units)
 - "translation": Chinese translation (may combine several short cues into one line)
 
+{% if summary or terms or glossary %}
+## Context (reference only — do not annotate every listed term)
+
+{% if summary %}
+{% if summary.title %}**Title**: {{ summary.title }}{% endif %}
+{% if summary.domain %}**Domain**: {{ summary.domain }}{% endif %}
+{% if summary.overview %}**Overview**: {{ summary.overview }}{% endif %}
+{% if summary.key_topics %}**Key topics**: {{ summary.key_topics | join(", ") }}{% endif %}
+{% endif %}
+
+{% if terms %}
+**Known terms**:
+{% for entry in terms %}
+- {{ entry.term }}{% if entry.context %} ({{ entry.context }}){% endif %}
+{% endfor %}
+{% endif %}
+
+{% if glossary %}
+**Terminology** (use these Chinese forms in annotations):
+{% for src, tgt in glossary.items() %}
+- {{ src }}→{{ tgt }}
+{% endfor %}
+{% endif %}
+
+Use context above to calibrate density; glossary terms must match listed Chinese forms.
+{% endif %}
+
 ## Annotation Rules
 
 ### Level 1: Information Density Assessment (MOST IMPORTANT)
@@ -71,17 +98,3 @@ JSON array. Start with `[`, end with `]`. No markdown fences, no commentary.
   {"unit_id": "u001", "annotation": "RL训练：强化学习，通过奖励信号\N训练AI模型的方法"}
 ]
 ```
-
-{% if already_annotated %}
-## Already Annotated Terms (DO NOT repeat)
-
-{% for term in already_annotated %}
-- {{ term }}
-{% endfor %}
-{% endif %}
-
-## Input
-
-{{ batch_json }}
-
-Output ONLY valid JSON as described above.
