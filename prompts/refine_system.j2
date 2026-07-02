@@ -47,36 +47,6 @@ Below are subtitle translations that need improvement. Translations are split ac
 
 ---
 
-# Input Groups
-
-{% for fix in fixes %}
-## Fix Group #{{ loop.index }}
-
-{% for ctx in fix.context %}
-**Context** (approved, do NOT change):
-  [{{ ctx.unit_id }}] src: "{{ ctx.source }}" → "{{ ctx.translation }}"
-{% endfor %}
-
-**To Fix** ({{ fix.entries|length }} consecutive segments — rewrite together):
-{% for e in fix.entries %}
-  [{{ e.unit_id }}] source: "{{ e.source }}" | duration: {{ e.duration }}s (max ~{{ e.max_chars }} chars)
-                current: "{{ e.current }}"
-{% endfor %}
-
-**Issues to fix:**
-{% for issue in fix.issues %}
-  - {{ issue }}
-{% endfor %}
-{% if fix.suggestions %}
-**Evaluator suggestions:**
-{% for sug in fix.suggestions %}
-  - {{ sug }}
-{% endfor %}
-{% endif %}
-
-{% endfor %}
----
-
 # Output Format
 
 Return ONLY a JSON array with the FIXED translations:

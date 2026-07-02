@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from light_models import Segment, SubtitleCue
@@ -14,11 +13,12 @@ from light_models.punctuation import CJK_CLAUSE_PUNCT, SENTENCE_ENDS
 from ... import logger
 from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
+from ...llm.parallel import run_parallel_with_warmup
 from ...llm.prompts import render_prompt
-from ...usage.tracker import merge_token_usage
-from .align_check import check_batch_alignment, format_align_failures
+from ...usage.tracker import merge_token_usage, pick_usage_fields
+from .align_check import check_batch_alignment, format_align_failures, render_align_check_system_prompt
 from .merge_apply import apply_display_merges, covered_unit_ids
-from .merge_review import MergeHint, log_merge_hints, review_merge_hints
+from .merge_review import MergeHint, log_merge_hints, render_merge_review_system_prompt, review_merge_hints
 
 CHUNK_SIZE = 100
 MAX_WORKERS = 4
@@ -38,14 +38,8 @@ def _render_translate_prompt(config: SubtitleConfig) -> str:
 
 
 def _translation_context_fields(config: SubtitleConfig) -> dict:
-    """Shared glossary + summary fields for translation user payloads."""
-    fields: dict = {
-        "target_lang": config.target_lang,
-        "glossary": config.glossary,
-    }
-    if config.content_summary is not None:
-        fields["content_summary"] = config.content_summary
-    return fields
+    """Per-batch user payload fields (glossary/summary live in system prompt)."""
+    return {"target_lang": config.target_lang}
 
 
 def run(
@@ -67,6 +61,8 @@ def run(
     )
 
     system_prompt = _render_translate_prompt(config)
+    align_system_prompt = render_align_check_system_prompt(config)
+    merge_system_prompt = render_merge_review_system_prompt()
     existing_cues: list[SubtitleCue] = []
     hint_records: list[dict[str, str]] = []
     if tx_dir is not None:
@@ -89,7 +85,16 @@ def run(
     if len(batch_chunks) == 1:
         chunk = batch_chunks[0]
         abs_idx = segments.index(chunk[0]) if chunk else 0
-        cues, usage, hints = _translate_batch(client, system_prompt, chunk, segments, abs_idx, config)
+        cues, usage, hints, batch_breakdown = _translate_batch(
+            client,
+            system_prompt,
+            chunk,
+            segments,
+            abs_idx,
+            config,
+            align_system_prompt=align_system_prompt,
+            merge_system_prompt=merge_system_prompt,
+        )
         for c in cues:
             existing[c.unit_id] = c
         ordered_1_1 = _order_cues(segments, existing)
@@ -97,41 +102,45 @@ def run(
         if tx_dir is not None:
             _save_partial(tx_dir, ordered_1_1, hint_records, segments)
         ordered = _finalize_translated_cues(ordered_1_1, _hints_from_records(segments, hint_records), config)
+        if batch_breakdown:
+            usage = usage or {}
+            usage["breakdown"] = batch_breakdown
         return ordered, usage
 
     total_usage: dict[str, int] = {}
+    usage_breakdown: dict[str, dict] = {}
 
-    with ThreadPoolExecutor(max_workers=min(MAX_WORKERS, len(batch_chunks))) as executor:
-        futures = {
-            executor.submit(
-                logger.run_with_file_logger(
-                    _translate_batch,
-                    client,
-                    system_prompt,
-                    chunk,
-                    segments,
-                    segments.index(chunk[0]),
-                    config,
-                ),
-            ): segments.index(chunk[0])
-            for chunk in batch_chunks
-            if chunk
-        }
-        results: dict[int, tuple[list[SubtitleCue], dict, list[MergeHint]]] = {}
-        for future in as_completed(futures):
-            idx = futures[future]
-            results[idx] = future.result()
+    def _run_chunk(chunk: list[Segment]) -> tuple[list[SubtitleCue], dict, list[MergeHint], dict[str, dict]]:
+        abs_idx = segments.index(chunk[0])
+        return _translate_batch(
+            client,
+            system_prompt,
+            chunk,
+            segments,
+            abs_idx,
+            config,
+            align_system_prompt=align_system_prompt,
+            merge_system_prompt=merge_system_prompt,
+        )
 
-        for idx in sorted(results):
-            cues, usage, hints = results[idx]
-            hint_records = _dedupe_hint_records(hint_records + _hint_records_from_hints(hints))
-            for c in cues:
-                existing[c.unit_id] = c
-            for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
-                total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)
-            ordered_1_1 = _order_cues(segments, existing)
-            if tx_dir is not None:
-                _save_partial(tx_dir, ordered_1_1, hint_records, segments)
+    tasks = [
+        (lambda c=chunk: logger.run_with_file_logger(_run_chunk, c)(), segments.index(chunk[0]))
+        for chunk in batch_chunks
+        if chunk
+    ]
+    results = run_parallel_with_warmup(tasks, max_workers=MAX_WORKERS)
+
+    for idx in sorted(results):
+        cues, usage, hints, batch_breakdown = results[idx]
+        hint_records = _dedupe_hint_records(hint_records + _hint_records_from_hints(hints))
+        for c in cues:
+            existing[c.unit_id] = c
+        merge_token_usage(total_usage, usage)
+        for step_id, step_usage in batch_breakdown.items():
+            merge_token_usage(usage_breakdown.setdefault(step_id, {}), step_usage)
+        ordered_1_1 = _order_cues(segments, existing)
+        if tx_dir is not None:
+            _save_partial(tx_dir, ordered_1_1, hint_records, segments)
 
     ordered_1_1 = _order_cues(segments, existing)
     ordered = _finalize_translated_cues(
@@ -139,6 +148,8 @@ def run(
         _hints_from_records(segments, hint_records),
         config,
     )
+    if usage_breakdown:
+        total_usage["breakdown"] = usage_breakdown
     return ordered, total_usage or None
 
 
@@ -323,7 +334,10 @@ def _translate_batch(
     all_segments: list[Segment],
     batch_idx: int,
     config: SubtitleConfig,
-) -> tuple[list[SubtitleCue], dict, list[MergeHint]]:
+    *,
+    align_system_prompt: str | None = None,
+    merge_system_prompt: str | None = None,
+) -> tuple[list[SubtitleCue], dict, list[MergeHint], dict[str, dict]]:
     payload = _build_payload(segments, all_segments, batch_idx, config)
 
     messages = [
@@ -338,17 +352,23 @@ def _translate_batch(
     for attempt in range(max_retries):
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
+            translate_usage = pick_usage_fields(usage)
             cues, parsed_texts = _parse_response(response, segments, config, all_segments)
 
             aligned, failures, align_usage = check_batch_alignment(
-                client, segments, parsed_texts, all_segments, batch_idx, config
+                client,
+                segments,
+                parsed_texts,
+                all_segments,
+                batch_idx,
+                config,
+                system_prompt=align_system_prompt,
             )
             merge_token_usage(usage, align_usage)
             if not aligned:
                 detail = format_align_failures(failures)
                 logger.warning(
-                    f"    Align check failed batch@{batch_idx} "
-                    f"(attempt {attempt + 1}/{max_retries}): {detail}"
+                    f"    Align check failed batch@{batch_idx} (attempt {attempt + 1}/{max_retries}): {detail}"
                 )
                 if attempt < max_retries - 1:
                     continue
@@ -356,10 +376,21 @@ def _translate_batch(
                     f"    Align check failed batch@{batch_idx} after {max_retries} attempts; using last result"
                 )
 
-            merge_hints, review_usage = review_merge_hints(client, segments, parsed_texts, config)
+            merge_hints, review_usage = review_merge_hints(
+                client,
+                segments,
+                parsed_texts,
+                config,
+                system_prompt=merge_system_prompt,
+            )
             merge_token_usage(usage, review_usage)
             log_merge_hints(merge_hints)
-            return cues, usage, merge_hints
+            breakdown = {
+                "translate.translate": translate_usage,
+                "translate.align_check": pick_usage_fields(align_usage),
+                "translate.merge_review": pick_usage_fields(review_usage),
+            }
+            return cues, usage, merge_hints, breakdown
         except (json.JSONDecodeError, ValueError) as e:
             last_error = e
             if attempt < max_retries - 1:
@@ -681,6 +712,7 @@ def translate_missing(
         model=config.llm_model,
     )
     system_prompt = _render_translate_prompt(config)
+    merge_system_prompt = render_merge_review_system_prompt()
 
     all_cues: list[SubtitleCue] = []
     total_usage: dict[str, int] = {}
@@ -708,7 +740,7 @@ def translate_missing(
             payload_items.append(entry)
 
         payload = {
-            **_translation_context_fields(config),
+            "target_lang": config.target_lang,
             "units": payload_items,
         }
 
@@ -720,12 +752,13 @@ def translate_missing(
         try:
             response, usage = client.chat(messages, temperature=config.llm_temperature)
             cues, parsed_texts = _parse_response(response, [s], config, segments)
-            merge_hints, review_usage = review_merge_hints(client, [s], parsed_texts, config)
+            merge_hints, review_usage = review_merge_hints(
+                client, [s], parsed_texts, config, system_prompt=merge_system_prompt
+            )
             merge_token_usage(usage, review_usage)
             log_merge_hints(merge_hints)
             all_cues.extend(cues)
-            for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
-                total_usage[k] = total_usage.get(k, 0) + usage.get(k, 0)
+            merge_token_usage(total_usage, usage)
         except Exception as e:
             logger.warning(f"      Retry failed for {s.unit_id}: {e}")
 

@@ -24,7 +24,7 @@ def _segment(unit_id: str, text: str) -> Segment:
 
 
 class TestTranslationContextInjection:
-    def test_payload_includes_glossary_and_summary(self):
+    def test_payload_omits_glossary_and_summary(self):
         config = SubtitleConfig(
             input_path="test.wav",
             target_lang="zh",
@@ -33,14 +33,15 @@ class TestTranslationContextInjection:
         )
         segments = [_segment("u0001", "RL training is hard")]
         payload = _build_payload(segments, segments, 0, config)
-        assert payload["glossary"] == {"RL": "强化学习"}
-        assert payload["content_summary"]["overview"] == "AI research talk"
+        assert payload["target_lang"] == "zh"
+        assert "glossary" not in payload
+        assert "content_summary" not in payload
+        assert "units" in payload
 
-    def test_context_fields_omit_summary_when_none(self):
+    def test_context_fields_only_target_lang(self):
         config = SubtitleConfig(input_path="test.wav", target_lang="zh")
         fields = _translation_context_fields(config)
-        assert "content_summary" not in fields
-        assert fields["glossary"] == {}
+        assert fields == {"target_lang": "zh"}
 
     def test_prompt_includes_glossary_and_summary(self):
         config = SubtitleConfig(
@@ -50,7 +51,7 @@ class TestTranslationContextInjection:
             content_summary={"overview": "Talk about AI scaling"},
         )
         prompt = _render_translate_prompt(config)
-        assert "MANDATORY" in prompt
+        assert "Mandatory Glossary" in prompt
         assert "scaling" in prompt
-        assert "Content Summary" in prompt
+        assert "Global Context Summary" in prompt
         assert "AI scaling" in prompt

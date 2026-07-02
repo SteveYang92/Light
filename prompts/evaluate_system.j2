@@ -101,18 +101,6 @@ Items with no issues → leave suggestion empty.
 
 ---
 
-# Input Data
-
-{% for item in items %}
---- Item {{ loop.index }} ---
-unit_id: {{ item.unit_id }}
-duration: {{ item.duration }}s
-source: "{{ item.source }}"
-translation: "{{ item.translation }}"
-{% endfor %}
-
----
-
 # Output Format
 
 Return ONLY a JSON array. Each object:

@@ -78,9 +78,7 @@ class TestBuildAlignPayload:
         all_segments = [_seg(f"g{i}", f"source {i}") for i in range(5)]
         batch = all_segments[1:4]
         parsed = {0: "译1", 1: "译2", 2: "译3"}
-        payload = align_check._build_align_payload(
-            batch, parsed, [1], all_segments, batch_idx=1, config=_config()
-        )
+        payload = align_check._build_align_payload(batch, parsed, [1], all_segments, batch_idx=1, config=_config())
         assert payload["target_lang"] == "zh"
         assert len(payload["checks"]) == 1
         check = payload["checks"][0]
@@ -92,9 +90,7 @@ class TestBuildAlignPayload:
     def test_sampled_units_each_have_check_entry(self):
         batch = [_seg("b0"), _seg("b1"), _seg("b2"), _seg("b3"), _seg("b4")]
         parsed = {i: f"译{i}" for i in range(5)}
-        payload = align_check._build_align_payload(
-            batch, parsed, [0, 2, 4], batch, batch_idx=0, config=_config()
-        )
+        payload = align_check._build_align_payload(batch, parsed, [0, 2, 4], batch, batch_idx=0, config=_config())
         assert len(payload["checks"]) == 3
         for check in payload["checks"]:
             assert "source" in check

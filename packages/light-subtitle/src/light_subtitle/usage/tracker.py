@@ -93,6 +93,13 @@ def format_token_usage(usage: dict[str, Any] | None) -> str:
     return " ".join(parts)
 
 
+def pick_usage_fields(usage: dict[str, Any] | None) -> dict[str, Any]:
+    """Copy token usage fields present in *usage*."""
+    if not usage:
+        return {}
+    return {key: usage[key] for key in TOKEN_INT_KEYS if key in usage and usage[key] is not None}
+
+
 def usage_delta(before: dict[str, Any] | None, after: dict[str, Any] | None) -> dict[str, Any]:
     """Return token fields added between *before* and *after* usage snapshots."""
     if not after:

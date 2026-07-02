@@ -226,13 +226,14 @@ def _llm_split_batch(
         model=config.llm_model,
     )
 
+    system_prompt = render_prompt("compose_split_system.j2")
     result: dict[str, list[Segment]] = {}
     total_usage: dict = {}
 
     for batch_start in range(0, len(overlong_segments), BATCH_SIZE):
         batch = overlong_segments[batch_start : batch_start + BATCH_SIZE]
         label = f"{batch_start + 1}-{batch_start + len(batch)}"
-        attempt, usage = _run_llm_split_attempt(client, batch, config, label)
+        attempt, usage = _run_llm_split_attempt(client, system_prompt, batch, config, label)
         merge_token_usage(total_usage, usage)
         result.update(attempt.splits)
 
@@ -243,7 +244,7 @@ def _llm_split_batch(
                 f"mismatch={attempt.mismatch_count}, absent={attempt.absent_count}; "
                 f"retrying unresolved={len(attempt.unresolved)}"
             )
-            retry, retry_usage = _run_llm_split_attempt(client, attempt.unresolved, config, label)
+            retry, retry_usage = _run_llm_split_attempt(client, system_prompt, attempt.unresolved, config, label)
             merge_token_usage(total_usage, retry_usage)
             result.update(retry.splits)
             logger.info(
@@ -304,17 +305,21 @@ def _run_llm_split_single(
 
 def _run_llm_split_attempt(
     client: OpenAIClient,
+    system_prompt: str,
     batch: list[Segment],
     config: SubtitleConfig,
     label: str,
 ) -> tuple[_BatchAttempt, dict]:
     """Run one LLM split attempt and classify unresolved items."""
     batch_json_str = json.dumps(_batch_payload(batch, config.max_duration), ensure_ascii=False)
-    system_prompt = render_prompt("compose_split.j2", batch_json=batch_json_str)
+    user_prompt = render_prompt("compose_split_user.j2", batch_json=batch_json_str)
 
     try:
         response, usage = client.chat(
-            [{"role": "user", "content": system_prompt}],
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
             temperature=0.1,
         )
     except Exception:

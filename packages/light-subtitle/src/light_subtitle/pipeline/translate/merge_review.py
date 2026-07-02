@@ -22,8 +22,13 @@ _OPEN_END_SUFFIXES = ("……", "…", "——", "—")
 MergeHint = tuple[Segment, Segment, str, str]
 
 
-def _render_merge_review_prompt() -> str:
+def render_merge_review_system_prompt() -> str:
+    """Public alias for merge-review system prompt rendering."""
     return render_prompt("merge_review.j2", gap_closure_false_ms=_CLOSURE_GAP_FALSE_MS)
+
+
+def _render_merge_review_prompt() -> str:
+    return render_merge_review_system_prompt()
 
 
 def _ends_with_closure(text: str) -> bool:
@@ -155,12 +160,14 @@ def review_merge_hints(
     segments: list[Segment],
     parsed_texts: dict[int, str],
     config: SubtitleConfig,
+    *,
+    system_prompt: str | None = None,
 ) -> tuple[list[MergeHint], dict]:
     """Run LLM merge review on one batch of translated texts."""
     if len(segments) <= 1:
         return [], {}
 
-    system_prompt = _render_merge_review_prompt()
+    system_prompt = system_prompt or _render_merge_review_prompt()
     max_true = max(1, (len(segments) + 23) // 24)
     payload = {
         "max_merge_true": max_true,

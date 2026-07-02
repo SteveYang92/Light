@@ -95,11 +95,12 @@ def refine_translations(
 
     refined_cues: list[SubtitleCue] = []
     total_usage: dict = {}
+    system_prompt = _render_refine_system_prompt(config)
 
     # Process in small batches to amortize LLM overhead.
     for batch_idx in range(0, len(groups), REFINE_BATCH_SIZE):
         batch = groups[batch_idx : batch_idx + REFINE_BATCH_SIZE]
-        batch_cues, usage = _refine_batch(batch, all_segments, cue_map, score_map, client, config)
+        batch_cues, usage = _refine_batch(batch, all_segments, cue_map, score_map, client, config, system_prompt)
         refined_cues.extend(batch_cues)
         merge_token_usage(total_usage, usage)
 
@@ -139,11 +140,15 @@ def _refine_batch(
     score_map: dict[str, QualityScore],
     client,
     config: SubtitleConfig,
+    system_prompt: str,
 ) -> tuple[list[SubtitleCue], dict]:
     """Refine a batch of low-quality translation groups."""
-    prompt = _build_refine_prompt(groups, all_segments, cue_map, score_map, config)
+    user_prompt = _build_refine_user_prompt(groups, all_segments, cue_map, score_map, config)
 
-    messages = [{"role": "user", "content": prompt}]
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
 
     try:
         response, usage = client.chat(messages, temperature=0.2)
@@ -157,30 +162,36 @@ def _refine_batch(
 # ── Prompt construction ──────────────────────────────────────────────────────
 
 
-def _build_refine_prompt(
+def _render_refine_system_prompt(config: SubtitleConfig) -> str:
+    """Build cache-friendly system prompt for refinement."""
+    return render_prompt(
+        "refine_system.j2",
+        target_lang=config.target_lang,
+        glossary=config.glossary,
+        content_summary=config.content_summary,
+    )
+
+
+def _build_refine_fixes(
     groups: list[list[tuple[int, str, Segment]]],
     all_segments: list[Segment],
     cue_map: dict[str, SubtitleCue],
     score_map: dict[str, QualityScore],
-    config: SubtitleConfig,
-) -> str:
-    """Build a refinement prompt with grouped consecutive low-scoring segments."""
+) -> list[dict]:
+    """Build fix-group structures for the refine user prompt."""
     fixes: list[dict] = []
 
     for group in groups:
-        # Find the range of segment indices in this group.
         group_indices = [seg_idx for seg_idx, _, _ in group]
         min_idx = min(group_indices)
         max_idx = max(group_indices)
 
-        # Context: CONTEXT_WINDOW segments before/after the group.
         ctx_start = max(0, min_idx - CONTEXT_WINDOW)
         ctx_end = min(len(all_segments), max_idx + CONTEXT_WINDOW + 1)
 
         context: list[dict] = []
         for ci in range(ctx_start, ctx_end):
             cs = all_segments[ci]
-            # Skip segments that are in the fix group.
             if any(cs.unit_id == uid for _, uid, _ in group):
                 continue
             ctx_cue = cue_map.get(cs.unit_id)
@@ -214,20 +225,42 @@ def _build_refine_prompt(
             if score and score.suggestion:
                 all_suggestions.append(score.suggestion)
 
-        fix = {
-            "entries": entries,
-            "context": context,
-            "issues": all_issues,
-            "suggestions": all_suggestions,
-        }
-        fixes.append(fix)
+        fixes.append(
+            {
+                "entries": entries,
+                "context": context,
+                "issues": all_issues,
+                "suggestions": all_suggestions,
+            }
+        )
 
-    return render_prompt(
-        "refine.j2",
-        target_lang=config.target_lang,
-        fixes=fixes,
-        glossary=config.glossary,
-        content_summary=config.content_summary,
+    return fixes
+
+
+def _build_refine_user_prompt(
+    groups: list[list[tuple[int, str, Segment]]],
+    all_segments: list[Segment],
+    cue_map: dict[str, SubtitleCue],
+    score_map: dict[str, QualityScore],
+    config: SubtitleConfig,
+) -> str:
+    """Build per-batch user prompt for refinement."""
+    fixes = _build_refine_fixes(groups, all_segments, cue_map, score_map)
+    return render_prompt("refine_user.j2", fixes=fixes)
+
+
+def _build_refine_prompt(
+    groups: list[list[tuple[int, str, Segment]]],
+    all_segments: list[Segment],
+    cue_map: dict[str, SubtitleCue],
+    score_map: dict[str, QualityScore],
+    config: SubtitleConfig,
+) -> str:
+    """Legacy single-message prompt builder (tests only)."""
+    return (
+        _render_refine_system_prompt(config)
+        + "\n\n"
+        + _build_refine_user_prompt(groups, all_segments, cue_map, score_map, config)
     )
 
 

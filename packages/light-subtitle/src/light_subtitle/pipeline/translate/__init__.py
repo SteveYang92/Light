@@ -18,7 +18,7 @@ from light_models import Segment, SubtitleCue, Word
 
 from ... import logger
 from ...config import SubtitleConfig
-from ...usage.tracker import merge_token_usage, save_step_usage
+from ...usage.tracker import merge_token_usage, pick_usage_fields, save_step_usage
 from .. import export
 from .compose import compose_segments
 from .context import TranslateContext as TranslateContext
@@ -463,9 +463,10 @@ def run(
 
     usage_breakdown: dict[str, dict] = {}
     if usage:
-        usage_breakdown["translate.translate"] = {
-            k: usage.get(k) for k in ("prompt_tokens", "completion_tokens", "total_tokens", "calls") if k in usage
-        }
+        if usage.get("breakdown"):
+            usage_breakdown.update(usage["breakdown"])
+        else:
+            usage_breakdown["translate.translate"] = pick_usage_fields(usage)
     if eval_breakdown:
         usage_breakdown.update(eval_breakdown)
         for step_usage in eval_breakdown.values():

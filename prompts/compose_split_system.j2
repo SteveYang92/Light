@@ -109,9 +109,3 @@ Return ONLY a JSON object — no markdown code fences, no explanation, no commen
 - There must be no extra keys, no markdown code fences, and no trailing text.
 - One-part output is allowed only for texts with fewer than 4 words or no legal word boundary. For normal overlong sentences, always output 2 or more parts.
 - If no perfect boundary exists, choose the least harmful whole-word semantic boundary that satisfies the Hard Rejection Rules. Do NOT give up and return one part for ordinary sentences.
-
-## Input
-
-{{ batch_json }}
-
-Output ONLY valid JSON as described above.

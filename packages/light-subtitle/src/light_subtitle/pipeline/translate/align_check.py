@@ -59,11 +59,16 @@ def _alignment_sample_indices(n: int) -> list[int]:
     return [0, n // 2, n - 1]
 
 
-def _render_align_check_prompt(config: SubtitleConfig) -> str:
+def render_align_check_system_prompt(config: SubtitleConfig) -> str:
+    """Build align-check system prompt (cache-friendly when reused across batches)."""
     return render_prompt(
         "translate_align_check.j2",
         target_lang=config.target_lang or "unknown",
     )
+
+
+def _render_align_check_prompt(config: SubtitleConfig) -> str:
+    return render_align_check_system_prompt(config)
 
 
 def _in_current_batch(global_idx: int, batch_idx: int, batch_len: int) -> bool:
@@ -95,12 +100,10 @@ def _build_check_entry(
     ctx_end = min(len(all_segments), global_idx + _CONTEXT_WINDOW + 1)
 
     before = [
-        _neighbor_entry(j, all_segments, batch_idx, batch_len, parsed_texts)
-        for j in range(ctx_start, global_idx)
+        _neighbor_entry(j, all_segments, batch_idx, batch_len, parsed_texts) for j in range(ctx_start, global_idx)
     ]
     after = [
-        _neighbor_entry(j, all_segments, batch_idx, batch_len, parsed_texts)
-        for j in range(global_idx + 1, ctx_end)
+        _neighbor_entry(j, all_segments, batch_idx, batch_len, parsed_texts) for j in range(global_idx + 1, ctx_end)
     ]
 
     return {
@@ -198,6 +201,8 @@ def check_batch_alignment(
     all_segments: list[Segment],
     batch_idx: int,
     config: SubtitleConfig,
+    *,
+    system_prompt: str | None = None,
 ) -> tuple[bool, list[AlignFailure], dict]:
     """Check first/middle/last sampled units for source/translation alignment.
 
@@ -220,7 +225,7 @@ def check_batch_alignment(
         batch_idx,
         config,
     )
-    system_prompt = _render_align_check_prompt(config)
+    system_prompt = system_prompt or _render_align_check_prompt(config)
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},

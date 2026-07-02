@@ -23,7 +23,6 @@ import json
 import logging
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from light_models import Word
@@ -31,6 +30,7 @@ from light_models import Word
 from .. import logger
 from ..config import SubtitleConfig
 from ..llm.client import OpenAIClient
+from ..llm.parallel import run_parallel_with_warmup
 from ..llm.prompts import render_prompt
 from ..usage.tracker import format_token_usage, merge_token_usage, save_step_usage
 from ._word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
@@ -89,16 +89,17 @@ def correct_transcript(
     all_results: dict[int, str] = {}
     batch_usage: dict[str, int] = {}
 
-    with ThreadPoolExecutor(max_workers=min(_MAX_WORKERS, len(chunks))) as executor:
-        futures = {
-            executor.submit(_correct_batch, client, system_prompt, chunk, segments): idx
-            for idx, chunk in enumerate(chunks)
-        }
-        for future in as_completed(futures):
-            idx = futures[future]
-            response_str, usage = future.result()
-            all_results[idx] = response_str
-            merge_token_usage(batch_usage, usage)
+    tasks = [
+        (
+            lambda c=chunk, idx=idx: _correct_batch(client, system_prompt, c, segments),
+            idx,
+        )
+        for idx, chunk in enumerate(chunks)
+    ]
+    batch_results = run_parallel_with_warmup(tasks, max_workers=_MAX_WORKERS)
+    for idx, (response_str, usage) in batch_results.items():
+        all_results[idx] = response_str
+        merge_token_usage(batch_usage, usage)
 
     changed_words = 0
     for chunk_idx in range(len(chunks)):

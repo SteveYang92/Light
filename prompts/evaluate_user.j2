@@ -1,0 +1,11 @@
+# Input Data
+
+{% for item in items %}
+--- Item {{ loop.index }} ---
+unit_id: {{ item.unit_id }}
+duration: {{ item.duration }}s
+source: "{{ item.source }}"
+translation: "{{ item.translation }}"
+{% endfor %}
+
+Return ONLY the JSON array as described above.

@@ -23,8 +23,9 @@ from light_models import Segment, SubtitleCue, covered_source_text
 if TYPE_CHECKING:
     from ...config import SubtitleConfig
 from ... import logger
-from ...llm.client import OpenAIClient, merge_token_usage
+from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
+from ...usage.tracker import merge_token_usage
 
 # ── Data structures ────────────────────────────────────────────────────────
 
@@ -90,11 +91,12 @@ def evaluate_translations(
 
     all_scores: list[QualityScore] = []
     total_usage: dict = {}
+    system_prompt = _render_eval_system_prompt(config)
 
     # Evaluate in batches.
     for batch_idx in range(0, len(pairs), EVAL_BATCH_SIZE):
         batch = pairs[batch_idx : batch_idx + EVAL_BATCH_SIZE]
-        batch_scores, usage = _evaluate_batch(batch, config, batch_idx // EVAL_BATCH_SIZE)
+        batch_scores, usage = _evaluate_batch(batch, config, batch_idx // EVAL_BATCH_SIZE, system_prompt)
         all_scores.extend(batch_scores)
         merge_token_usage(total_usage, usage)
 
@@ -108,6 +110,7 @@ def _evaluate_batch(
     pairs: list[tuple[SubtitleCue, str]],
     config: SubtitleConfig,
     batch_num: int,
+    system_prompt: str,
 ) -> tuple[list[QualityScore], dict]:
     """Send a batch of source+translation pairs for LLM quality scoring."""
     client = OpenAIClient(
@@ -116,8 +119,11 @@ def _evaluate_batch(
         model=config.llm_model,
     )
 
-    prompt = _build_eval_prompt(pairs, config)
-    messages = [{"role": "user", "content": prompt}]
+    user_prompt = _build_eval_user_prompt(pairs)
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
 
     try:
         response, usage = client.chat(messages, temperature=0.1)
@@ -131,11 +137,18 @@ def _evaluate_batch(
 # ── Prompt construction ─────────────────────────────────────────────────────
 
 
-def _build_eval_prompt(
-    pairs: list[tuple[SubtitleCue, str]],
-    config: SubtitleConfig,
-) -> str:
-    """Build the evaluation prompt with source + translation pairs."""
+def _render_eval_system_prompt(config: SubtitleConfig) -> str:
+    """Build cache-friendly system prompt for evaluation."""
+    return render_prompt(
+        "evaluate_system.j2",
+        target_lang=config.target_lang,
+        glossary=config.glossary,
+        content_summary=config.content_summary,
+    )
+
+
+def _build_eval_user_prompt(pairs: list[tuple[SubtitleCue, str]]) -> str:
+    """Build per-batch user prompt with source + translation pairs."""
     items: list[dict] = []
     for cue, src_text in pairs:
         items.append(
@@ -146,13 +159,15 @@ def _build_eval_prompt(
                 "translation": cue.text.replace("\n", "\\n"),
             }
         )
-    return render_prompt(
-        "evaluate.j2",
-        target_lang=config.target_lang,
-        items=items,
-        glossary=config.glossary,
-        content_summary=config.content_summary,
-    )
+    return render_prompt("evaluate_user.j2", items=items)
+
+
+def _build_eval_prompt(
+    pairs: list[tuple[SubtitleCue, str]],
+    config: SubtitleConfig,
+) -> str:
+    """Legacy single-message prompt builder (tests only)."""
+    return _render_eval_system_prompt(config) + "\n\n" + _build_eval_user_prompt(pairs)
 
 
 # ── Response parsing ────────────────────────────────────────────────────────

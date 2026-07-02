@@ -647,7 +647,8 @@ class TestComposeSplitBatchPrompt:
 
     @staticmethod
     def _prompt_text() -> str:
-        return Path(__file__).resolve().parents[3].joinpath("prompts/compose_split.j2").read_text()
+        root = Path(__file__).resolve().parents[3].joinpath("prompts")
+        return root.joinpath("compose_split_system.j2").read_text()
 
     def test_batch_prompt_forbids_word_internal_splits(self):
         prompt = self._prompt_text()
