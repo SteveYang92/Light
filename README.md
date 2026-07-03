@@ -67,6 +67,7 @@ uv sync
 packages/
 ├── light-models/        共享数据契约（Word, Segment, SubtitleCue, is_cjk…）
 ├── light-subtitle/      ASR → 翻译 → 字幕流水线
+├── light-tts/           字幕配音（官方 IndexTTS2 / Qwen3-TTS）
 │   ├── pipeline/        ASR → correct → punct → segment → translate → subtitle → export
 │   ├── step_registry.py 声明式步骤注册表（StepId + run/hydrate/progress）
 │   ├── step_plan.py     运行时 plan 构建与 resume 解析
@@ -171,6 +172,59 @@ uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video
 ```
 
 > 需 `ffmpeg-full`（Homebrew）提供 libass 支持：`brew install ffmpeg-full`
+
+#### light-tts — 字幕配音（官方 IndexTTS2 / Qwen3-TTS）
+
+`light-tts` 读取 `translations/raw.json`（LLM 翻译带标点），合成配音轨并混音为 `{slug}_dub.mp4`。
+
+**IndexTTS2（推荐，旁白克隆）** — 从 `ref.wav` 零样本克隆，适合长视频单说话人旁白：
+
+```bash
+# 一次性：克隆官方 repo + checkpoints（见 scripts/indextts2_poc.py）
+# 准备参考音：output/<run>/tts/ref.wav（或 --ref-audio）
+
+# Preview（前 3 分钟）
+uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
+
+# 完整长视频（默认 --resume，中断可续跑 segment WAV）
+uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
+uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
+
+# 等价 CLI
+uv run light-tts dub output/<run> --engine indextts2 --lang zh --skip-mix --resume
+```
+
+配置见 `packages/light-tts/src/light_tts/assets/indextts2.yaml`（可在 run 目录放同名文件覆盖）。多说话人时在 yaml 里配置 `speaker_refs`。
+
+**Qwen3-TTS（预设音色，需 `--diarize`）** — Apple Silicon / mlx-audio：
+
+```bash
+# 安装（与 Light torch 栈隔离；mlx-audio 仅 Apple Silicon）
+./scripts/setup_mlx_venv.sh
+source .venv-mlx/bin/activate
+
+# 字幕（必须 --diarize 才有 speaker 字段）
+uv run light-subtitle -i input.mp4 --diarize --target-lang zh -o output
+
+# Phase 0：前几条 cue 试听
+python scripts/tts_poc.py --cues output/<run> --out output/<run>/tts_poc --max-cues 6
+
+# Phase 1：preview 试听（先验证 Qwen 输出质量，再跑整段）
+python scripts/tts_dub.py output/<run> --lang zh --skip-mix --preview --preview-duration 180
+
+# Phase 1：完整 dub.wav（默认按 Qwen-safe 说话人语义块合并，非逐条 display cue）
+python scripts/tts_dub.py output/<run> --lang zh --skip-mix
+python scripts/tts_dub.py output/<run> --lang zh --per-cue --skip-mix   # legacy 逐条 cue
+python scripts/tts_dub.py output/<run> --lang zh --mix duck
+
+# Mock 测管线（root uv run 即可，无需 mlx）
+uv run python scripts/tts_dub.py output/<run> --lang zh --engine mock --skip-mix
+
+# HTTP 引擎（另开终端：mlx_audio.server --port 8000）
+python scripts/tts_dub.py output/<run> --engine http --mlx-url http://127.0.0.1:8000
+```
+
+默认模型：`mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit`（预设音色；Base 版仅用于声音克隆，不支持 Vivian/Uncle_Fu）。说话人映射见 `packages/light-tts/src/light_tts/assets/voices.yaml`。如本机内存不足，可用 `--model mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-6bit` 或临时回退 0.6B。
 
 ### light-qc
 

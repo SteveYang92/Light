@@ -11,6 +11,49 @@ from light_subtitle.pipeline import subtitle as sub_mod
 from light_subtitle.pipeline.translate import load_cached_translation, save_segment_words
 
 
+def test_load_cached_translation_attaches_speakers_from_compose(tmp_path: Path) -> None:
+    compose_dir = tmp_path / "compose"
+    tx_dir = tmp_path / "translations"
+    compose_dir.mkdir()
+    tx_dir.mkdir()
+
+    (compose_dir / "compose.json").write_text(
+        json.dumps(
+            [
+                {"unit_id": "u0", "start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "hi"},
+                {"unit_id": "u1", "start": 1.0, "end": 2.0, "speaker": "SPEAKER_01", "text": "yo"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tx_dir / "raw.json").write_text(
+        json.dumps(
+            [
+                {
+                    "cue_id": "zh_0000",
+                    "unit_id": "u0",
+                    "start": 0.0,
+                    "end": 1.0,
+                    "text": "你好",
+                    "lang": "zh",
+                },
+                {
+                    "cue_id": "zh_0001",
+                    "unit_id": "u1",
+                    "start": 1.0,
+                    "end": 2.0,
+                    "text": "嗨",
+                    "lang": "zh",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    cues, _ = load_cached_translation(tx_dir, SubtitleConfig(input_path="dummy.mp4", target_lang="zh"))
+    assert [c.speaker for c in cues] == ["SPEAKER_00", "SPEAKER_01"]
+
+
 def test_load_cached_translation_attaches_words_from_compose_dir(tmp_path: Path) -> None:
     compose_dir = tmp_path / "compose"
     tx_dir = tmp_path / "translations"

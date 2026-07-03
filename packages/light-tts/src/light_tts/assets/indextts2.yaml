@@ -1,0 +1,14 @@
+engine: indextts2
+official_root: .cache/indextts-official/index-tts
+checkpoints:
+ref_audio:
+emotion: calm
+emotion_weight: 0.6
+num_beams: 3
+indextts_chunk_chars: 160
+indextts_chunk_min_chars: 45
+max_turn_duration_s: 180.0
+crossfade_ms: 30.0
+atempo_max_monologue: 2.2
+resume: true
+speaker_refs: {}

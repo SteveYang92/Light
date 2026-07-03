@@ -1,0 +1,50 @@
+{
+  "media": {},
+  "speakers": [],
+  "cues": [
+    {
+      "id": 1,
+      "cue_id": "tgt_0001",
+      "unit_id": "u0001",
+      "start": 1.0,
+      "end": 3.5,
+      "speaker": "SPEAKER_00",
+      "lang": "zh",
+      "text": "大家好，欢迎收看本期节目。",
+      "qc": {}
+    },
+    {
+      "id": 2,
+      "cue_id": "tgt_0002",
+      "unit_id": "u0002",
+      "start": 4.0,
+      "end": 6.2,
+      "speaker": "SPEAKER_01",
+      "lang": "zh",
+      "text": "今天我们聊一下人工智能。",
+      "qc": {}
+    },
+    {
+      "id": 3,
+      "cue_id": "tgt_0003",
+      "unit_id": "u0003",
+      "start": 6.5,
+      "end": 9.0,
+      "speaker": "SPEAKER_00",
+      "lang": "zh",
+      "text": "首先看看最近的发展。",
+      "qc": {}
+    },
+    {
+      "id": 4,
+      "cue_id": "src_0001",
+      "unit_id": "u0001",
+      "start": 1.0,
+      "end": 3.5,
+      "speaker": "SPEAKER_00",
+      "lang": "en",
+      "text": "Hello everyone.",
+      "qc": {}
+    }
+  ]
+}

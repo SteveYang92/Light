@@ -22,6 +22,7 @@ members = [
     "packages/light-qc",
     "packages/light-regression",
     "packages/light-backend",
+    "packages/light-tts",
 ]
 
 [tool.uv.sources]
@@ -30,6 +31,7 @@ light-subtitle = { workspace = true }
 light-qc = { workspace = true }
 light-regression = { workspace = true }
 light-backend = { workspace = true }
+light-tts = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -41,6 +43,12 @@ dev = [
 ]
 youtube = [
     "youtube-transcript-api>=0.6",
+]
+tts = [
+    "light-tts",
+]
+tts-mlx = [
+    "light-tts[mlx]",
 ]
 
 [tool.ruff]

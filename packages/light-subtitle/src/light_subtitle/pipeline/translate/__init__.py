@@ -92,12 +92,15 @@ def load_cached_translation(
             end=c["end"],
             text=c["text"],
             lang=c.get("lang", config.target_lang),
+            speaker=c.get("speaker", ""),
             merged_from=c.get("merged_from", []),
         )
         for c in raw_data
     ]
 
-    _attach_words_to_cues(translated_cues, tx_dir.parent / "compose")
+    compose_dir = tx_dir.parent / "compose"
+    _attach_words_to_cues(translated_cues, compose_dir)
+    _attach_speakers_from_compose(translated_cues, compose_dir, tx_dir)
 
     usage: dict | None = None
     usage_path = tx_dir / "usage.json"
@@ -160,6 +163,34 @@ def _attach_words_to_cues(cues: list[SubtitleCue], compose_dir: Path) -> None:
         words = _words_from_unit_chain(unit_chain, seg_words_map)
         if words:
             cue.words = words
+
+
+def _load_compose_speaker_map(compose_dir: Path, tx_dir: Path) -> dict[str, str]:
+    """Speaker labels keyed by compose ``unit_id`` (supports legacy ``translations/compose.json``)."""
+    for path in (compose_dir / "compose.json", tx_dir / "compose.json"):
+        if not path.exists():
+            continue
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, list):
+            continue
+        return {
+            item["unit_id"]: item.get("speaker", "")
+            for item in data
+            if isinstance(item, dict) and "unit_id" in item
+        }
+    return {}
+
+
+def _attach_speakers_from_compose(cues: list[SubtitleCue], compose_dir: Path, tx_dir: Path) -> None:
+    """Fill empty cue speakers from compose metadata on resume."""
+    speaker_by_unit = _load_compose_speaker_map(compose_dir, tx_dir)
+    if not speaker_by_unit:
+        return
+    for cue in cues:
+        if cue.speaker:
+            continue
+        cue.speaker = speaker_by_unit.get(cue.unit_id, "")
 
 
 def _save_translation_segment_words(translation_segments: list[Segment], compose_dir: Path) -> None:

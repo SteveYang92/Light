@@ -9,6 +9,8 @@ build/
 
 # Virtual environment
 .venv/
+.venv-mlx/
+.venv-indextts/
 venv/
 env/
 

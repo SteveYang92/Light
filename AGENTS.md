@@ -13,6 +13,7 @@ packages/
 │   └── language/        语言处理（英语/CJK 断句、标点、显示约定）
 ├── light-qc/            独立 QC 引擎（规则 + LLM）
 ├── light-regression/    回归测试工具（固定黄金基线 + rebaseline）
+├── light-tts/           字幕配音（Qwen3-TTS / mlx-audio，Apple Silicon）
 ├── light-backend/       FastAPI Web 后端（routers/ + services/）
 └── light-frontend/      React + Vite SPA（pages/ + components/）
 ```
@@ -24,6 +25,7 @@ packages/
 | 改动模块 | 必跑验证 | 命令 |
 |---|---|---|
 | light-subtitle | 回归测试（已内置 QC） | `uv run light-regression run tests/regression/cases/<case>/case.yaml` |
+| light-tts | 单测（mock 引擎，无需 MLX） | `uv run pytest tests/test_light_tts.py -v` |
 | light-qc | 端到端 QC | `uv run light-qc -i <本地 output 里的 .srt> --transcript <本地 output 里的 transcript.json> -f json` |
 | light-frontend | 类型检查 + 构建 | `npm --prefix packages/light-frontend run build` |
 | light-backend | Lint + 后端测试 | `uv run ruff check packages/light-backend/ && uv run pytest tests/test_light_backend_playback.py -v` |

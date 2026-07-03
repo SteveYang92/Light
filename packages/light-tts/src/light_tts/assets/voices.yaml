@@ -1,0 +1,18 @@
+engine: mlx-audio
+model: mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit
+default_voice: Vivian
+auto_assign: true
+speakers:
+  SPEAKER_00: Vivian
+  SPEAKER_01: Uncle_Fu
+voices:
+  Vivian:
+    language: Chinese
+  Uncle_Fu:
+    language: Chinese
+  Serena:
+    language: Chinese
+  Dylan:
+    language: Chinese
+  Eric:
+    language: Chinese
