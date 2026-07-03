@@ -38,7 +38,7 @@ export default function Import() {
 
       <div className="space-y-5">
         <p className="text-xs text-[#6b7280]">
-          填入管线 output 目录路径，自动发现目录内的视频和字幕文件。
+          填入管线 output 目录路径，自动发现目录内的音视频和字幕文件。
         </p>
 
         <div>
@@ -57,12 +57,14 @@ export default function Import() {
           <summary className="cursor-pointer hover:text-[#e5e5e5]">高级选项</summary>
           <div className="mt-3 space-y-3">
             <div>
-              <label className="block text-xs text-[#6b7280] mb-1">视频文件路径（目录内无 mp4 时需指定）</label>
+              <label className="block text-xs text-[#6b7280] mb-1">
+                媒体文件路径（仅当目录内无法自动发现 mp4/mp3/m4a 等时使用）
+              </label>
               <input
                 type="text"
                 value={importData.video_path}
                 onChange={(e) => setImportData({ ...importData, video_path: e.target.value })}
-                placeholder="可选，自动从 output 目录发现"
+                placeholder="可选，例如 /path/to/podcast.mp3"
                 className="w-full px-4 py-3 rounded-xl bg-[#141414] border border-[#1f1f1f] text-sm
                   placeholder:text-[#6b7280] focus:outline-none focus:border-[#3b82f6]"
               />

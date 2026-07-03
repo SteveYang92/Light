@@ -10,6 +10,7 @@ from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 
 from ..database import get_chunk, get_video
+from ..media import guess_stream_mime
 from ..state import get_config
 
 router = APIRouter(prefix="/api/chunks", tags=["files"])
@@ -29,19 +30,7 @@ class RangeNotSatisfiable(Exception):
 
 
 def _guess_mime(path: str) -> str:
-    ext = Path(path).suffix.lower()
-    return {
-        ".mp4": "video/mp4",
-        ".webm": "video/webm",
-        ".mkv": "video/x-matroska",
-        ".srt": "text/plain; charset=utf-8",
-        ".vtt": "text/vtt; charset=utf-8",
-        ".ass": "text/plain; charset=utf-8",
-        ".json": "application/json",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".png": "image/png",
-    }.get(ext, "application/octet-stream")
+    return guess_stream_mime(path)
 
 
 def _is_under_dir(candidate: str, base_dir: str) -> bool:

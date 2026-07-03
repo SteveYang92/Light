@@ -8,6 +8,7 @@ import ProgressStepper from "../components/ProgressStepper";
 import SubtitleControls from "../components/SubtitleControls";
 import { extractSubLang, cueTextAt, cueTextAtRaw, parseVtt, splitBilingualCue, type TimedCue } from "../lib/vtt";
 import { attachMobilePlayerGestures } from "../lib/mobilePlayerGestures";
+import { isAudioChunk, streamMimeType } from "../lib/media";
 import { attachPauseIconOverlay } from "../lib/pauseIconOverlay";
 import {
   chunkHasAnnotations,
@@ -318,9 +319,8 @@ export default function Player() {
 
     const streamUrl = `/api/chunks/${currentChunk.id}/stream`;
     const ext = currentChunk.video_ext?.toLowerCase() ?? "mp4";
-    const mimeType = ext === "webm" ? "video/webm"
-      : ext === "mkv" ? "video/x-matroska"
-      : "video/mp4";
+    const isAudio = isAudioChunk(currentChunk);
+    const mimeType = streamMimeType(ext, isAudio ? "audio" : "video");
     let cancelled = false;
     let autoPlayFallbackTimer: ReturnType<typeof setTimeout> | null = null;
     let removeMobileGestures: (() => void) | null = null;
@@ -343,7 +343,9 @@ export default function Player() {
       const container = playerContainerRef.current;
       container.innerHTML = "";
       const el = document.createElement("video");
-      el.className = "video-js vjs-theme-dark vjs-big-play-centered";
+      el.className = isAudio
+        ? "video-js vjs-theme-dark vjs-big-play-centered vjs-audio-only"
+        : "video-js vjs-theme-dark vjs-big-play-centered";
       el.setAttribute("playsinline", "");
       el.setAttribute("webkit-playsinline", "");
       el.setAttribute("x5-playsinline", "");
@@ -353,12 +355,14 @@ export default function Player() {
       const player = videojs(el, {
         controls: true,
         autoplay: false,
-        // Eager buffering so the video decoder has a head start; otherwise the
-        // audio clock (fast Opus decode) runs ahead of the slower video decode
-        // (e.g. AV1 software decoding) and the first seconds show only the poster.
         preload: "auto",
         fluid: true,
-        aspectRatio: "16:9",
+        ...(isAudio ? {} : {
+          // Eager buffering so the video decoder has a head start; otherwise the
+          // audio clock (fast Opus decode) runs ahead of the slower video decode
+          // (e.g. AV1 software decoding) and the first seconds show only the poster.
+          aspectRatio: "16:9",
+        }),
         html5: {
           nativeTextTracks: false,
         },
@@ -680,6 +684,7 @@ export default function Player() {
   const hasNoChunks = chunks.length === 0;
   const hasAnnotations = chunkHasAnnotations(currentChunk);
   const hasBilingual = chunkHasBilingual(currentChunk);
+  const isAudio = currentChunk ? isAudioChunk(currentChunk) : false;
 
   if (isProcessing && hasNoChunks) {
     return (
@@ -754,7 +759,11 @@ export default function Player() {
         <div className="flex-1">
           <div
             ref={playerContainerRef}
-            className="aspect-video max-h-[75vh] max-w-full mx-auto rounded-xl overflow-hidden bg-black relative"
+            className={
+              isAudio
+                ? "light-audio-player max-w-xl mx-auto rounded-xl overflow-hidden bg-[#141414] border border-[#1f1f1f] relative"
+                : "aspect-video max-h-[75vh] max-w-full mx-auto rounded-xl overflow-hidden bg-black relative"
+            }
           />
           {annotationOverlayEl && annotationsEnabled && annotationText && (
             createPortal(

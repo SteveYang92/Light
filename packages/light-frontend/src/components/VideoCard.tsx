@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isAudioVideo } from "../lib/media";
 import type { Video } from "../types";
 
 function formatDuration(sec: number | null): string {
@@ -37,6 +38,7 @@ export default function VideoCard({
   const [confirming, setConfirming] = useState(false);
 
   const src = video.thumbnail ?? null;
+  const isAudio = isAudioVideo(video);
 
   const langs = new Set<string>();
   for (const c of video.chunks) {
@@ -63,7 +65,13 @@ export default function VideoCard({
         className="w-full text-left rounded-xl overflow-hidden bg-[#141414] border border-[#1f1f1f]
           hover:border-[#333] transition-colors cursor-pointer"
       >
-        <div className="aspect-video bg-[#1a1a1a] flex items-center justify-center overflow-hidden">
+        <div
+          className={
+            isAudio
+              ? "aspect-[2/1] bg-[#1a1a1a] flex items-center justify-center overflow-hidden"
+              : "aspect-video bg-[#1a1a1a] flex items-center justify-center overflow-hidden"
+          }
+        >
           {src && !imgError ? (
             <img
               src={src}
@@ -72,7 +80,9 @@ export default function VideoCard({
               onError={() => setImgError(true)}
             />
           ) : (
-            <span className="text-[#6b7280] text-4xl font-light">&#9654;</span>
+            <span className="text-[#6b7280] text-4xl font-light">
+              {isAudio ? "\u266A" : "\u25B6"}
+            </span>
           )}
         </div>
         <div className="p-3 space-y-1">

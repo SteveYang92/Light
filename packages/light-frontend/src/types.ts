@@ -3,6 +3,7 @@ export interface Chunk {
   chunk_index: number;
   duration: number | null;
   video_ext: string;
+  media_kind: "audio" | "video";
   subtitles: string[];
 }
 

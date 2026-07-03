@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from light_subtitle.config import SubtitleConfig
 
 from ..database import delete_chunks, get_video, list_chunks, list_videos, update_video
+from ..media import media_kind
 from ..models import ImportSubmit, UrlSubmit, VideoOut
 from ..services.library import delete_video_and_files, get_video_detail, import_existing_output
 from ..services.pipeline import _get_video_title, _set_main_loop, start_pipeline_thread
@@ -27,6 +28,7 @@ def _chunk_to_out(c: dict) -> dict:
         "chunk_index": c["chunk_index"],
         "duration": c.get("duration"),
         "video_ext": ext or "mp4",
+        "media_kind": media_kind(video_path) if video_path else "video",
         "subtitles": subtitle_keys,
     }
 

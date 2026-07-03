@@ -145,6 +145,45 @@ class TestDiscoverChunks:
         assert pairs[0].video_path == str(video)
         assert "zh.vtt" in pairs[0].subtitles
 
+    def test_single_audio_with_root_subtitles(self, tmp_path: Path) -> None:
+        (tmp_path / "podcast.mp3").write_bytes(b"\x00")
+        (tmp_path / "zh.srt").write_text("1\n00:00:00,000 --> 00:00:01,000\nhi\n", encoding="utf-8")
+        (tmp_path / "en.srt").write_text("1\n00:00:00,000 --> 00:00:01,000\nhi\n", encoding="utf-8")
+
+        pairs = _discover_chunks(str(tmp_path))
+        assert len(pairs) == 1
+        assert pairs[0].video_path.endswith("podcast.mp3")
+        assert "zh.srt" in pairs[0].subtitles
+        assert "en.srt" in pairs[0].subtitles
+
+    def test_audio_stem_pairing(self, tmp_path: Path) -> None:
+        (tmp_path / "episode.m4a").write_bytes(b"\x00")
+        (tmp_path / "episode.zh.srt").write_text("sub\n", encoding="utf-8")
+
+        pairs = _discover_chunks(str(tmp_path))
+        assert len(pairs) == 1
+        assert pairs[0].video_path.endswith("episode.m4a")
+        assert "zh.srt" in pairs[0].subtitles
+
+    def test_multipart_audio(self, tmp_path: Path) -> None:
+        (tmp_path / "talk_p1.mp3").write_bytes(b"\x00")
+        (tmp_path / "talk_p2.mp3").write_bytes(b"\x00")
+        (tmp_path / "talk_p1.zh.srt").write_text("sub1\n", encoding="utf-8")
+        (tmp_path / "talk_p2.zh.srt").write_text("sub2\n", encoding="utf-8")
+        (tmp_path / "talk.mp3").write_bytes(b"\x00")
+
+        pairs = _discover_chunks(str(tmp_path))
+        assert len(pairs) == 2
+        stems = {Path(p.video_path).stem for p in pairs}
+        assert stems == {"talk_p1", "talk_p2"}
+
+    def test_subtitles_only_returns_empty_media_path(self, tmp_path: Path) -> None:
+        (tmp_path / "zh.srt").write_text("sub\n", encoding="utf-8")
+
+        pairs = _discover_chunks(str(tmp_path))
+        assert len(pairs) == 1
+        assert pairs[0].video_path == ""
+
 
 # ── API response sanitization ───────────────────────────
 
@@ -164,7 +203,22 @@ class TestChunkSanitization:
         assert "video_path" not in out
         assert "output_dir" not in out
         assert out["video_ext"] == "webm"
+        assert out["media_kind"] == "video"
         assert set(out["subtitles"]) == {"zh.vtt", "en.srt"}
+
+    def test_chunk_to_out_audio(self) -> None:
+        out = _chunk_to_out(
+            {
+                "id": "abc",
+                "chunk_index": 0,
+                "video_path": "/secret/data/podcast.m4a",
+                "output_dir": "/secret/data/out",
+                "duration": 3600.0,
+                "subtitles": {"zh.srt": "/secret/data/out/zh.srt"},
+            }
+        )
+        assert out["video_ext"] == "m4a"
+        assert out["media_kind"] == "audio"
 
 
 # ── Stream endpoint integration ─────────────────────────
@@ -197,6 +251,35 @@ def playback_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             subtitles={"zh.vtt": str(sub)},
         )
         yield client, chunk, video_file, sub
+
+
+@pytest.fixture
+def audio_playback_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("LIGHT_DATA_DIR", str(data_dir))
+
+    with TestClient(app) as client:
+        cfg = get_config()
+        db_path = cfg.db_path
+
+        video = insert_video(db_path, title="podcast", source="import", status="done")
+        audio_file = data_dir / "sample.mp3"
+        audio_file.write_bytes(b"\x00" * 2048)
+
+        output_dir = data_dir / "out_audio"
+        output_dir.mkdir()
+        sub = output_dir / "zh.vtt"
+        sub.write_text("WEBVTT\n", encoding="utf-8")
+
+        chunk = insert_chunk(
+            db_path,
+            video_id=video["id"],
+            chunk_index=0,
+            video_path=str(audio_file),
+            output_dir=str(output_dir),
+            subtitles={"zh.vtt": str(sub)},
+        )
+        yield client, chunk, audio_file, sub
 
 
 class TestStreamEndpoint:
@@ -236,3 +319,17 @@ class TestStreamEndpoint:
         client, chunk, _, _ = playback_client
         resp = client.get(f"/api/chunks/{chunk['id']}/subtitles/..%2F..%2Fetc/passwd.vtt")
         assert resp.status_code == 404
+
+    def test_audio_stream_content_type(self, audio_playback_client) -> None:
+        client, chunk, audio_file, _ = audio_playback_client
+        resp = client.get(f"/api/chunks/{chunk['id']}/stream")
+        assert resp.status_code == 200
+        assert resp.content == audio_file.read_bytes()
+        assert resp.headers.get("content-type") == "audio/mpeg"
+
+    def test_audio_partial_content(self, audio_playback_client) -> None:
+        client, chunk, _, _ = audio_playback_client
+        resp = client.get(f"/api/chunks/{chunk['id']}/stream", headers={"Range": "bytes=0-9"})
+        assert resp.status_code == 206
+        assert len(resp.content) == 10
+        assert resp.headers.get("content-type") == "audio/mpeg"

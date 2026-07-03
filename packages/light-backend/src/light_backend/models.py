@@ -31,6 +31,7 @@ class ChunkOut(BaseModel):
     chunk_index: int
     duration: float | None
     video_ext: str = "mp4"
+    media_kind: str = "video"
     subtitles: list[str] = []
 
 

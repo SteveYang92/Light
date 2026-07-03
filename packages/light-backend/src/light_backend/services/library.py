@@ -13,11 +13,12 @@ from ..database import (
     list_chunks,
     update_video,
 )
+from ..media import MEDIA_GLOBS, media_kind
 
 
 @dataclass
 class _ChunkPair:
-    """A matched video + subtitle group."""
+    """A matched media + subtitle group."""
 
     video_path: str
     subtitles: dict[str, str]
@@ -25,33 +26,32 @@ class _ChunkPair:
 
 
 def _discover_chunks(output_dir: str, explicit_video: str = "") -> list[_ChunkPair]:
-    """Discover video+subtitle pairs in the output directory.
+    """Discover media+subtitle pairs in the output directory.
 
     Handles two patterns:
       1. x-subtitle style: {slug}_p1.mp4, {slug}_p1.zh.srt, {slug}_p2.mp4, ...
-      2. Single chunk: zh.srt, en.srt + optional separate video file
+      2. Single chunk: zh.srt, en.srt + optional separate media file
     """
     out = Path(output_dir)
     pairs: list[_ChunkPair] = []
 
-    # ── Pattern 1: multi-part — find all video files, match subtitle files ──
-    video_exts = ["*.mp4", "*.webm", "*.mkv"]
-    all_videos: list[Path] = []
-    for ext in video_exts:
-        all_videos.extend(out.glob(ext))
-    all_videos = sorted(all_videos)
+    # ── Pattern 1: multi-part — find all media files, match subtitle files ──
+    all_media: list[Path] = []
+    for pattern in MEDIA_GLOBS:
+        all_media.extend(out.glob(pattern))
+    all_media = sorted(all_media)
 
     # Detect multi-part pattern: if any file has "_pN" suffix, exclude the
-    # base (unsplit) video that lacks the suffix.
-    has_segments = any(re.search(r"_p\d+$", v.stem) for v in all_videos)
+    # base (unsplit) media file that lacks the suffix.
+    has_segments = any(re.search(r"_p\d+$", v.stem) for v in all_media)
     if has_segments:
-        video_files = [v for v in all_videos if re.search(r"_p\d+$", v.stem)]
+        media_files = [v for v in all_media if re.search(r"_p\d+$", v.stem)]
     else:
-        video_files = all_videos
+        media_files = all_media
 
-    if video_files:
-        for video in video_files:
-            base = video.stem  # e.g. "video", "Biggest_Mysteries_in_Physics_p1"
+    if media_files:
+        for media in media_files:
+            base = media.stem  # e.g. "video", "Biggest_Mysteries_in_Physics_p1"
             segment = ""
             m = re.search(r"_p(\d+)$", base)
             if m:
@@ -67,8 +67,8 @@ def _discover_chunks(output_dir: str, explicit_video: str = "") -> list[_ChunkPa
                         key = f.name[len(base) + 1 :]
                     subtitles[key] = str(f)
 
-            # For single-video dirs: also grab root-level subtitle files
-            if len(video_files) == 1:
+            # For single-media dirs: also grab root-level subtitle files
+            if len(media_files) == 1:
                 for f in out.iterdir():
                     if f.is_file() and f.suffix.lower() in (".srt", ".vtt"):
                         key = f.name
@@ -77,14 +77,14 @@ def _discover_chunks(output_dir: str, explicit_video: str = "") -> list[_ChunkPa
 
             pairs.append(
                 _ChunkPair(
-                    video_path=str(video),
+                    video_path=str(media),
                     subtitles=subtitles,
                     segment_label=segment,
                 )
             )
         return pairs
 
-    # ── Pattern 2: no mp4 in dir — use explicit video path + subtitle files ──
+    # ── Pattern 2: no media in dir — use explicit path + subtitle files ──
     if explicit_video and Path(explicit_video).exists():
         subtitles: dict[str, str] = {}
         for f in out.iterdir():
@@ -99,7 +99,7 @@ def _discover_chunks(output_dir: str, explicit_video: str = "") -> list[_ChunkPa
         )
         return pairs
 
-    # ── Pattern 3: no mp4 and no explicit video — scan for subtitles only ──
+    # ── Pattern 3: no media and no explicit path — scan for subtitles only ──
     subtitles: dict[str, str] = {}
     for f in out.iterdir():
         if f.is_file() and f.suffix.lower() in (".srt", ".vtt"):
@@ -125,8 +125,8 @@ def import_existing_output(
 ) -> dict:
     """Import an existing light-subtitle output directory.
 
-    Automatically discovers video+subtitle pairs. Handles multi-part
-    videos (p1/p2/...) by creating one video with multiple chunks.
+    Automatically discovers media+subtitle pairs. Handles multi-part
+    media (p1/p2/...) by creating one video with multiple chunks.
     """
     out_path = Path(output_dir)
     if not out_path.exists():
@@ -134,13 +134,15 @@ def import_existing_output(
 
     pairs = _discover_chunks(output_dir, video_path)
     if not pairs:
-        raise ValueError(f"目录中未发现任何视频或字幕文件: {output_dir}")
+        raise ValueError(f"目录中未发现任何音视频或字幕文件: {output_dir}")
 
     # ── Check: if any pair has no video_path, user must specify it ──
     for p in pairs:
         if not p.video_path:
             found = ", ".join(p.subtitles.keys())
-            raise ValueError(f"发现字幕文件 ({found})，但未找到 mp4 视频。请在导入时指定视频文件路径。")
+            raise ValueError(
+                f"发现字幕文件 ({found})，但未找到音视频文件（mp4/mp3/m4a 等）。请在导入时指定媒体文件路径。"
+            )
 
     # ── Determine title and total duration ──
     if not title:
@@ -188,34 +190,35 @@ def import_existing_output(
     )
     vid = video["id"]
 
-    # ── Generate thumbnail from first segment ──
-    thumb_dir = os.path.join(data_dir, "videos", vid)
-    os.makedirs(thumb_dir, exist_ok=True)
-    thumb_path = os.path.join(thumb_dir, "thumbnail.jpg")
-    try:
-        first_dur = chunk_durations[0] if chunk_durations else 30
-        subprocess.run(
-            [
-                "ffmpeg",
-                "-ss",
-                str(min(first_dur * 0.1, 30)),
-                "-i",
-                pairs[0].video_path,
-                "-vframes",
-                "1",
-                "-q:v",
-                "2",
-                "-y",
-                thumb_path,
-            ],
-            capture_output=True,
-            timeout=30,
-            check=True,
-        )
-        if os.path.getsize(thumb_path) > 0:
-            update_video(db_path, vid, thumbnail=thumb_path)
-    except Exception:
-        pass
+    # ── Generate thumbnail from first segment (video only) ──
+    if media_kind(pairs[0].video_path) == "video":
+        thumb_dir = os.path.join(data_dir, "videos", vid)
+        os.makedirs(thumb_dir, exist_ok=True)
+        thumb_path = os.path.join(thumb_dir, "thumbnail.jpg")
+        try:
+            first_dur = chunk_durations[0] if chunk_durations else 30
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-ss",
+                    str(min(first_dur * 0.1, 30)),
+                    "-i",
+                    pairs[0].video_path,
+                    "-vframes",
+                    "1",
+                    "-q:v",
+                    "2",
+                    "-y",
+                    thumb_path,
+                ],
+                capture_output=True,
+                timeout=30,
+                check=True,
+            )
+            if os.path.getsize(thumb_path) > 0:
+                update_video(db_path, vid, thumbnail=thumb_path)
+        except Exception:
+            pass
 
     # ── Create chunks ──
     for i, p in enumerate(pairs):

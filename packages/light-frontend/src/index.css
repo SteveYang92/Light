@@ -237,6 +237,25 @@ body {
   }
 }
 
+/* Audio-only player — compact layout without 16:9 letterboxing */
+.light-audio-player .video-js.vjs-audio-only {
+  width: 100%;
+  height: auto;
+  padding-top: 0;
+}
+
+.light-audio-player .video-js.vjs-audio-only .vjs-tech {
+  display: none;
+}
+
+.light-audio-player .video-js.vjs-audio-only .vjs-poster {
+  display: none;
+}
+
+.light-audio-player .video-js.vjs-audio-only .vjs-control-bar {
+  position: relative;
+}
+
 /* custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
