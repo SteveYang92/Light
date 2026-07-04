@@ -177,15 +177,19 @@ uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video
 
 `light-tts` 读取 `translations/raw.json`（LLM 翻译带标点），合成配音轨并混音为 `{slug}_dub.mp4`。
 
-**IndexTTS2（推荐，旁白克隆）** — 从 `ref.wav` 零样本克隆，适合长视频单说话人旁白：
+**IndexTTS（推荐，旁白克隆）** — 从 `ref.wav` 零样本克隆，适合长视频单说话人旁白：
 
 ```bash
 # 一次性：init submodule + 官方 uv 环境 + checkpoints（见 vendor/INDEX-TTS.md）
 ./scripts/setup_indextts_official.sh
+# 可选 v1.5 权重：./scripts/setup_indextts_official.sh --with-v15
 # 准备参考音：output/<run>/tts/ref.wav（或 --ref-audio）
 
-# Preview（前 3 分钟）
+# Preview（前 3 分钟，默认 IndexTTS 2.0）
 uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
+
+# IndexTTS 1.5（24000 Hz，无 emotion 向量）
+uv run python scripts/indextts_dub.py output/<run> --engine indextts15 --lang zh --skip-mix --preview
 
 # 完整长视频（中断后续跑：显式加 --resume）
 uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
@@ -193,9 +197,10 @@ uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
 
 # 等价 CLI
 uv run light-tts dub output/<run> --engine indextts2 --lang zh --skip-mix --resume
+uv run light-tts dub output/<run> --engine indextts15 --lang zh --skip-mix --preview
 ```
 
-配置见 `packages/light-tts/src/light_tts/assets/indextts2.yaml`（可在 run 目录放同名文件覆盖）。多说话人时在 yaml 里配置 `speaker_refs`。
+配置见 `packages/light-tts/src/light_tts/assets/indextts.yaml`（run 目录可放 `indextts.yaml` 或旧名 `indextts2.yaml` 覆盖）。多说话人时在 yaml 里配置 `speaker_refs`。
 
 **Qwen3-TTS（预设音色，需 `--diarize`）** — Apple Silicon / mlx-audio：
 

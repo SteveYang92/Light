@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .config import TtsConfig
+from .config import IndexTTSVersion, TtsConfig
 
 EMOTION_INDEX = {
     "happy": 0,
@@ -18,9 +19,41 @@ EMOTION_INDEX = {
     "calm": 7,
 }
 
-
-# Official IndexTTS2 infer_v2 writes 22050 Hz audio (see infer_v2.py sampling_rate = 22050).
+INDEXTTS15_SAMPLE_RATE = 24000
 INDEXTTS2_SAMPLE_RATE = 22050
+
+
+@dataclass(frozen=True)
+class IndexTTSVariantSpec:
+    version: IndexTTSVersion
+    sample_rate: int
+    default_checkpoints_subdir: str
+    hf_repo: str
+
+
+INDEXTTS_VARIANTS: dict[IndexTTSVersion, IndexTTSVariantSpec] = {
+    "1.5": IndexTTSVariantSpec(
+        version="1.5",
+        sample_rate=INDEXTTS15_SAMPLE_RATE,
+        default_checkpoints_subdir="checkpoints-v15",
+        hf_repo="IndexTeam/IndexTTS-1.5",
+    ),
+    "2.0": IndexTTSVariantSpec(
+        version="2.0",
+        sample_rate=INDEXTTS2_SAMPLE_RATE,
+        default_checkpoints_subdir="checkpoints",
+        hf_repo="IndexTeam/IndexTTS-2",
+    ),
+}
+
+
+def variant_spec(version: IndexTTSVersion) -> IndexTTSVariantSpec:
+    return INDEXTTS_VARIANTS[version]
+
+
+def default_checkpoints(official_root: Path, version: IndexTTSVersion) -> Path:
+    spec = variant_spec(version)
+    return official_root / spec.default_checkpoints_subdir
 
 
 def emotion_vector(name: str, weight: float) -> list[float] | None:
@@ -38,8 +71,9 @@ def official_python(official_root: Path) -> Path | None:
 
 def official_run_hint(official_root: Path) -> str:
     return (
-        "Run IndexTTS2 dub with the official index-tts uv environment:\n"
-        f"  cd {official_root} && PYTHONPATH=. uv run light-tts dub <output_dir> --engine indextts2 ..."
+        "Run IndexTTS dub with the official index-tts uv environment:\n"
+        f"  cd {official_root} && PYTHONPATH=. uv run light-tts dub <output_dir> "
+        "--engine indextts2|indextts15 ..."
     )
 
 
@@ -62,7 +96,27 @@ def maybe_reexec_in_official_venv(*, official_root: Path, enabled: bool) -> None
     os.execve(str(official_py), [str(official_py), *sys.argv], env)
 
 
-def load_official_tts(
+def _load_official_tts_v15(
+    official_root: Path,
+    checkpoints: Path,
+    *,
+    use_fp16: bool,
+) -> Any:
+    sys.path.insert(0, str(official_root.resolve()))
+    from indextts.infer import IndexTTS
+
+    cfg_path = checkpoints / "config.yaml"
+    if not cfg_path.is_file():
+        raise FileNotFoundError(f"Missing official checkpoint config: {cfg_path}")
+    return IndexTTS(
+        cfg_path=str(cfg_path),
+        model_dir=str(checkpoints),
+        use_fp16=use_fp16,
+        use_cuda_kernel=False,
+    )
+
+
+def _load_official_tts_v2(
     official_root: Path,
     checkpoints: Path,
     *,
@@ -81,6 +135,24 @@ def load_official_tts(
         use_fp16=use_fp16,
         use_cuda_kernel=False,
         use_deepspeed=False,
+        use_torch_compile=use_torch_compile,
+    )
+
+
+def load_official_tts(
+    version: IndexTTSVersion,
+    official_root: Path,
+    checkpoints: Path,
+    *,
+    use_fp16: bool,
+    use_torch_compile: bool = False,
+) -> Any:
+    if version == "1.5":
+        return _load_official_tts_v15(official_root, checkpoints, use_fp16=use_fp16)
+    return _load_official_tts_v2(
+        official_root,
+        checkpoints,
+        use_fp16=use_fp16,
         use_torch_compile=use_torch_compile,
     )
 
@@ -104,7 +176,7 @@ def resolve_ref_audio_path(config: TtsConfig, speaker: str) -> Path:
     if legacy.is_file():
         return legacy.resolve()
     raise FileNotFoundError(
-        f"No reference audio configured. Set ref_audio in indextts2.yaml, speaker_refs, or place ref.wav at {tts_ref}"
+        f"No reference audio configured. Set ref_audio in indextts.yaml, speaker_refs, or place ref.wav at {tts_ref}"
     )
 
 

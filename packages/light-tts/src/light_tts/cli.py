@@ -9,7 +9,7 @@ import typer
 from .config import DEFAULT_MODEL, EngineMode, MixMode, TtsConfig
 from .dub import run_dub, run_poc
 
-app = typer.Typer(no_args_is_help=True, help="Subtitle dubbing (Qwen3-TTS or official IndexTTS2).")
+app = typer.Typer(no_args_is_help=True, help="Subtitle dubbing (Qwen3-TTS or official IndexTTS).")
 
 
 @app.command()
@@ -19,16 +19,16 @@ def dub(
     model: str = typer.Option(DEFAULT_MODEL, "--model", help="HuggingFace mlx-community model id"),
     voices: str = typer.Option("", "--voices", help="Path to voices.yaml"),
     mix: MixMode = typer.Option(MixMode.DUCK, "--mix", help="Audio mix mode"),
-    engine: EngineMode = typer.Option(EngineMode.MLX, "--engine", help="mlx | http | mock | indextts2"),
+    engine: EngineMode = typer.Option(EngineMode.MLX, "--engine", help="mlx | http | mock | indextts2 | indextts15"),
     mlx_url: str = typer.Option("", "--mlx-url", help="mlx_audio.server base URL (http engine)"),
     official_root: Path = typer.Option(
         Path("vendor/index-tts"),
         "--official-root",
-        help="Cloned official index-tts repo (indextts2 engine)",
+        help="Cloned official index-tts repo (indextts2 / indextts15)",
     ),
-    ref_audio: Path | None = typer.Option(None, "--ref-audio", help="Speaker reference WAV (indextts2)"),
-    checkpoints: Path | None = typer.Option(None, "--checkpoints", help="IndexTTS2 checkpoints dir"),
-    emotion: str = typer.Option("calm", "--emotion", help="IndexTTS2 emotion (indextts2)"),
+    ref_audio: Path | None = typer.Option(None, "--ref-audio", help="Speaker reference WAV (IndexTTS)"),
+    checkpoints: Path | None = typer.Option(None, "--checkpoints", help="IndexTTS checkpoints dir"),
+    emotion: str = typer.Option("calm", "--emotion", help="IndexTTS2 emotion (indextts2 only)"),
     emotion_weight: float = typer.Option(0.6, "--emotion-weight", help="IndexTTS2 emotion weight"),
     num_beams: int = typer.Option(3, "--num-beams", help="IndexTTS2 GPT beam width"),
     cues: str = typer.Option("", "--cues", help="Path to translations/raw.json or pipeline output directory"),
@@ -42,8 +42,8 @@ def dub(
     preview: bool = typer.Option(False, "--preview", help="Write a short preview under tts/preview/"),
     preview_duration: float = typer.Option(180.0, "--preview-duration", help="Preview prefix duration in seconds"),
     qwen_chunk_chars: int = typer.Option(180, "--qwen-chunk-chars", help="Max chars per Qwen turn"),
-    chunk_chars: int = typer.Option(160, "--chunk-chars", help="Max chars per IndexTTS2 turn"),
-    chunk_min_chars: int = typer.Option(45, "--chunk-min-chars", help="Min chars before IndexTTS2 soft split"),
+    chunk_chars: int = typer.Option(160, "--chunk-chars", help="Max chars per IndexTTS turn"),
+    chunk_min_chars: int = typer.Option(45, "--chunk-min-chars", help="Min chars before IndexTTS soft split"),
     qwen_max_tokens_min: int = typer.Option(512, "--qwen-max-tokens-min", help="Minimum Qwen max_tokens cap"),
     qwen_max_tokens_max: int = typer.Option(2048, "--qwen-max-tokens-max", help="Maximum Qwen max_tokens cap"),
     qwen_seed: int | None = typer.Option(None, "--qwen-seed", help="Optional Qwen seed if supported by mlx-audio"),
@@ -51,7 +51,7 @@ def dub(
     top_k: int = typer.Option(50, "--top-k", help="Qwen top-k sampling"),
     top_p: float = typer.Option(1.0, "--top-p", help="Qwen top-p sampling"),
     repetition_penalty: float = typer.Option(1.05, "--repetition-penalty", help="Qwen repetition penalty"),
-    indextts_verbose: bool = typer.Option(False, "--indextts-verbose", help="Verbose IndexTTS2 infer logs"),
+    indextts_verbose: bool = typer.Option(False, "--indextts-verbose", help="Verbose IndexTTS infer logs"),
 ) -> None:
     """Generate dubbed audio (and optional {slug}_dub.mp4) from subtitle cues."""
     cfg = TtsConfig(
@@ -98,7 +98,7 @@ def poc_cmd(
     out: str = typer.Option(..., "--out", help="Output directory for WAV files"),
     model: str = typer.Option(DEFAULT_MODEL, "--model", help="Qwen3-TTS model id"),
     max_cues: int = typer.Option(3, "--max-cues", help="Max cues to synthesize"),
-    engine: EngineMode = typer.Option(EngineMode.MLX, "--engine", help="mlx | http | mock | indextts2"),
+    engine: EngineMode = typer.Option(EngineMode.MLX, "--engine", help="mlx | http | mock | indextts2 | indextts15"),
 ) -> None:
     """Phase 0 POC: synthesize a few cues to WAV (no timeline mix)."""
     run_poc(

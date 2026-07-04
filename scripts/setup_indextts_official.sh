@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Initialize official IndexTTS2 submodule and uv venv (vendor/index-tts).
+# Initialize official IndexTTS submodule and uv venv (vendor/index-tts).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -7,6 +7,21 @@ cd "$ROOT"
 
 VENDOR="${ROOT}/vendor/index-tts"
 LEGACY="${ROOT}/.cache/indextts-official/index-tts"
+WITH_V15=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-v15)
+      WITH_V15=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Usage: $0 [--with-v15]" >&2
+      exit 1
+      ;;
+  esac
+done
 
 git submodule update --init vendor/index-tts
 
@@ -44,6 +59,17 @@ if [[ ! -f "$VENDOR/checkpoints/config.yaml" ]]; then
   exit 1
 fi
 
+if [[ "$WITH_V15" == true ]]; then
+  if [[ ! -f "$VENDOR/checkpoints-v15/config.yaml" ]]; then
+    echo ""
+    echo "Downloading IndexTTS-1.5 weights to vendor/index-tts/checkpoints-v15/ ..."
+    (cd "$VENDOR" && hf download IndexTeam/IndexTTS-1.5 --local-dir=checkpoints-v15)
+  else
+    echo "IndexTTS-1.5 checkpoints already present at vendor/index-tts/checkpoints-v15/"
+  fi
+fi
+
 echo ""
-echo "Official IndexTTS2 ready at vendor/index-tts"
-echo "Preview: uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview"
+echo "Official IndexTTS ready at vendor/index-tts"
+echo "Preview (v2): uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview"
+echo "Preview (v1.5): uv run python scripts/indextts_dub.py output/<run> --engine indextts15 --lang zh --skip-mix --preview"

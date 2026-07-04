@@ -13,11 +13,20 @@ Light **vendors upstream code only** — model weights are downloaded locally an
 
 ```bash
 ./scripts/setup_indextts_official.sh
+# optional IndexTTS 1.5 weights:
+./scripts/setup_indextts_official.sh --with-v15
 ```
 
 ## Checkpoints (local, not in git)
 
-Download IndexTTS-2 weights into `vendor/index-tts/checkpoints/`:
+Two independent weight directories (do not mix):
+
+| Version | Directory | HF model | Output SR |
+|---------|-----------|----------|-----------|
+| **2.0** (default) | `vendor/index-tts/checkpoints/` | `IndexTeam/IndexTTS-2` | 22050 Hz |
+| **1.5** | `vendor/index-tts/checkpoints-v15/` | `IndexTeam/IndexTTS-1.5` | 24000 Hz |
+
+Download IndexTTS-2 (required for default dub path):
 
 ```bash
 cd vendor/index-tts
@@ -27,9 +36,16 @@ hf download IndexTeam/IndexTTS-2 --local-dir=checkpoints
 modelscope download --model IndexTeam/IndexTTS-2 --local_dir checkpoints
 ```
 
-Verify: `vendor/index-tts/checkpoints/config.yaml` and `gpt.pth` exist.
+Download IndexTTS-1.5 (optional, for `--engine indextts15`):
 
-Local artifacts (`checkpoints/`, `.venv/`, `hf_cache/`) stay inside the submodule working tree only. `.gitmodules` sets `ignore = all` so Light `git status` does not flag them as dirty.
+```bash
+cd vendor/index-tts
+hf download IndexTeam/IndexTTS-1.5 --local-dir=checkpoints-v15
+```
+
+Verify: `config.yaml` and `gpt.pth` exist under each directory.
+
+Local artifacts (`checkpoints/`, `checkpoints-v15/`, `.venv/`, `hf_cache/`) stay inside the submodule working tree only. `.gitmodules` sets `ignore = all` so Light `git status` does not flag them as dirty.
 
 ## Upgrade upstream
 
@@ -37,10 +53,17 @@ Local artifacts (`checkpoints/`, `.venv/`, `hf_cache/`) stay inside the submodul
 ./scripts/vendor_sync_indextts.sh <new-sha>
 ```
 
-Then update the pinned SHA in this file, re-run `uv sync` inside `vendor/index-tts`, and smoke-test IndexTTS2 preview.
+Then update the pinned SHA in this file, re-run `uv sync` inside `vendor/index-tts`, and smoke-test IndexTTS preview (v2 and optionally v1.5).
 
 ## Override path
 
-Default: `vendor/index-tts` (see `packages/light-tts/src/light_tts/assets/indextts2.yaml`).
+Default: `vendor/index-tts` (see `packages/light-tts/src/light_tts/assets/indextts.yaml`).
 
 CLI: `--official-root /path/to/index-tts`
+
+Engine selection:
+
+- `--engine indextts2` — IndexTTS 2.0 (emotion control, 22050 Hz)
+- `--engine indextts15` — IndexTTS 1.5 (24000 Hz, no emotion vector)
+
+IndexTTS 1.5 uses official `infer_fast()` by default (`indextts_use_fast: true` in yaml). The old slow path mapped `chunk_chars` → token segments incorrectly; tune `indextts_max_text_tokens_per_segment` (smaller = faster, default 100) and `num_beams` if RTF is still high.

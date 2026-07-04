@@ -11,7 +11,13 @@ from light_tts.audio_io import concat_with_crossfade, trim_edge_silence, write_w
 from light_tts.config import EngineMode, MixMode, TtsConfig
 from light_tts.cues_loader import Cue, find_cues_json, load_cues, resolve_cues_path, resolve_dub_cues_path
 from light_tts.dub import _preview_timeline_duration, run_dub
-from light_tts.indextts2_runtime import INDEXTTS2_SAMPLE_RATE, resolve_ref_audio_path, resolve_torch_compile
+from light_tts.indextts_runtime import (
+    INDEXTTS2_SAMPLE_RATE,
+    INDEXTTS15_SAMPLE_RATE,
+    resolve_ref_audio_path,
+    resolve_torch_compile,
+    variant_spec,
+)
 from light_tts.merge_turns import SpeakerTurn, merge_speaker_turns
 from light_tts.speaker_map import build_indextts_speaker_map, build_speaker_voice_map, voice_for_cue
 from light_tts.sync import compute_turn_placed_start, fit_budget, fit_duration
@@ -146,8 +152,103 @@ def test_config_indextts2_yaml(tmp_path: Path) -> None:
     )
     cfg = TtsConfig.from_yaml(cfg_path, output_dir=str(tmp_path))
     assert cfg.engine_mode == EngineMode.INDEXTTS2
+    assert cfg.indextts_resolved_version == "2.0"
     assert cfg.indextts_ref_audio == "/tmp/ref.wav"
     assert cfg.indextts_chunk_chars == 120
+
+
+def test_config_indextts15_yaml(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "indextts15.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "engine: indextts15",
+                "ref_audio: /tmp/ref15.wav",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    cfg = TtsConfig.from_yaml(cfg_path, output_dir=str(tmp_path))
+    assert cfg.engine_mode == EngineMode.INDEXTTS15
+    assert cfg.indextts_resolved_version == "1.5"
+    assert cfg.is_official_indextts
+    assert not cfg.indextts_supports_emotion
+    assert cfg.indextts_ref_audio == "/tmp/ref15.wav"
+
+
+def test_config_indextts_version_field(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "indextts.yaml"
+    cfg_path.write_text("engine: indextts\nindextts_version: '1.5'\n", encoding="utf-8")
+    cfg = TtsConfig.from_yaml(cfg_path, output_dir=str(tmp_path))
+    assert cfg.engine_mode == EngineMode.INDEXTTS2
+    assert cfg.indextts_resolved_version == "1.5"
+
+
+def test_resolve_indextts_yaml_prefers_unified_name(tmp_path: Path) -> None:
+    out_dir = tmp_path / "run"
+    out_dir.mkdir()
+    (out_dir / "indextts.yaml").write_text("engine: indextts2\n", encoding="utf-8")
+    (out_dir / "indextts2.yaml").write_text("engine: indextts15\n", encoding="utf-8")
+    cfg = TtsConfig(output_dir=str(out_dir), engine_mode=EngineMode.INDEXTTS2)
+    assert cfg.resolve_indextts_yaml_path() == out_dir / "indextts.yaml"
+
+
+def test_is_official_indextts_chunk_settings() -> None:
+    v2 = TtsConfig(output_dir="/tmp", engine_mode=EngineMode.INDEXTTS2, indextts_chunk_chars=99)
+    v15 = TtsConfig(output_dir="/tmp", engine_mode=EngineMode.INDEXTTS15, indextts_chunk_chars=88)
+    qwen = TtsConfig(output_dir="/tmp", engine_mode=EngineMode.MLX, qwen_chunk_chars=77)
+    assert v2.chunk_chars() == 99
+    assert v15.chunk_chars() == 88
+    assert qwen.chunk_chars() == 77
+
+
+def test_config_indextts15_fast_defaults(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "indextts.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "engine: indextts15",
+                "indextts_use_fast: false",
+                "indextts_max_text_tokens_per_segment: 80",
+                "indextts_segments_bucket_max_size: 2",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    cfg = TtsConfig.from_yaml(cfg_path, output_dir=str(tmp_path))
+    assert cfg.indextts_use_fast is False
+    assert cfg.indextts_max_text_tokens_per_segment == 80
+    assert cfg.indextts_segments_bucket_max_size == 2
+
+
+def test_indextts15_uses_infer_fast(monkeypatch: pytest.MonkeyPatch) -> None:
+    from light_tts.engine.indextts import OfficialIndexTTSEngine
+
+    calls: list[str] = []
+
+    class _FakeTts:
+        def infer(self, **_kwargs: object) -> None:
+            calls.append("infer")
+
+        def infer_fast(self, **_kwargs: object) -> None:
+            calls.append("infer_fast")
+
+    config = TtsConfig(
+        output_dir="/tmp/out",
+        engine_mode=EngineMode.INDEXTTS15,
+        indextts_use_fast=True,
+        indextts_max_text_tokens_per_segment=100,
+    )
+    engine = OfficialIndexTTSEngine.__new__(OfficialIndexTTSEngine)
+    engine._config = config
+    engine._version = "1.5"
+    engine._tts = _FakeTts()
+    engine._infer_v15(Path("/tmp/ref.wav"), "你好世界", Path("/tmp/out.wav"))
+    assert calls == ["infer_fast"]
+
+    config.indextts_use_fast = False
+    engine._infer_v15(Path("/tmp/ref.wav"), "你好世界", Path("/tmp/out.wav"))
+    assert calls == ["infer_fast", "infer"]
 
 
 def test_speaker_map_auto_assign() -> None:
@@ -357,6 +458,44 @@ def test_preview_timeline_duration_uses_generated_audio_end() -> None:
     assert _preview_timeline_duration(placed, fallback_duration=180.0) == pytest.approx(24.0)
 
 
+def test_run_dub_indextts15_mock_engine(tmp_path: Path) -> None:
+    out_dir = tmp_path / "output"
+    out_dir.mkdir()
+    ref = out_dir / "tts" / "ref.wav"
+    ref.parent.mkdir(parents=True)
+    ref.write_bytes(b"RIFF")
+    (out_dir / "translations" / "raw.json").parent.mkdir(parents=True)
+    (out_dir / "translations" / "raw.json").write_text(CUES_JSON.read_text(encoding="utf-8"), encoding="utf-8")
+
+    config = TtsConfig(
+        output_dir=str(out_dir),
+        lang="zh",
+        engine_mode=EngineMode.MOCK,
+        mix_mode=MixMode.REPLACE,
+        preview=True,
+        preview_duration_s=10.0,
+        indextts_chunk_chars=40,
+    )
+    config.engine_mode = EngineMode.INDEXTTS15
+
+    from light_tts import synthesize as synth_mod
+    from light_tts.engine import create_engine
+
+    engine = create_engine(TtsConfig(output_dir=str(out_dir), engine_mode=EngineMode.MOCK))
+    cues = load_cues(out_dir / "translations" / "raw.json", lang="zh")
+    turns = merge_speaker_turns(cues, max_turn_duration_s=None, max_turn_chars=40, min_turn_chars=10)
+    speaker_map, placed, sr = synth_mod.synthesize_turns(
+        turns,
+        cues,
+        config,
+        segments_dir=out_dir / "tts" / "preview" / "segments",
+        engine=engine,
+    )
+    assert speaker_map
+    assert placed
+    assert sr == 24000
+
+
 def test_run_dub_indextts2_mock_engine(tmp_path: Path) -> None:
     out_dir = tmp_path / "output"
     out_dir.mkdir()
@@ -396,9 +535,12 @@ def test_run_dub_indextts2_mock_engine(tmp_path: Path) -> None:
 
 
 def test_indextts2_engine_sample_rate() -> None:
-    from light_tts.engine.indextts2 import IndexTTS2Engine
+    from light_tts.engine.indextts import IndexTTS2Engine, OfficialIndexTTSEngine
 
     assert IndexTTS2Engine.sample_rate == INDEXTTS2_SAMPLE_RATE == 22050
+    assert OfficialIndexTTSEngine is IndexTTS2Engine
+    assert variant_spec("1.5").sample_rate == INDEXTTS15_SAMPLE_RATE == 24000
+    assert variant_spec("2.0").sample_rate == INDEXTTS2_SAMPLE_RATE == 22050
 
 
 def test_resume_skips_cached_segment_with_wrong_sample_rate(tmp_path: Path) -> None:
@@ -423,6 +565,41 @@ def test_resume_skips_cached_segment_with_wrong_sample_rate(tmp_path: Path) -> N
         turn,
         tts_engine=engine,
         voice="Ryan",
+        language="Chinese",
+        instruct=None,
+        config=config,
+        monologue=False,
+        out_path=out_path,
+        natural_target_s=1.0,
+        max_tokens=100,
+    )
+    assert sr == 24000
+    assert stat["status"] == "ok"
+    assert len(samples) > 0
+
+
+def test_resume_regenerates_when_cached_sr_mismatch_indextts15(tmp_path: Path) -> None:
+    from light_tts import synthesize as synth_mod
+    from light_tts.engine import create_engine
+
+    config = TtsConfig(output_dir=str(tmp_path), engine_mode=EngineMode.INDEXTTS15, resume=True)
+    engine = create_engine(TtsConfig(output_dir=str(tmp_path), engine_mode=EngineMode.MOCK))
+    turn = SpeakerTurn(
+        turn_id="t001",
+        speaker="SPEAKER_00",
+        start=0.0,
+        slot_end=2.0,
+        text="测试",
+        lang="zh",
+        cue_ids=("c1",),
+    )
+    out_path = tmp_path / "t001.wav"
+    write_wav(out_path, np.zeros(22050, dtype=np.float32), 22050)
+
+    samples, sr, stat = synth_mod._synthesize_turn(
+        turn,
+        tts_engine=engine,
+        voice="SPEAKER_00",
         language="Chinese",
         instruct=None,
         config=config,

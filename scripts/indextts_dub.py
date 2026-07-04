@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # ruff: noqa: B008
-"""IndexTTS2 dub pipeline — runs in the official index-tts uv venv (auto re-exec).
+"""IndexTTS dub pipeline — runs in the official index-tts uv venv (auto re-exec).
 
 Setup (once)::
 
     ./scripts/setup_indextts_official.sh
     # downloads checkpoints if missing — see vendor/INDEX-TTS.md
+    # optional v1.5 weights: ./scripts/setup_indextts_official.sh --with-v15
 
-Prepare reference audio at ``<run>/tts/ref.wav`` (or set ``ref_audio`` in indextts2.yaml).
+Prepare reference audio at ``<run>/tts/ref.wav`` (or set ``ref_audio`` in indextts.yaml).
 
 Run::
 
     uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
+    uv run python scripts/indextts_dub.py output/<run> --engine indextts15 --lang zh --skip-mix --preview
     uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
     uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
 """
@@ -58,7 +60,7 @@ sys.path.insert(0, str(_REPO / "packages" / "light-tts" / "src"))
 
 from light_tts.config import EngineMode, MixMode, TtsConfig  # noqa: E402
 from light_tts.dub import run_dub  # noqa: E402
-from light_tts.indextts2_runtime import maybe_reexec_in_official_venv  # noqa: E402
+from light_tts.indextts_runtime import maybe_reexec_in_official_venv  # noqa: E402
 
 
 def main() -> None:
@@ -70,10 +72,15 @@ def main() -> None:
     def dub(
         output_dir: str = typer.Argument(..., help="Pipeline output directory"),
         lang: str = typer.Option("zh", "--lang"),
+        engine: EngineMode = typer.Option(
+            EngineMode.INDEXTTS2,
+            "--engine",
+            help="indextts2 | indextts15",
+        ),
         official_root: Path = typer.Option(DEFAULT_OFFICIAL_ROOT, "--official-root"),
         ref_audio: Path | None = typer.Option(None, "--ref-audio", help="Speaker reference WAV"),
         checkpoints: Path | None = typer.Option(None, "--checkpoints"),
-        emotion: str = typer.Option("calm", "--emotion"),
+        emotion: str = typer.Option("calm", "--emotion", help="IndexTTS2 emotion (indextts2 only)"),
         emotion_weight: float = typer.Option(0.6, "--emotion-weight"),
         num_beams: int = typer.Option(3, "--num-beams"),
         chunk_chars: int = typer.Option(160, "--chunk-chars"),
@@ -93,7 +100,7 @@ def main() -> None:
         cfg = TtsConfig(
             output_dir=output_dir,
             lang=lang,
-            engine_mode=EngineMode.INDEXTTS2,
+            engine_mode=engine,
             indextts_official_root=str(official_root),
             indextts_checkpoints=str(checkpoints) if checkpoints else None,
             indextts_ref_audio=str(ref_audio) if ref_audio else None,

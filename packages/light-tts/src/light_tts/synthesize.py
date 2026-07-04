@@ -10,10 +10,10 @@ from rich.table import Table
 
 from .assemble import PlacedSegment
 from .audio_io import read_wav, trim_edge_silence, write_wav
-from .config import EngineMode, TtsConfig
+from .config import TtsConfig
 from .cues_loader import Cue
 from .engine import TtsEngine, create_engine
-from .indextts2_runtime import resolve_ref_audio_path
+from .indextts_runtime import resolve_ref_audio_path
 from .merge_turns import SpeakerTurn
 from .speaker_map import (
     build_indextts_speaker_map,
@@ -149,10 +149,10 @@ def _synthesize_turn(
     speech_samples = trim_edge_silence(samples, sample_rate)
     speech_actual = len(speech_samples) / sample_rate if sample_rate > 0 else 0.0
     too_long = speech_actual > max(slot, natural_target_s) * config.tts_outlier_ratio
-    invalid = config.engine_mode != EngineMode.INDEXTTS2 and (
+    invalid = not config.is_official_indextts and (
         len(speech_samples) == 0 or _is_model_cap_outlier(actual, sample_rate, len(samples)) or (monologue and too_long)
     )
-    if len(speech_samples) == 0 and config.engine_mode == EngineMode.INDEXTTS2:
+    if len(speech_samples) == 0 and config.is_official_indextts:
         invalid = True
 
     status = "ok"
@@ -193,7 +193,7 @@ def synthesize_turns(
 ) -> tuple[dict[str, str], list[PlacedSegment], int]:
     """Synthesize merged speaker turns (default dub path)."""
     tts_engine = engine or create_engine(config)
-    if config.engine_mode == EngineMode.INDEXTTS2:
+    if config.is_official_indextts:
         speaker_map = build_indextts_speaker_map(turns)
     else:
         speaker_map = build_speaker_voice_map(turns, config)
@@ -206,7 +206,7 @@ def synthesize_turns(
     prev_end: float | None = None
 
     for turn in turns:
-        if config.engine_mode == EngineMode.INDEXTTS2:
+        if config.is_official_indextts:
             voice = turn.speaker.strip() or "__default__"
             language = "Chinese"
             instruct = None
@@ -220,9 +220,7 @@ def synthesize_turns(
         slot = turn.slot_duration
         atempo_max = config.atempo_max_monologue if monologue else config.atempo_max_cross
         natural_target = _natural_target_duration(turn.text) if monologue else slot
-        use_token_cap = config.engine_mode != EngineMode.INDEXTTS2 and (
-            monologue or len(turn.text) >= config.chunk_min_chars()
-        )
+        use_token_cap = not config.is_official_indextts and (monologue or len(turn.text) >= config.chunk_min_chars())
         max_tokens = (
             _max_tokens_for_duration(
                 natural_target,
@@ -306,7 +304,7 @@ def synthesize_cues(
 ) -> tuple[dict[str, str], list[PlacedSegment], int]:
     """Synthesize each display cue separately (debug / legacy)."""
     tts_engine = engine or create_engine(config)
-    if config.engine_mode == EngineMode.INDEXTTS2:
+    if config.is_official_indextts:
         speaker_map = build_indextts_speaker_map(cues)
     else:
         speaker_map = build_speaker_voice_map(cues, config)
@@ -317,7 +315,7 @@ def synthesize_cues(
 
     for i, cue in enumerate(cues):
         next_cue = cues[i + 1] if i + 1 < len(cues) else None
-        if config.engine_mode == EngineMode.INDEXTTS2:
+        if config.is_official_indextts:
             voice = cue.speaker.strip() or "__default__"
             language = "Chinese"
             instruct = None
@@ -376,7 +374,7 @@ def synthesize_cues(
             speed=speed,
             max_tokens=(
                 None
-                if config.engine_mode == EngineMode.INDEXTTS2
+                if config.is_official_indextts
                 else _max_tokens_for_duration(
                     target,
                     min_tokens=config.qwen_max_tokens_min,
@@ -409,7 +407,7 @@ def synthesize_cues(
 
 
 def print_speaker_map(speaker_map: dict[str, str], *, config: TtsConfig | None = None) -> None:
-    if config and config.engine_mode == EngineMode.INDEXTTS2:
+    if config and config.is_official_indextts:
         table = Table(title="Speaker → Reference audio")
         table.add_column("Speaker")
         table.add_column("Ref WAV")
@@ -436,10 +434,12 @@ def save_voice_map(path: Path, speaker_map: dict[str, str], config: TtsConfig) -
         "engine": config.engine_mode.value,
         "speakers": speaker_map,
     }
-    if config.engine_mode == EngineMode.INDEXTTS2:
+    if config.is_official_indextts:
         payload["ref_audio"] = {speaker: str(resolve_ref_audio_path(config, speaker)) for speaker in speaker_map}
-        payload["emotion"] = config.indextts_emotion
-        payload["emotion_weight"] = config.indextts_emotion_weight
+        if config.indextts_supports_emotion:
+            payload["emotion"] = config.indextts_emotion
+            payload["emotion_weight"] = config.indextts_emotion_weight
+        payload["indextts_version"] = config.indextts_resolved_version
     else:
         payload["model"] = config.model
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")

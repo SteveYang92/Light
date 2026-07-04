@@ -11,7 +11,7 @@ from .assemble import assemble_timeline
 from .audio_io import write_wav
 from .config import DEFAULT_MODEL, EngineMode, TtsConfig
 from .cues_loader import load_cues, resolve_dub_cues_path
-from .indextts2_runtime import maybe_reexec_in_official_venv, resolve_ref_audio_path
+from .indextts_runtime import maybe_reexec_in_official_venv, resolve_ref_audio_path
 from .merge_turns import merge_speaker_turns
 from .mix import OUTPUT_SUFFIX, find_video, mix_dub
 from .synthesize import print_speaker_map, save_turns_manifest, save_voice_map, synthesize_cues, synthesize_turns
@@ -37,15 +37,16 @@ def _probe_duration(path: Path) -> float:
     return float(result.stdout.strip())
 
 
-def _apply_indextts2_yaml(config: TtsConfig) -> None:
-    """Merge bundled or run-local ``indextts2.yaml`` into *config*."""
-    path = config.resolve_indextts2_path()
+def _apply_indextts_yaml(config: TtsConfig) -> None:
+    """Merge bundled or run-local ``indextts.yaml`` (or legacy ``indextts2.yaml``) into *config*."""
+    path = config.resolve_indextts_yaml_path()
     if not path:
         return
     merged = TtsConfig.from_yaml(path, output_dir=config.output_dir)
-    merged.engine_mode = EngineMode.INDEXTTS2
+    cli_engine = config.engine_mode
     for key in (
         "indextts_official_root",
+        "indextts_version",
         "indextts_checkpoints",
         "indextts_ref_audio",
         "indextts_speaker_refs",
@@ -56,6 +57,9 @@ def _apply_indextts2_yaml(config: TtsConfig) -> None:
         "indextts_use_random",
         "indextts_verbose",
         "indextts_torch_compile",
+        "indextts_use_fast",
+        "indextts_max_text_tokens_per_segment",
+        "indextts_segments_bucket_max_size",
         "indextts_chunk_chars",
         "indextts_chunk_min_chars",
         "max_turn_duration_s",
@@ -72,6 +76,12 @@ def _apply_indextts2_yaml(config: TtsConfig) -> None:
         if key == "indextts_speaker_refs" and not value:
             continue
         setattr(config, key, value)
+    if cli_engine in (EngineMode.INDEXTTS2, EngineMode.INDEXTTS15):
+        config.engine_mode = cli_engine
+    else:
+        config.engine_mode = merged.engine_mode
+    if config.engine_mode == EngineMode.INDEXTTS15:
+        config.indextts_version = "1.5"
 
 
 def _apply_voices_yaml(config: TtsConfig) -> None:
@@ -127,8 +137,8 @@ def _preview_timeline_duration(placed: list, *, fallback_duration: float) -> flo
 
 def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool = False) -> Path:
     """Full dub pipeline: synthesize → align → assemble → mix."""
-    if config.engine_mode == EngineMode.INDEXTTS2:
-        _apply_indextts2_yaml(config)
+    if config.is_official_indextts:
+        _apply_indextts_yaml(config)
         maybe_reexec_in_official_venv(
             official_root=Path(config.indextts_official_root),
             enabled=True,
@@ -143,7 +153,7 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
     if config.preview:
         cues = _limit_preview_cues(cues, config.preview_duration_s)
 
-    if config.engine_mode == EngineMode.INDEXTTS2:
+    if config.is_official_indextts:
         labels = {cue.speaker.strip() or "__default__" for cue in cues}
         for label in sorted(labels):
             resolve_ref_audio_path(config, label)
@@ -220,7 +230,8 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
             "qwen_chunk_chars": config.qwen_chunk_chars,
             "qwen_max_tokens_min": config.qwen_max_tokens_min,
             "qwen_max_tokens_max": config.qwen_max_tokens_max,
-            "indextts_emotion": config.indextts_emotion if config.engine_mode == EngineMode.INDEXTTS2 else None,
+            "indextts_version": config.indextts_resolved_version if config.is_official_indextts else None,
+            "indextts_emotion": config.indextts_emotion if config.indextts_supports_emotion else None,
             "indextts_ref_audio": config.indextts_ref_audio,
             "temperature": config.temperature,
             "top_k": config.top_k,

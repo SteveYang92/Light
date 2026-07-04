@@ -1,0 +1,17 @@
+engine: indextts2
+official_root: vendor/index-tts
+checkpoints:
+ref_audio:
+emotion: calm
+emotion_weight: 0.6
+num_beams: 3
+# IndexTTS 1.5 speed (infer_fast batching; chunk_chars is Light turn-split only)
+indextts_use_fast: true
+indextts_max_text_tokens_per_segment: 100
+indextts_segments_bucket_max_size: 4
+indextts_chunk_chars: 160
+indextts_chunk_min_chars: 45
+max_turn_duration_s: 180.0
+crossfade_ms: 30.0
+atempo_max_monologue: 2.2
+speaker_refs: {}

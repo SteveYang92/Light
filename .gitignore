@@ -56,6 +56,10 @@ packages/light-frontend/tsconfig.*.tsbuildinfo
 regression_dashboard.html
 .cache/
 
+# IndexTTS model weights (local download, not committed)
+vendor/index-tts/checkpoints/
+vendor/index-tts/checkpoints-v15/
+
 # Skills
 .agents/
 .pi/
