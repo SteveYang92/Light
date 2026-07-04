@@ -1,0 +1,3 @@
+[submodule "vendor/index-tts"]
+	path = vendor/index-tts
+	url = https://github.com/index-tts/index-tts

@@ -80,7 +80,7 @@ class TtsConfig:
     preview_duration_s: float = 180.0
     duck_db: float = -18.0
     video: str | None = None
-    indextts_official_root: str = ".cache/indextts-official/index-tts"
+    indextts_official_root: str = "vendor/index-tts"
     indextts_checkpoints: str | None = None
     indextts_ref_audio: str | None = None
     indextts_speaker_refs: dict[str, str] = field(default_factory=dict)

@@ -14,7 +14,7 @@ from typing import Any
 import numpy as np
 
 RUN_DIR = Path("output/Dan_Carlins_Hardcore_History_62_Supernova_in_the_East_1/.seg1")
-DEFAULT_OFFICIAL_ROOT = Path(".cache/indextts-official/index-tts")
+DEFAULT_OFFICIAL_ROOT = Path("vendor/index-tts")
 TERMINAL_PUNCT = tuple("。！？!?；;…")
 PAUSE_PUNCT = tuple("，,、：:" + "".join(TERMINAL_PUNCT))
 EMOTION_INDEX = {

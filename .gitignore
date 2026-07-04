@@ -56,6 +56,12 @@ packages/light-frontend/tsconfig.*.tsbuildinfo
 regression_dashboard.html
 .cache/
 
+# Official IndexTTS2 (submodule vendor/index-tts) — local weights and venv only
+vendor/index-tts/checkpoints/
+vendor/index-tts/.venv/
+vendor/index-tts/hf_cache/
+vendor/index-tts/output/
+
 # Skills
 .agents/
 .pi/

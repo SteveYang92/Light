@@ -22,7 +22,7 @@ def dub(
     engine: EngineMode = typer.Option(EngineMode.MLX, "--engine", help="mlx | http | mock | indextts2"),
     mlx_url: str = typer.Option("", "--mlx-url", help="mlx_audio.server base URL (http engine)"),
     official_root: Path = typer.Option(
-        Path(".cache/indextts-official/index-tts"),
+        Path("vendor/index-tts"),
         "--official-root",
         help="Cloned official index-tts repo (indextts2 engine)",
     ),

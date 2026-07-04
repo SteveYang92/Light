@@ -1,5 +1,5 @@
 engine: indextts2
-official_root: .cache/indextts-official/index-tts
+official_root: vendor/index-tts
 checkpoints:
 ref_audio:
 emotion: calm
@@ -10,5 +10,4 @@ indextts_chunk_min_chars: 45
 max_turn_duration_s: 180.0
 crossfade_ms: 30.0
 atempo_max_monologue: 2.2
-resume: true
 speaker_refs: {}

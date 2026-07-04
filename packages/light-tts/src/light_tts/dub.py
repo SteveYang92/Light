@@ -62,7 +62,6 @@ def _apply_indextts2_yaml(config: TtsConfig) -> None:
         "crossfade_ms",
         "atempo_max_monologue",
         "atempo_max",
-        "resume",
         "speech_offset",
         "speaker_gap_s",
         "max_inter_speaker_pause_s",

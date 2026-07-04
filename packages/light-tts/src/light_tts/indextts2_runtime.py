@@ -52,9 +52,7 @@ def maybe_reexec_in_official_venv(*, official_root: Path, enabled: bool) -> None
         return
     if Path(sys.executable).resolve() == official_py.resolve():
         return
-    import light_tts
-
-    tts_src = str(Path(light_tts.__file__).resolve().parent.parent)
+    tts_src = str(Path(__file__).resolve().parent.parent)
     env = os.environ.copy()
     root = str(official_root.resolve())
     parts = [tts_src, root]

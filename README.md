@@ -180,13 +180,14 @@ uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video
 **IndexTTS2（推荐，旁白克隆）** — 从 `ref.wav` 零样本克隆，适合长视频单说话人旁白：
 
 ```bash
-# 一次性：克隆官方 repo + checkpoints（见 scripts/indextts2_poc.py）
+# 一次性：init submodule + 官方 uv 环境 + checkpoints（见 vendor/INDEX-TTS.md）
+./scripts/setup_indextts_official.sh
 # 准备参考音：output/<run>/tts/ref.wav（或 --ref-audio）
 
 # Preview（前 3 分钟）
 uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
 
-# 完整长视频（默认 --resume，中断可续跑 segment WAV）
+# 完整长视频（中断后续跑：显式加 --resume）
 uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
 uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
 

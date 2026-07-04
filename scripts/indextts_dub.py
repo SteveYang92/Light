@@ -4,9 +4,8 @@
 
 Setup (once)::
 
-    git clone https://github.com/index-tts/index-tts .cache/indextts-official/index-tts
-    cd .cache/indextts-official/index-tts && uv sync
-    # download checkpoints to checkpoints/
+    ./scripts/setup_indextts_official.sh
+    # downloads checkpoints if missing — see vendor/INDEX-TTS.md
 
 Prepare reference audio at ``<run>/tts/ref.wav`` (or set ``ref_audio`` in indextts2.yaml).
 
@@ -19,17 +18,47 @@ Run::
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parents[1]
+DEFAULT_OFFICIAL_ROOT = _REPO / "vendor/index-tts"
+
+
+def _parse_official_root(argv: list[str]) -> Path:
+    for index, arg in enumerate(argv):
+        if arg == "--official-root" and index + 1 < len(argv):
+            return Path(argv[index + 1])
+        if arg.startswith("--official-root="):
+            return Path(arg.split("=", 1)[1])
+    return DEFAULT_OFFICIAL_ROOT
+
+
+def _maybe_reexec_early() -> None:
+    """Re-exec in official venv before importing light_tts (root uv may lack httpx)."""
+    official_root = _parse_official_root(sys.argv[1:]).expanduser().resolve()
+    official_py = official_root / ".venv" / "bin" / "python"
+    if not official_py.is_file():
+        return
+    if Path(sys.executable).resolve() == official_py.resolve():
+        return
+    tts_src = str(_REPO / "packages" / "light-tts" / "src")
+    env = os.environ.copy()
+    parts = [tts_src, str(official_root)]
+    if env.get("PYTHONPATH"):
+        parts.append(env["PYTHONPATH"])
+    env["PYTHONPATH"] = os.pathsep.join(parts)
+    os.execve(str(official_py), [str(official_py), *sys.argv], env)
+
+
+_maybe_reexec_early()
+
 sys.path.insert(0, str(_REPO / "packages" / "light-tts" / "src"))
 
 from light_tts.config import EngineMode, MixMode, TtsConfig  # noqa: E402
 from light_tts.dub import run_dub  # noqa: E402
 from light_tts.indextts2_runtime import maybe_reexec_in_official_venv  # noqa: E402
-
-DEFAULT_OFFICIAL_ROOT = _REPO / ".cache/indextts-official/index-tts"
 
 
 def main() -> None:
@@ -53,7 +82,7 @@ def main() -> None:
         cues: Path | None = typer.Option(None, "--cues"),
         video: Path | None = typer.Option(None, "--video"),
         max_cues: int | None = typer.Option(None, "--max-cues"),
-        resume: bool = typer.Option(True, "--resume/--no-resume"),
+        resume: bool = typer.Option(False, "--resume", help="Reuse existing segment WAVs (skip synthesis)"),
         skip_mix: bool = typer.Option(False, "--skip-mix"),
         preview: bool = typer.Option(False, "--preview"),
         preview_duration: float = typer.Option(180.0, "--preview-duration"),
