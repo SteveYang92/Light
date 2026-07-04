@@ -29,6 +29,8 @@ modelscope download --model IndexTeam/IndexTTS-2 --local_dir checkpoints
 
 Verify: `vendor/index-tts/checkpoints/config.yaml` and `gpt.pth` exist.
 
+Local artifacts (`checkpoints/`, `.venv/`, `hf_cache/`) stay inside the submodule working tree only. `.gitmodules` sets `ignore = all` so Light `git status` does not flag them as dirty.
+
 ## Upgrade upstream
 
 ```bash
