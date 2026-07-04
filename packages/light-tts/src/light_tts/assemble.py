@@ -18,8 +18,9 @@ def assemble_timeline(
     sample_rate: int,
     *,
     crossfade_ms: float = 50.0,
+    replace_on_overlap: bool = False,
 ) -> np.ndarray:
-    """Place segments on a timeline with linear crossfade at segment starts."""
+    """Place segments on a timeline with optional linear crossfade at segment starts."""
     total_samples = max(1, int(total_duration * sample_rate))
     timeline = np.zeros(total_samples, dtype=np.float32)
     cf = max(0, int(sample_rate * crossfade_ms / 1000.0))
@@ -39,7 +40,7 @@ def assemble_timeline(
             if idx >= total_samples:
                 break
             prev = timeline[idx]
-            if prev == 0.0:
+            if prev == 0.0 or replace_on_overlap:
                 timeline[idx] = sample
                 continue
             if cf > 0 and i < cf:

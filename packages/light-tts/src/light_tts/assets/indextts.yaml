@@ -15,3 +15,5 @@ max_turn_duration_s: 180.0
 crossfade_ms: 30.0
 atempo_max_monologue: 2.2
 speaker_refs: {}
+# Natural turn playback + retimed zh_dub.srt (load zh_dub.srt when watching video_dub.mp4).
+align_mode: turn_retime

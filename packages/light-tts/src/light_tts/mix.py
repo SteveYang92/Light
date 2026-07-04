@@ -9,21 +9,33 @@ from .config import MixMode
 logger = logging.getLogger(__name__)
 
 OUTPUT_SUFFIX = "_dub"
+_VIDEO_EXTENSIONS = {".webm", ".mp4", ".mkv", ".mov", ".avi", ".m4v"}
 
 
 def find_video(output_dir: Path, video_override: str | None) -> Path:
     if video_override:
-        path = Path(video_override).resolve()
+        path = Path(video_override).expanduser().resolve()
         if not path.is_file():
             raise FileNotFoundError(f"Video not found: {path}")
         return path
-    mp4_files = sorted(p for p in output_dir.glob("*.mp4") if OUTPUT_SUFFIX not in p.stem and "_pack" not in p.stem)
-    if not mp4_files:
-        raise FileNotFoundError(f"No .mp4 video in {output_dir}")
-    if len(mp4_files) > 1:
-        names = "\n".join(f"  {f.name}" for f in mp4_files)
+    candidates: list[Path] = []
+    for entry in sorted(output_dir.iterdir()):
+        if not entry.is_file():
+            continue
+        if entry.suffix.lower() not in _VIDEO_EXTENSIONS:
+            continue
+        if OUTPUT_SUFFIX in entry.stem or "_pack" in entry.stem:
+            continue
+        if entry.stem.startswith("video") or entry.name.startswith("video."):
+            candidates.insert(0, entry)
+        else:
+            candidates.append(entry)
+    if not candidates:
+        raise FileNotFoundError(f"No video file in {output_dir} (tried {_VIDEO_EXTENSIONS})")
+    if len(candidates) > 1:
+        names = "\n".join(f"  {f.name}" for f in candidates)
         raise RuntimeError(f"Multiple videos found:\n{names}\nUse --video to specify.")
-    return mp4_files[0]
+    return candidates[0]
 
 
 def mix_dub(

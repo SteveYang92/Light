@@ -9,12 +9,20 @@ from rich.console import Console
 
 from .assemble import assemble_timeline
 from .audio_io import write_wav
-from .config import DEFAULT_MODEL, EngineMode, TtsConfig
+from .config import DEFAULT_MODEL, AlignMode, EngineMode, TtsConfig
 from .cues_loader import load_cues, resolve_dub_cues_path
 from .indextts_runtime import maybe_reexec_in_official_venv, resolve_ref_audio_path
 from .merge_turns import merge_speaker_turns
 from .mix import OUTPUT_SUFFIX, find_video, mix_dub
-from .synthesize import print_speaker_map, save_turns_manifest, save_voice_map, synthesize_cues, synthesize_turns
+from .subtitle_retime import export_dub_subtitles
+from .synthesize import (
+    print_speaker_map,
+    reassemble_turns_from_segments,
+    save_turns_manifest,
+    save_voice_map,
+    synthesize_cues,
+    synthesize_turns,
+)
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -69,6 +77,8 @@ def _apply_indextts_yaml(config: TtsConfig) -> None:
         "speech_offset",
         "speaker_gap_s",
         "max_inter_speaker_pause_s",
+        "subtitle_aligned",
+        "align_mode",
     ):
         value = getattr(merged, key)
         if key in {"indextts_ref_audio", "indextts_checkpoints"} and not value:
@@ -135,8 +145,119 @@ def _preview_timeline_duration(placed: list, *, fallback_duration: float) -> flo
     return max(0.1, last_end + 1.0)
 
 
+def _resolve_total_duration(output_dir: Path, config: TtsConfig, cues: list) -> tuple[float, Path | None]:
+    try:
+        video = find_video(output_dir, config.video)
+        return _probe_duration(video), video
+    except FileNotFoundError:
+        logger.warning("No video found — dub.wav length from last cue end")
+        return max(c.end for c in cues) + 1.0, None
+
+
+def _finalize_dub(
+    config: TtsConfig,
+    output_dir: Path,
+    *,
+    cues: list,
+    placed: list,
+    placed_turns: list | None,
+    sample_rate: int,
+    tts_dir: Path,
+    dub_wav_path: Path,
+    preview: bool = False,
+) -> float:
+    """Assemble timeline, write dub.wav, and export retimed subtitles when applicable."""
+    if preview:
+        total_duration = _preview_timeline_duration(placed, fallback_duration=max(c.end for c in cues) + 1.0)
+    else:
+        total_duration, _ = _resolve_total_duration(output_dir, config, cues)
+
+    timeline = assemble_timeline(
+        placed,
+        total_duration,
+        sample_rate,
+        crossfade_ms=config.assembly_crossfade_ms,
+        replace_on_overlap=config.assembly_replace_on_overlap,
+    )
+    write_wav(dub_wav_path, timeline, sample_rate)
+
+    if (
+        config.effective_align_mode == AlignMode.TURN_RETIME
+        and placed_turns
+        and len(placed) == len(placed_turns)
+    ):
+        srt_path = export_dub_subtitles(
+            output_dir,
+            placed_turns,
+            placed,
+            cues,
+            tts_dir=tts_dir,
+            lang=config.lang,
+        )
+        console.print(f"  {srt_path.name} → {srt_path} (retimed to dub audio)")
+
+    return total_duration
+
+
+def run_reassemble(config: TtsConfig, *, cues_path: Path | None = None) -> Path:
+    """Rebuild ``tts/dub.wav`` from existing segment WAVs."""
+    if config.resolve_indextts_yaml_path():
+        _apply_indextts_yaml(config)
+
+    output_dir = Path(config.output_dir).resolve()
+    cues_file = cues_path or resolve_dub_cues_path(output_dir, lang=config.lang)
+    cues = load_cues(cues_file, lang=config.lang)
+    turns = merge_speaker_turns(
+        cues,
+        speaker_gap_s=config.speaker_gap_s,
+        max_turn_duration_s=config.max_turn_duration_s,
+        max_turn_chars=config.chunk_chars(),
+        min_turn_chars=config.chunk_min_chars(),
+    )
+    tts_dir = output_dir / "tts"
+    segments_dir = tts_dir / "segments"
+    dub_wav_path = tts_dir / "dub.wav"
+
+    placed, sample_rate, placed_turns = reassemble_turns_from_segments(
+        turns,
+        cues,
+        config,
+        segments_dir=segments_dir,
+        stats_path=tts_dir / "chunks.json",
+    )
+    total_duration = _finalize_dub(
+        config,
+        output_dir,
+        cues=cues,
+        placed=placed,
+        placed_turns=placed_turns,
+        sample_rate=sample_rate,
+        tts_dir=tts_dir,
+        dub_wav_path=dub_wav_path,
+    )
+    console.print(f"  dub.wav → {dub_wav_path} ({total_duration:.1f}s, reassembled)")
+    return dub_wav_path
+
+
+def run_mix_only(config: TtsConfig) -> Path:
+    """Mux existing ``tts/dub.wav`` with the segment video (no TTS engine load)."""
+    output_dir = Path(config.output_dir).resolve()
+    dub_wav_path = output_dir / "tts" / "dub.wav"
+    if not dub_wav_path.is_file():
+        raise FileNotFoundError(f"Missing dubbed audio: {dub_wav_path}")
+    video = find_video(output_dir, config.video)
+    out_mp4 = output_dir / f"{video.stem}{OUTPUT_SUFFIX}.mp4"
+    mix_dub(video, dub_wav_path, out_mp4, mode=config.mix_mode, duck_db=config.duck_db)
+    console.print(f"  [green]✓[/green] {out_mp4}")
+    return out_mp4
+
+
 def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool = False) -> Path:
     """Full dub pipeline: synthesize → align → assemble → mix."""
+    if config.mix_only:
+        return run_mix_only(config)
+    if config.reassemble:
+        return run_reassemble(config)
     if config.is_official_indextts:
         _apply_indextts_yaml(config)
         maybe_reexec_in_official_venv(
@@ -161,6 +282,7 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
     tts_dir = output_dir / "tts" / "preview" if config.preview else output_dir / "tts"
     segments_dir = tts_dir / "segments"
     dub_wav_path = tts_dir / "dub.wav"
+    placed_turns: list | None = None
 
     if config.per_cue:
         if config.max_cues is not None:
@@ -183,7 +305,7 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
         console.print(
             f"[bold]Dubbing[/bold] {len(turns)} speaker turns (from {len(cues)} display cues) — {cues_file.name}"
         )
-        speaker_map, placed, sample_rate = synthesize_turns(
+        speaker_map, placed, sample_rate, placed_turns = synthesize_turns(
             turns,
             cues,
             config,
@@ -197,19 +319,21 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
     save_voice_map(tts_dir / "voice_map.json", speaker_map, config)
 
     if config.preview:
-        total_duration = _preview_timeline_duration(placed, fallback_duration=max(c.end for c in cues) + 1.0)
         video = None
     else:
-        try:
-            video = find_video(output_dir, config.video)
-            total_duration = _probe_duration(video)
-        except FileNotFoundError:
-            total_duration = max(c.end for c in cues) + 1.0
-            video = None
-            logger.warning("No video found — dub.wav length from last cue end")
+        _, video = _resolve_total_duration(output_dir, config, cues)
 
-    timeline = assemble_timeline(placed, total_duration, sample_rate, crossfade_ms=config.crossfade_ms)
-    write_wav(dub_wav_path, timeline, sample_rate)
+    total_duration = _finalize_dub(
+        config,
+        output_dir,
+        cues=cues,
+        placed=placed,
+        placed_turns=placed_turns,
+        sample_rate=sample_rate,
+        tts_dir=tts_dir,
+        dub_wav_path=dub_wav_path,
+        preview=config.preview,
+    )
     console.print(f"  dub.wav → {dub_wav_path} ({total_duration:.1f}s)")
 
     run_state = {
@@ -233,6 +357,7 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
             "indextts_version": config.indextts_resolved_version if config.is_official_indextts else None,
             "indextts_emotion": config.indextts_emotion if config.indextts_supports_emotion else None,
             "indextts_ref_audio": config.indextts_ref_audio,
+            "align_mode": config.effective_align_mode.value,
             "temperature": config.temperature,
             "top_k": config.top_k,
             "top_p": config.top_p,

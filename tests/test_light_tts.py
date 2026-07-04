@@ -7,10 +7,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 from light_tts.assemble import PlacedSegment, assemble_timeline
-from light_tts.audio_io import concat_with_crossfade, trim_edge_silence, write_wav
-from light_tts.config import EngineMode, MixMode, TtsConfig
+from light_tts.audio_io import concat_with_crossfade, read_wav, trim_edge_silence, write_wav
+from light_tts.config import AlignMode, EngineMode, MixMode, TtsConfig
 from light_tts.cues_loader import Cue, find_cues_json, load_cues, resolve_cues_path, resolve_dub_cues_path
-from light_tts.dub import _preview_timeline_duration, run_dub
+from light_tts.dub import _preview_timeline_duration, run_dub, run_mix_only
 from light_tts.indextts_runtime import (
     INDEXTTS2_SAMPLE_RATE,
     INDEXTTS15_SAMPLE_RATE,
@@ -19,8 +19,9 @@ from light_tts.indextts_runtime import (
     variant_spec,
 )
 from light_tts.merge_turns import SpeakerTurn, merge_speaker_turns
+from light_tts.mix import find_video
 from light_tts.speaker_map import build_indextts_speaker_map, build_speaker_voice_map, voice_for_cue
-from light_tts.sync import compute_turn_placed_start, fit_budget, fit_duration
+from light_tts.sync import compute_subtitle_aligned_start, compute_turn_placed_start, fit_budget, fit_duration
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CUES_JSON = FIXTURES / "tts_cues.json"
@@ -347,6 +348,42 @@ def test_fit_duration_skips_pad_when_disabled() -> None:
     assert len(result.samples) == int(0.5 * sr)
 
 
+def test_place_turn_by_cues_aligns_each_display_cue() -> None:
+    from light_tts.synthesize import _place_turn_by_cues
+
+    cues = [
+        Cue(cue_id="a", start=0.6, end=4.9, text="一", speaker="__default__", lang="zh"),
+        Cue(cue_id="b", start=11.4, end=13.9, text="二", speaker="__default__", lang="zh"),
+    ]
+    turn = SpeakerTurn(
+        turn_id="turn_0000",
+        speaker="__default__",
+        start=0.6,
+        slot_end=13.9,
+        text="一。二。",
+        lang="zh",
+        cue_ids=("a", "b"),
+    )
+    sr = 22050
+    samples = np.ones(sr * 2, dtype=np.float32)
+    config = TtsConfig(output_dir=".", subtitle_aligned=True, speech_offset=0.05)
+    placed, _ = _place_turn_by_cues(turn, {c.cue_id: c for c in cues}, samples, sr, config, atempo_max=2.2)
+    assert len(placed) == 2
+    assert placed[0].start == pytest.approx(0.65, abs=0.01)
+    assert placed[1].start == pytest.approx(11.45, abs=0.01)
+    assert placed[0].start + len(placed[0].samples) / sr <= placed[1].start + 0.001
+
+
+def test_compute_subtitle_aligned_start_waits_for_cue_time() -> None:
+    start = compute_subtitle_aligned_start(22.0, 11.1, speaker_gap_s=0.08)
+    assert start == pytest.approx(22.0, abs=0.01)
+
+
+def test_compute_subtitle_aligned_start_pushes_after_overrun() -> None:
+    start = compute_subtitle_aligned_start(10.0, 12.0, speaker_gap_s=0.08)
+    assert start == pytest.approx(12.08, abs=0.01)
+
+
 def test_compute_turn_placed_start_compresses_long_source_pause() -> None:
     start = compute_turn_placed_start(
         10.0,
@@ -484,7 +521,7 @@ def test_run_dub_indextts15_mock_engine(tmp_path: Path) -> None:
     engine = create_engine(TtsConfig(output_dir=str(out_dir), engine_mode=EngineMode.MOCK))
     cues = load_cues(out_dir / "translations" / "raw.json", lang="zh")
     turns = merge_speaker_turns(cues, max_turn_duration_s=None, max_turn_chars=40, min_turn_chars=10)
-    speaker_map, placed, sr = synth_mod.synthesize_turns(
+    speaker_map, placed, sr, _placed_turns = synth_mod.synthesize_turns(
         turns,
         cues,
         config,
@@ -522,7 +559,7 @@ def test_run_dub_indextts2_mock_engine(tmp_path: Path) -> None:
     engine = create_engine(TtsConfig(output_dir=str(out_dir), engine_mode=EngineMode.MOCK))
     cues = load_cues(out_dir / "translations" / "raw.json", lang="zh")
     turns = merge_speaker_turns(cues, max_turn_duration_s=None, max_turn_chars=40, min_turn_chars=10)
-    speaker_map, placed, sr = synth_mod.synthesize_turns(
+    speaker_map, placed, sr, _placed_turns = synth_mod.synthesize_turns(
         turns,
         cues,
         config,
@@ -676,3 +713,145 @@ def test_run_dub_preview_writes_preview_artifacts(tmp_path: Path) -> None:
     assert (out_dir / "tts" / "preview" / "chunks.json").is_file()
     run_meta = json.loads((out_dir / "tts" / "preview" / "tts_run.json").read_text())
     assert run_meta["config"]["preview"] is True
+
+
+def test_find_video_prefers_video_webm(tmp_path: Path) -> None:
+    (tmp_path / "other.mp4").write_bytes(b"x")
+    webm = tmp_path / "video.webm"
+    webm.write_bytes(b"x")
+    assert find_video(tmp_path, None) == webm
+
+
+def test_run_mix_only_requires_dub_wav(tmp_path: Path) -> None:
+    out_dir = tmp_path / "output"
+    out_dir.mkdir()
+    (out_dir / "video.webm").write_bytes(b"x")
+    config = TtsConfig(output_dir=str(out_dir), mix_only=True, mix_mode=MixMode.DUCK)
+    with pytest.raises(FileNotFoundError, match="dub.wav"):
+        run_mix_only(config)
+
+
+def test_run_mix_only_calls_mix(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    out_dir = tmp_path / "output"
+    tts_dir = out_dir / "tts"
+    tts_dir.mkdir(parents=True)
+    write_wav(tts_dir / "dub.wav", np.zeros(1000, dtype=np.float32), 22050)
+    (out_dir / "video.webm").write_bytes(b"x")
+    calls: list[tuple] = []
+
+    def fake_mix(video_path, dub_wav, output_path, *, mode, duck_db) -> None:
+        calls.append((video_path, dub_wav, output_path, mode, duck_db))
+
+    monkeypatch.setattr("light_tts.dub.mix_dub", fake_mix)
+    config = TtsConfig(output_dir=str(out_dir), mix_only=True, mix_mode=MixMode.DUCK)
+    out = run_mix_only(config)
+    assert out == out_dir / "video_dub.mp4"
+    assert len(calls) == 1
+    assert calls[0][0].name == "video.webm"
+    assert calls[0][1].name == "dub.wav"
+
+
+def test_merge_dub_timeline_trims_overlap(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from light_tts.episode_merge import merge_dub_timeline
+
+    monkeypatch.setattr(
+        "light_tts.episode_merge.compute_segment_offsets",
+        lambda *args, **kwargs: [0.0, 15.0],
+    )
+
+    episode = tmp_path / "episode"
+    seg1 = episode / ".seg1"
+    seg2 = episode / ".seg2"
+    for seg in (seg1, seg2):
+        (seg / "tts").mkdir(parents=True)
+        (seg / "video.webm").write_bytes(b"x")
+    sr = 22050
+    write_wav(seg1 / "tts" / "dub.wav", np.ones(sr * 30, dtype=np.float32), sr)
+    write_wav(seg2 / "tts" / "dub.wav", np.full(sr * 30, 2.0, dtype=np.float32), sr)
+    (episode / "split_points.json").write_text(
+        json.dumps({"split_points": [0.0, 20.0, 40.0], "overlap": 5.0}),
+        encoding="utf-8",
+    )
+    out_path, out_sr = merge_dub_timeline(episode)
+    assert out_sr == sr
+    merged, _ = read_wav(out_path)
+    assert np.allclose(merged[: sr * 20], 1.0)
+    assert np.allclose(merged[sr * 20 : sr * 40], 2.0)
+
+
+def test_retime_turn_cues_partitions_interval() -> None:
+    from light_tts.subtitle_retime import retime_turn_cues
+
+    cues = [
+        Cue(cue_id="a", start=0.0, end=3.0, text="一", speaker="__default__", lang="zh"),
+        Cue(cue_id="b", start=3.0, end=6.0, text="二二", speaker="__default__", lang="zh"),
+        Cue(cue_id="c", start=6.0, end=10.0, text="三三三", speaker="__default__", lang="zh"),
+    ]
+    turn = SpeakerTurn(
+        turn_id="turn_0000",
+        speaker="__default__",
+        start=0.0,
+        slot_end=10.0,
+        text="一二三",
+        lang="zh",
+        cue_ids=("a", "b", "c"),
+    )
+    retimed = retime_turn_cues(turn, {c.cue_id: c for c in cues}, audio_start=5.0, audio_duration=10.0)
+    assert len(retimed) == 3
+    assert retimed[0].start == pytest.approx(5.0)
+    assert retimed[-1].end == pytest.approx(15.0)
+    for left, right in zip(retimed, retimed[1:], strict=False):
+        assert left.end == pytest.approx(right.start)
+        assert left.end <= right.start + 0.001
+
+
+def test_turn_retime_placement_no_atempo(tmp_path: Path) -> None:
+    from light_tts.synthesize import reassemble_turns_from_segments
+
+    sr = 22050
+    cues = [Cue("a", 0.0, 2.0, "测试", "__default__", "zh")]
+    turn = SpeakerTurn(
+        turn_id="turn_0000",
+        speaker="__default__",
+        start=0.0,
+        slot_end=2.0,
+        text="测试",
+        lang="zh",
+        cue_ids=("a",),
+    )
+    raw = np.ones(sr * 3, dtype=np.float32)
+    segments_dir = tmp_path / "segments"
+    segments_dir.mkdir()
+    write_wav(segments_dir / "turn_0000.wav", raw, sr)
+    config = TtsConfig(output_dir=str(tmp_path), align_mode=AlignMode.TURN_RETIME, speech_offset=0.05)
+    placed, _, _ = reassemble_turns_from_segments([turn], cues, config, segments_dir=segments_dir)
+    assert len(placed) == 1
+    assert len(placed[0].samples) == len(raw)
+
+
+def test_turn_retime_no_overlap_between_turns(tmp_path: Path) -> None:
+    from light_tts.synthesize import reassemble_turns_from_segments
+
+    sr = 22050
+    cues = [
+        Cue("a", 0.0, 2.0, "一", "__default__", "zh"),
+        Cue("b", 5.0, 7.0, "二", "__default__", "zh"),
+    ]
+    turns = [
+        SpeakerTurn("turn_0000", "__default__", 0.0, 2.0, "一", "zh", ("a",)),
+        SpeakerTurn("turn_0001", "__default__", 5.0, 7.0, "二", "zh", ("b",)),
+    ]
+    segments_dir = tmp_path / "segments"
+    segments_dir.mkdir()
+    write_wav(segments_dir / "turn_0000.wav", np.ones(sr * 4, dtype=np.float32), sr)
+    write_wav(segments_dir / "turn_0001.wav", np.ones(sr, dtype=np.float32), sr)
+    config = TtsConfig(
+        output_dir=str(tmp_path),
+        align_mode=AlignMode.TURN_RETIME,
+        speech_offset=0.05,
+        speaker_gap_s=0.08,
+    )
+    placed, _, _ = reassemble_turns_from_segments(turns, cues, config, segments_dir=segments_dir)
+    assert len(placed) == 2
+    end0 = placed[0].start + len(placed[0].samples) / sr
+    assert placed[1].start >= end0 + config.speaker_gap_s - 0.001

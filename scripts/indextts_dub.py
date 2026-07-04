@@ -16,6 +16,7 @@ Run::
     uv run python scripts/indextts_dub.py output/<run> --engine indextts15 --lang zh --skip-mix --preview
     uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
     uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
+    uv run python scripts/indextts_dub.py output/<run> --mix-only --mix duck
 """
 
 from __future__ import annotations
@@ -91,12 +92,19 @@ def main() -> None:
         max_cues: int | None = typer.Option(None, "--max-cues"),
         resume: bool = typer.Option(False, "--resume", help="Reuse existing segment WAVs (skip synthesis)"),
         skip_mix: bool = typer.Option(False, "--skip-mix"),
+        mix_only: bool = typer.Option(False, "--mix-only", help="Only ffmpeg mix existing tts/dub.wav"),
+        reassemble: bool = typer.Option(
+            False,
+            "--reassemble",
+            help="Rebuild tts/dub.wav from segment WAVs (subtitle-aligned, no TTS load)",
+        ),
         preview: bool = typer.Option(False, "--preview"),
         preview_duration: float = typer.Option(180.0, "--preview-duration"),
         per_cue: bool = typer.Option(False, "--per-cue"),
         verbose: bool = typer.Option(False, "--verbose"),
     ) -> None:
-        maybe_reexec_in_official_venv(official_root=official_root, enabled=True)
+        if not mix_only and not reassemble:
+            maybe_reexec_in_official_venv(official_root=official_root, enabled=True)
         cfg = TtsConfig(
             output_dir=output_dir,
             lang=lang,
@@ -113,6 +121,8 @@ def main() -> None:
             mix_mode=mix,
             max_cues=max_cues,
             resume=resume,
+            mix_only=mix_only,
+            reassemble=reassemble,
             video=str(video) if video else None,
             preview=preview,
             preview_duration_s=preview_duration,

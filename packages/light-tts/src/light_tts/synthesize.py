@@ -10,7 +10,7 @@ from rich.table import Table
 
 from .assemble import PlacedSegment
 from .audio_io import read_wav, trim_edge_silence, write_wav
-from .config import TtsConfig
+from .config import AlignMode, TtsConfig
 from .cues_loader import Cue
 from .engine import TtsEngine, create_engine
 from .indextts_runtime import resolve_ref_audio_path
@@ -22,7 +22,7 @@ from .speaker_map import (
     voice_for_cue,
     voice_for_speaker,
 )
-from .sync import compute_turn_placed_start, fit_budget, fit_duration
+from .sync import compute_subtitle_aligned_start, compute_turn_placed_start, fit_budget, fit_duration
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -85,6 +85,84 @@ def _pipeline_sample_rate(placed: list[PlacedSegment], default: int) -> int:
     if len(rates) > 1:
         raise ValueError(f"Mixed sample rates in placed segments: {sorted(rates)}")
     return placed[0].sample_rate
+
+
+def _place_turn_by_cues(
+    turn: SpeakerTurn,
+    cues_by_id: dict[str, Cue],
+    samples: np.ndarray,
+    sample_rate: int,
+    config: TtsConfig,
+    *,
+    atempo_max: float,
+    prev_end: float | None = None,
+    next_turn_start: float | None = None,
+) -> tuple[list[PlacedSegment], float | None]:
+    """Split one synthesized turn across display cues without overlapping neighbours."""
+    cue_list = [cues_by_id[cid] for cid in turn.cue_ids if cid in cues_by_id]
+    if not cue_list:
+        return [], prev_end
+
+    def _fit_chunk(chunk: np.ndarray, cue: Cue, *, next_start: float | None) -> tuple[PlacedSegment, float]:
+        scheduled = cue.start + config.speech_offset
+        start = scheduled if prev_end is None else max(scheduled, prev_end + config.speaker_gap_s)
+        if next_start is not None:
+            until_next = next_start - config.speaker_gap_s - start
+        else:
+            until_next = max(cue.duration, cue.end - start + 0.25)
+        max_dur = max(0.05, min(cue.duration, until_next))
+        fitted = fit_duration(
+            chunk,
+            sample_rate,
+            max_dur,
+            max_duration=max_dur,
+            atempo_min=config.atempo_min,
+            atempo_max=atempo_max,
+            allow_trim=True,
+            pad_to_target=False,
+            strict_cap=True,
+        )
+        end = start + len(fitted.samples) / sample_rate
+        return PlacedSegment(start=start, samples=fitted.samples, sample_rate=sample_rate), end
+
+    if len(cue_list) == 1:
+        next_start = next_turn_start
+        segment, end = _fit_chunk(samples, cue_list[0], next_start=next_start)
+        return [segment], end
+
+    weights = [max(1, len(c.text)) for c in cue_list]
+    total_w = sum(weights)
+    placed: list[PlacedSegment] = []
+    idx = 0
+    end = prev_end
+    for i, cue in enumerate(cue_list):
+        if i == len(cue_list) - 1:
+            chunk = samples[idx:]
+            next_start = next_turn_start
+        else:
+            n = int(round(len(samples) * weights[i] / total_w))
+            chunk = samples[idx : idx + n]
+            idx += n
+            next_start = cue_list[i + 1].start
+        segment, end = _fit_chunk(chunk, cue, next_start=next_start)
+        placed.append(segment)
+        prev_end = end
+    return placed, end
+
+
+def _place_turn_natural(
+    turn: SpeakerTurn,
+    samples: np.ndarray,
+    sample_rate: int,
+    config: TtsConfig,
+    prev_end: float | None,
+) -> tuple[PlacedSegment, float]:
+    """Place a full turn without time-stretch or per-cue splitting."""
+    scheduled = turn.start + config.speech_offset
+    start = scheduled if prev_end is None else max(scheduled, prev_end + config.speaker_gap_s)
+    segment = PlacedSegment(start=start, samples=samples.astype(np.float32), sample_rate=sample_rate)
+    end = start + len(samples) / sample_rate
+    return segment, end
 
 
 def _synthesize_turn(
@@ -190,7 +268,7 @@ def synthesize_turns(
     segments_dir: Path,
     engine: TtsEngine | None = None,
     stats_path: Path | None = None,
-) -> tuple[dict[str, str], list[PlacedSegment], int]:
+) -> tuple[dict[str, str], list[PlacedSegment], int, list[SpeakerTurn]]:
     """Synthesize merged speaker turns (default dub path)."""
     tts_engine = engine or create_engine(config)
     if config.is_official_indextts:
@@ -199,13 +277,15 @@ def synthesize_turns(
         speaker_map = build_speaker_voice_map(turns, config)
     segments_dir.mkdir(parents=True, exist_ok=True)
     monologue = _is_monologue(cues)
+    cues_by_id = {c.cue_id: c for c in cues}
 
     placed: list[PlacedSegment] = []
+    placed_turns: list[SpeakerTurn] = []
     stats: list[dict[str, object]] = []
     sample_rate = tts_engine.sample_rate
     prev_end: float | None = None
 
-    for turn in turns:
+    for turn_index, turn in enumerate(turns):
         if config.is_official_indextts:
             voice = turn.speaker.strip() or "__default__"
             language = "Chinese"
@@ -250,6 +330,39 @@ def synthesize_turns(
             stats.append(stat)
             continue
 
+        align_mode = config.effective_align_mode
+        if align_mode == AlignMode.TURN_RETIME and monologue:
+            segment, prev_end = _place_turn_natural(turn, samples, sample_rate, config, prev_end)
+            placed.append(segment)
+            placed_turns.append(turn)
+            stat["final_duration_s"] = round(len(samples) / sample_rate, 3)
+            stat["placed_start_s"] = round(segment.start, 3)
+            stat["trimmed"] = False
+            stat["align_mode"] = align_mode.value
+            stats.append(stat)
+            continue
+
+        if monologue and align_mode == AlignMode.SUBTITLE_ALIGNED:
+            next_turn_start = turns[turn_index + 1].start if turn_index + 1 < len(turns) else None
+            sub_segments, prev_end = _place_turn_by_cues(
+                turn,
+                cues_by_id,
+                samples,
+                sample_rate,
+                config,
+                atempo_max=atempo_max,
+                prev_end=prev_end,
+                next_turn_start=next_turn_start,
+            )
+            placed.extend(sub_segments)
+            placed_turns.append(turn)
+            if sub_segments:
+                stat["final_duration_s"] = round(sum(len(s.samples) for s in sub_segments) / sample_rate, 3)
+                stat["placed_start_s"] = round(sub_segments[0].start, 3)
+            stat["trimmed"] = False
+            stats.append(stat)
+            continue
+
         if monologue:
             fitted = fit_duration(
                 samples,
@@ -276,14 +389,22 @@ def synthesize_turns(
             )
 
         scheduled = turn.start + config.speech_offset
-        start = compute_turn_placed_start(
-            scheduled,
-            prev_end,
-            speaker_gap_s=config.speaker_gap_s,
-            max_inter_speaker_pause_s=config.max_inter_speaker_pause_s,
-        )
+        if monologue:
+            start = compute_subtitle_aligned_start(
+                scheduled,
+                prev_end,
+                speaker_gap_s=config.speaker_gap_s,
+            )
+        else:
+            start = compute_turn_placed_start(
+                scheduled,
+                prev_end,
+                speaker_gap_s=config.speaker_gap_s,
+                max_inter_speaker_pause_s=config.max_inter_speaker_pause_s,
+            )
         prev_end = start + len(fitted.samples) / sample_rate
         placed.append(PlacedSegment(start=start, samples=fitted.samples, sample_rate=sample_rate))
+        placed_turns.append(turn)
         stat["final_duration_s"] = round(len(fitted.samples) / sample_rate, 3)
         stat["placed_start_s"] = round(start, 3)
         stat["trimmed"] = fitted.trimmed
@@ -292,7 +413,7 @@ def synthesize_turns(
     if stats_path is not None:
         stats_path.parent.mkdir(parents=True, exist_ok=True)
         stats_path.write_text(json.dumps(stats, indent=2, ensure_ascii=False), encoding="utf-8")
-    return speaker_map, placed, _pipeline_sample_rate(placed, tts_engine.sample_rate)
+    return speaker_map, placed, _pipeline_sample_rate(placed, tts_engine.sample_rate), placed_turns
 
 
 def synthesize_cues(
@@ -404,6 +525,152 @@ def synthesize_cues(
         placed.append(PlacedSegment(start=start, samples=fitted.samples, sample_rate=sample_rate))
 
     return speaker_map, placed, _pipeline_sample_rate(placed, tts_engine.sample_rate)
+
+
+def reassemble_turns_from_segments(
+    turns: list[SpeakerTurn],
+    cues: list[Cue],
+    config: TtsConfig,
+    *,
+    segments_dir: Path,
+    stats_path: Path | None = None,
+) -> tuple[list[PlacedSegment], int, list[SpeakerTurn]]:
+    """Rebuild timeline from existing segment WAVs (no TTS engine)."""
+    monologue = _is_monologue(cues)
+    cues_by_id = {c.cue_id: c for c in cues}
+    placed: list[PlacedSegment] = []
+    placed_turns: list[SpeakerTurn] = []
+    stats: list[dict[str, object]] = []
+    sample_rate: int | None = None
+    prev_end: float | None = None
+    align_mode = config.effective_align_mode
+
+    for turn_index, turn in enumerate(turns):
+        out_path = segments_dir / f"{turn.turn_id}.wav"
+        if not out_path.is_file():
+            raise FileNotFoundError(f"Missing segment WAV for reassemble: {out_path}")
+        samples, sr = read_wav(out_path)
+        if sample_rate is None:
+            sample_rate = sr
+        elif sr != sample_rate:
+            raise ValueError(f"Sample rate mismatch in {out_path}: {sr} != {sample_rate}")
+
+        slot = turn.slot_duration
+        atempo_max = config.atempo_max_monologue if monologue else config.atempo_max_cross
+
+        if align_mode == AlignMode.TURN_RETIME and monologue:
+            segment, prev_end = _place_turn_natural(turn, samples, sr, config, prev_end)
+            placed.append(segment)
+            placed_turns.append(turn)
+            stats.append(
+                {
+                    "turn_id": turn.turn_id,
+                    "speaker": turn.speaker,
+                    "cue_ids": list(turn.cue_ids),
+                    "target_duration_s": round(slot, 3),
+                    "raw_duration_s": round(len(samples) / sr, 3),
+                    "final_duration_s": round(len(samples) / sr, 3),
+                    "placed_start_s": round(segment.start, 3),
+                    "trimmed": False,
+                    "status": "reassembled",
+                    "align_mode": align_mode.value,
+                }
+            )
+            continue
+
+        if monologue and align_mode == AlignMode.SUBTITLE_ALIGNED:
+            next_turn_start = turns[turn_index + 1].start if turn_index + 1 < len(turns) else None
+            sub_segments, prev_end = _place_turn_by_cues(
+                turn,
+                cues_by_id,
+                samples,
+                sr,
+                config,
+                atempo_max=atempo_max,
+                prev_end=prev_end,
+                next_turn_start=next_turn_start,
+            )
+            placed.extend(sub_segments)
+            placed_turns.append(turn)
+            stats.append(
+                {
+                    "turn_id": turn.turn_id,
+                    "speaker": turn.speaker,
+                    "cue_ids": list(turn.cue_ids),
+                    "target_duration_s": round(slot, 3),
+                    "raw_duration_s": round(len(samples) / sr, 3),
+                    "final_duration_s": (
+                        round(sum(len(s.samples) for s in sub_segments) / sr, 3) if sub_segments else 0.0
+                    ),
+                    "placed_start_s": round(sub_segments[0].start, 3) if sub_segments else None,
+                    "trimmed": False,
+                    "status": "reassembled",
+                    "subtitle_aligned": True,
+                }
+            )
+            continue
+
+        if monologue:
+            fitted = fit_duration(
+                samples,
+                sr,
+                slot,
+                max_duration=slot,
+                atempo_min=config.atempo_min,
+                atempo_max=atempo_max,
+                allow_trim=True,
+                pad_to_target=False,
+                strict_cap=True,
+            )
+        else:
+            fitted = fit_duration(
+                samples,
+                sr,
+                slot,
+                max_duration=slot,
+                atempo_min=config.atempo_min,
+                atempo_max=atempo_max,
+                allow_trim=False,
+                pad_to_target=False,
+                strict_cap=False,
+            )
+
+        scheduled = turn.start + config.speech_offset
+        if monologue:
+            start = compute_subtitle_aligned_start(
+                scheduled,
+                prev_end,
+                speaker_gap_s=config.speaker_gap_s,
+            )
+        else:
+            start = compute_turn_placed_start(
+                scheduled,
+                prev_end,
+                speaker_gap_s=config.speaker_gap_s,
+                max_inter_speaker_pause_s=config.max_inter_speaker_pause_s,
+            )
+        prev_end = start + len(fitted.samples) / sr
+        placed.append(PlacedSegment(start=start, samples=fitted.samples, sample_rate=sr))
+        placed_turns.append(turn)
+        stats.append(
+            {
+                "turn_id": turn.turn_id,
+                "speaker": turn.speaker,
+                "cue_ids": list(turn.cue_ids),
+                "target_duration_s": round(slot, 3),
+                "raw_duration_s": round(len(samples) / sr, 3),
+                "final_duration_s": round(len(fitted.samples) / sr, 3),
+                "placed_start_s": round(start, 3),
+                "trimmed": fitted.trimmed,
+                "status": "reassembled",
+            }
+        )
+
+    if stats_path is not None:
+        stats_path.parent.mkdir(parents=True, exist_ok=True)
+        stats_path.write_text(json.dumps(stats, indent=2, ensure_ascii=False), encoding="utf-8")
+    assert sample_rate is not None
+    return placed, _pipeline_sample_rate(placed, sample_rate), placed_turns
 
 
 def print_speaker_map(speaker_map: dict[str, str], *, config: TtsConfig | None = None) -> None:

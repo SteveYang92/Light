@@ -75,6 +75,18 @@ def compute_turn_placed_start(
     return max(earliest, capped)
 
 
+def compute_subtitle_aligned_start(
+    scheduled_start: float,
+    prev_end: float | None,
+    *,
+    speaker_gap_s: float,
+) -> float:
+    """Place monologue speech at subtitle cue time; push later only when the prior turn overruns."""
+    if prev_end is None:
+        return scheduled_start
+    return max(scheduled_start, prev_end + speaker_gap_s)
+
+
 def fit_duration(
     samples: np.ndarray,
     sample_rate: int,

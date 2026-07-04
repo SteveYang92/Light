@@ -194,13 +194,28 @@ uv run python scripts/indextts_dub.py output/<run> --engine indextts15 --lang zh
 # 完整长视频（中断后续跑：显式加 --resume）
 uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
 uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
+# 已有 dub.wav，仅混音（不加载 IndexTTS 模型）
+uv run python scripts/indextts_dub.py output/<run> --mix-only --mix duck
+
+# 多段整集（.seg1/ … split_points.json overlap 合并）
+uv run python scripts/indextts_dub_batch.py output/<episode> --prepare-ref
+uv run python scripts/indextts_dub_batch.py output/<episode> --skip-mix --resume
+uv run python scripts/indextts_dub_batch.py output/<episode> --mix-only --mix duck
+uv run python scripts/indextts_dub_batch.py output/<episode> --merge --mix duck
 
 # 等价 CLI
 uv run light-tts dub output/<run> --engine indextts2 --lang zh --skip-mix --resume
 uv run light-tts dub output/<run> --engine indextts15 --lang zh --skip-mix --preview
 ```
 
-配置见 `packages/light-tts/src/light_tts/assets/indextts.yaml`（run 目录可放 `indextts.yaml` 或旧名 `indextts2.yaml` 覆盖）。多说话人时在 yaml 里配置 `speaker_refs`。
+配置见 `packages/light-tts/src/light_tts/assets/indextts.yaml`（run 目录可放 `indextts.yaml` 或旧名 `indextts2.yaml` 覆盖）。默认 `align_mode: turn_retime`：配音按 turn 自然播放，**观看 `video_dub.mp4` 时请加载 `{lang}_dub.srt`**（如 `zh_dub.srt`）；原 `zh.srt` 对应英文字幕时间轴，不保证与中文配音对齐。多说话人时在 yaml 里配置 `speaker_refs`。
+
+已有 segment WAV 时仅重排时间轴与字幕（不重跑 IndexTTS）：
+
+```bash
+uv run python scripts/indextts_dub.py output/<run> --reassemble
+uv run python scripts/indextts_dub.py output/<run> --mix-only --mix duck
+```
 
 **Qwen3-TTS（预设音色，需 `--diarize`）** — Apple Silicon / mlx-audio：
 

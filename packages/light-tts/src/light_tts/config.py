@@ -38,6 +38,14 @@ class EngineMode(StrEnum):
     INDEXTTS15 = "indextts15"
 
 
+class AlignMode(StrEnum):
+    """How synthesized turns are placed on the timeline."""
+
+    TURN_COMPACT = "turn_compact"
+    TURN_RETIME = "turn_retime"
+    SUBTITLE_ALIGNED = "subtitle_aligned"
+
+
 @dataclass
 class VoiceConfig:
     language: str = "Chinese"
@@ -59,6 +67,10 @@ class TtsConfig:
     mlx_server_url: str = field(default_factory=lambda: os.environ.get("MLX_AUDIO_URL", "http://127.0.0.1:8000"))
     max_cues: int | None = None
     resume: bool = False
+    mix_only: bool = False
+    reassemble: bool = False
+    align_mode: AlignMode = AlignMode.TURN_COMPACT
+    subtitle_aligned: bool = False
     speech_offset: float = 0.05
     crossfade_ms: float = 50.0
     atempo_min: float = 0.88
@@ -118,6 +130,22 @@ class TtsConfig:
     @property
     def indextts_supports_emotion(self) -> bool:
         return self.indextts_resolved_version == "2.0"
+
+    @property
+    def effective_align_mode(self) -> AlignMode:
+        if self.subtitle_aligned and self.align_mode == AlignMode.TURN_COMPACT:
+            return AlignMode.SUBTITLE_ALIGNED
+        return self.align_mode
+
+    @property
+    def assembly_crossfade_ms(self) -> float:
+        if self.effective_align_mode in (AlignMode.TURN_RETIME, AlignMode.SUBTITLE_ALIGNED):
+            return 0.0
+        return self.crossfade_ms
+
+    @property
+    def assembly_replace_on_overlap(self) -> bool:
+        return self.effective_align_mode in (AlignMode.TURN_RETIME, AlignMode.SUBTITLE_ALIGNED)
 
     def chunk_chars(self) -> int:
         if self.is_official_indextts:
@@ -203,6 +231,12 @@ class TtsConfig:
                 continue
             if key == "num_beams":
                 cfg.indextts_num_beams = int(value)
+                continue
+            if key == "align_mode":
+                cfg.align_mode = AlignMode(str(value))
+                continue
+            if key == "subtitle_aligned" and value:
+                cfg.subtitle_aligned = bool(value)
                 continue
             if hasattr(cfg, key) and value is not None:
                 setattr(cfg, key, value)
