@@ -1,3 +1,9 @@
+# IndexTTS 2.0 Metal (Apple Silicon, native mtts server):
+# engine: indextts2_metal
+# metal_root: vendor/index-tts2-metal
+# metal_url: http://127.0.0.1:3456
+# metal_cfm_steps: 16
+# metal_manage_server: false
 engine: indextts2
 official_root: vendor/index-tts
 checkpoints:
@@ -17,3 +23,5 @@ atempo_max_monologue: 2.2
 speaker_refs: {}
 # Natural turn playback + retimed zh_dub.srt (load zh_dub.srt when watching video_dub.mp4).
 align_mode: turn_retime
+# Stretch each turn toward ~0.22s/char (IndexTTS / mtts have no speed API).
+indextts_normalize_rate: false

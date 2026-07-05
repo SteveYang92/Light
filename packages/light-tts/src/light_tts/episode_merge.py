@@ -171,9 +171,7 @@ def merge_dub_timeline(output_dir: Path) -> tuple[Path, int]:
 
     split_points, overlap = load_split_points(output_dir)
     if len(split_points) != len(seg_dirs) + 1:
-        raise ValueError(
-            f"split_points length {len(split_points)} does not match {len(seg_dirs)} segments (+1)"
-        )
+        raise ValueError(f"split_points length {len(split_points)} does not match {len(seg_dirs)} segments (+1)")
 
     offsets = compute_segment_offsets(output_dir, seg_dirs, split_points, overlap)
     total_duration = split_points[-1]

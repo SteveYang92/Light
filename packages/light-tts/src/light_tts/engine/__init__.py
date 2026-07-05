@@ -5,6 +5,7 @@ from .base import TtsEngine
 
 __all__ = [
     "IndexTTS2Engine",
+    "IndexTTS2MetalEngine",
     "MockEngine",
     "OfficialIndexTTSEngine",
     "Qwen3HttpEngine",
@@ -18,6 +19,10 @@ def create_engine(config: TtsConfig) -> TtsEngine:
         from .mock import MockEngine
 
         return MockEngine()
+    if config.is_indextts_metal:
+        from .indextts_metal import IndexTTS2MetalEngine
+
+        return IndexTTS2MetalEngine(config)
     if config.is_official_indextts:
         from .indextts import OfficialIndexTTSEngine
 

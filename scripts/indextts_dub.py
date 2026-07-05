@@ -15,6 +15,7 @@ Run::
     uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
     uv run python scripts/indextts_dub.py output/<run> --engine indextts15 --lang zh --skip-mix --preview
     uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
+    uv run python scripts/indextts_dub.py output/<run> --engine indextts2_metal --lang zh --skip-mix --preview
     uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
     uv run python scripts/indextts_dub.py output/<run> --mix-only --mix duck
 """
@@ -38,8 +39,23 @@ def _parse_official_root(argv: list[str]) -> Path:
     return DEFAULT_OFFICIAL_ROOT
 
 
+_DEFAULT_ENGINE = "indextts2"
+_METAL_ENGINE = "indextts2_metal"
+
+
+def _parse_engine(argv: list[str]) -> str:
+    for index, arg in enumerate(argv):
+        if arg == "--engine" and index + 1 < len(argv):
+            return argv[index + 1].lower()
+        if arg.startswith("--engine="):
+            return arg.split("=", 1)[1].lower()
+    return _DEFAULT_ENGINE
+
+
 def _maybe_reexec_early() -> None:
-    """Re-exec in official venv before importing light_tts (root uv may lack httpx)."""
+    """Re-exec in official venv before importing light_tts (PyTorch IndexTTS only)."""
+    if _parse_engine(sys.argv[1:]) == _METAL_ENGINE:
+        return
     official_root = _parse_official_root(sys.argv[1:]).expanduser().resolve()
     official_py = official_root / ".venv" / "bin" / "python"
     if not official_py.is_file():
@@ -76,9 +92,17 @@ def main() -> None:
         engine: EngineMode = typer.Option(
             EngineMode.INDEXTTS2,
             "--engine",
-            help="indextts2 | indextts15",
+            help="indextts2 | indextts15 | indextts2_metal",
         ),
         official_root: Path = typer.Option(DEFAULT_OFFICIAL_ROOT, "--official-root"),
+        metal_root: Path = typer.Option(Path("vendor/index-tts2-metal"), "--metal-root"),
+        metal_url: str = typer.Option("", "--metal-url", help="mtts HTTP base URL"),
+        metal_cfm_steps: int = typer.Option(16, "--metal-cfm-steps"),
+        metal_manage_server: bool = typer.Option(
+            False,
+            "--metal-manage-server",
+            help="Auto-start local mtts server for indextts2_metal",
+        ),
         ref_audio: Path | None = typer.Option(None, "--ref-audio", help="Speaker reference WAV"),
         checkpoints: Path | None = typer.Option(None, "--checkpoints"),
         emotion: str = typer.Option("calm", "--emotion", help="IndexTTS2 emotion (indextts2 only)"),
@@ -103,13 +127,17 @@ def main() -> None:
         per_cue: bool = typer.Option(False, "--per-cue"),
         verbose: bool = typer.Option(False, "--verbose"),
     ) -> None:
-        if not mix_only and not reassemble:
+        if not mix_only and not reassemble and engine != EngineMode.INDEXTTS2_METAL:
             maybe_reexec_in_official_venv(official_root=official_root, enabled=True)
         cfg = TtsConfig(
             output_dir=output_dir,
             lang=lang,
             engine_mode=engine,
             indextts_official_root=str(official_root),
+            indextts_metal_root=str(metal_root),
+            indextts_metal_url=metal_url or os.environ.get("MIT2_SERVER_URL", "http://127.0.0.1:3456"),
+            indextts_metal_cfm_steps=metal_cfm_steps,
+            indextts_metal_manage_server=metal_manage_server,
             indextts_checkpoints=str(checkpoints) if checkpoints else None,
             indextts_ref_audio=str(ref_audio) if ref_audio else None,
             indextts_emotion=emotion,

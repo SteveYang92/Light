@@ -65,6 +65,52 @@ def trim_edge_silence(
     return samples[start:end]
 
 
+def compress_internal_silence(
+    samples: np.ndarray,
+    sample_rate: int,
+    *,
+    threshold: float = 0.012,
+    min_gap_s: float = 0.28,
+    keep_gap_s: float = 0.12,
+) -> np.ndarray:
+    """Collapse long mid-clip pauses while keeping short natural breaks.
+
+    mtts often inserts ~0.5–1.0s gaps between phrases inside one synthesis call.
+    """
+    if len(samples) == 0 or sample_rate <= 0:
+        return samples
+    min_gap = max(1, int(sample_rate * min_gap_s))
+    keep_gap = max(0, int(sample_rate * keep_gap_s))
+    mask = np.abs(samples) > threshold
+
+    chunks: list[np.ndarray] = []
+    i = 0
+    n = len(samples)
+    while i < n:
+        if mask[i]:
+            j = i + 1
+            while j < n and mask[j]:
+                j += 1
+            chunks.append(samples[i:j])
+            i = j
+            continue
+
+        j = i + 1
+        while j < n and not mask[j]:
+            j += 1
+        gap_len = j - i
+        if gap_len >= min_gap:
+            if keep_gap > 0:
+                chunks.append(np.zeros(keep_gap, dtype=np.float32))
+        else:
+            chunks.append(samples[i:j])
+        i = j
+
+    if not chunks:
+        return samples[:0]
+    return np.concatenate(chunks)
+
+
 def concat_with_crossfade(
     chunks: list[np.ndarray],
     sample_rate: int,

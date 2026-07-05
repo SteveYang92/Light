@@ -27,6 +27,7 @@ Thumbs.db
 
 # output directories
 output/
+outputs/
 
 # IDE
 .idea/
@@ -59,6 +60,13 @@ regression_dashboard.html
 # IndexTTS model weights (local download, not committed)
 vendor/index-tts/checkpoints/
 vendor/index-tts/checkpoints-v15/
+
+# IndexTTS2 Metal runtime artifacts (local download / runtime state)
+vendor/index-tts2-metal/mtts
+vendor/index-tts2-metal/bin/
+vendor/index-tts2-metal/voices/
+vendor/index-tts2-metal/outputs/
+vendor/index-tts2-metal/build/
 
 # Skills
 .agents/

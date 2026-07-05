@@ -70,12 +70,20 @@ def _apply_indextts_yaml(config: TtsConfig) -> None:
         "indextts_segments_bucket_max_size",
         "indextts_chunk_chars",
         "indextts_chunk_min_chars",
+        "indextts_metal_root",
+        "indextts_metal_url",
+        "indextts_metal_host",
+        "indextts_metal_port",
+        "indextts_metal_cfm_steps",
+        "indextts_metal_manage_server",
+        "indextts_normalize_rate",
         "max_turn_duration_s",
         "crossfade_ms",
         "atempo_max_monologue",
         "atempo_max",
         "speech_offset",
         "speaker_gap_s",
+        "max_inter_cue_gap_s",
         "max_inter_speaker_pause_s",
         "subtitle_aligned",
         "align_mode",
@@ -86,7 +94,7 @@ def _apply_indextts_yaml(config: TtsConfig) -> None:
         if key == "indextts_speaker_refs" and not value:
             continue
         setattr(config, key, value)
-    if cli_engine in (EngineMode.INDEXTTS2, EngineMode.INDEXTTS15):
+    if cli_engine in (EngineMode.INDEXTTS2, EngineMode.INDEXTTS15, EngineMode.INDEXTTS2_METAL):
         config.engine_mode = cli_engine
     else:
         config.engine_mode = merged.engine_mode
@@ -181,11 +189,7 @@ def _finalize_dub(
     )
     write_wav(dub_wav_path, timeline, sample_rate)
 
-    if (
-        config.effective_align_mode == AlignMode.TURN_RETIME
-        and placed_turns
-        and len(placed) == len(placed_turns)
-    ):
+    if config.effective_align_mode == AlignMode.TURN_RETIME and placed_turns and len(placed) == len(placed_turns):
         srt_path = export_dub_subtitles(
             output_dir,
             placed_turns,
@@ -213,6 +217,7 @@ def run_reassemble(config: TtsConfig, *, cues_path: Path | None = None) -> Path:
         max_turn_duration_s=config.max_turn_duration_s,
         max_turn_chars=config.chunk_chars(),
         min_turn_chars=config.chunk_min_chars(),
+        max_inter_cue_gap_s=config.max_inter_cue_gap_s,
     )
     tts_dir = output_dir / "tts"
     segments_dir = tts_dir / "segments"
@@ -258,12 +263,13 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
         return run_mix_only(config)
     if config.reassemble:
         return run_reassemble(config)
-    if config.is_official_indextts:
+    if config.is_indextts_dub:
         _apply_indextts_yaml(config)
-        maybe_reexec_in_official_venv(
-            official_root=Path(config.indextts_official_root),
-            enabled=True,
-        )
+        if config.is_official_indextts:
+            maybe_reexec_in_official_venv(
+                official_root=Path(config.indextts_official_root),
+                enabled=True,
+            )
     else:
         _apply_voices_yaml(config)
 
@@ -274,7 +280,7 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
     if config.preview:
         cues = _limit_preview_cues(cues, config.preview_duration_s)
 
-    if config.is_official_indextts:
+    if config.is_indextts_dub:
         labels = {cue.speaker.strip() or "__default__" for cue in cues}
         for label in sorted(labels):
             resolve_ref_audio_path(config, label)
@@ -298,6 +304,7 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
             max_turn_duration_s=config.max_turn_duration_s,
             max_turn_chars=config.chunk_chars(),
             min_turn_chars=config.chunk_min_chars(),
+            max_inter_cue_gap_s=config.max_inter_cue_gap_s,
         )
         if config.max_cues is not None:
             turns = turns[: config.max_cues]
@@ -354,9 +361,11 @@ def run_dub(config: TtsConfig, *, cues_path: Path | None = None, skip_mix: bool 
             "qwen_chunk_chars": config.qwen_chunk_chars,
             "qwen_max_tokens_min": config.qwen_max_tokens_min,
             "qwen_max_tokens_max": config.qwen_max_tokens_max,
-            "indextts_version": config.indextts_resolved_version if config.is_official_indextts else None,
+            "indextts_version": config.indextts_resolved_version if config.is_indextts_dub else None,
             "indextts_emotion": config.indextts_emotion if config.indextts_supports_emotion else None,
             "indextts_ref_audio": config.indextts_ref_audio,
+            "indextts_metal_url": config.indextts_metal_url if config.is_indextts_metal else None,
+            "indextts_metal_cfm_steps": config.indextts_metal_cfm_steps if config.is_indextts_metal else None,
             "align_mode": config.effective_align_mode.value,
             "temperature": config.temperature,
             "top_k": config.top_k,

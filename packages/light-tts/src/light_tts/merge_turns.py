@@ -15,6 +15,7 @@ class SpeakerTurn:
     speaker: str
     start: float
     slot_end: float
+    last_cue_end: float
     text: str
     lang: str
     cue_ids: tuple[str, ...]
@@ -125,6 +126,7 @@ def merge_speaker_turns(
                 speaker=speaker,
                 start=start,
                 slot_end=slot_end,
+                last_cue_end=group[-1].end,
                 text=_join_turn_text([c.text for c in group], group[0].lang),
                 lang=group[0].lang,
                 cue_ids=tuple(c.cue_id for c in group),

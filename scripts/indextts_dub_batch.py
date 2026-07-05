@@ -8,7 +8,8 @@ Each segment under ``<episode>/.segN/`` is processed independently. Episode-leve
 Examples::
 
     uv run python scripts/indextts_dub_batch.py output/Dan_Carlins_... --prepare-ref
-    uv run python scripts/indextts_dub_batch.py output/Dan_Carlins_... --skip-mix --resume
+    uv run python scripts/indextts_dub_batch.py output/Dan_Carlins_... \\
+        --engine indextts2_metal --metal-cfm-steps 20 --skip-mix
     uv run python scripts/indextts_dub_batch.py output/Dan_Carlins_... --mix-only --mix duck
     uv run python scripts/indextts_dub_batch.py output/Dan_Carlins_... --merge --mix duck
 """
@@ -32,8 +33,23 @@ def _parse_official_root(argv: list[str]) -> Path:
     return DEFAULT_OFFICIAL_ROOT
 
 
+_DEFAULT_ENGINE = "indextts2"
+_METAL_ENGINE = "indextts2_metal"
+
+
+def _parse_engine(argv: list[str]) -> str:
+    for index, arg in enumerate(argv):
+        if arg == "--engine" and index + 1 < len(argv):
+            return argv[index + 1].lower()
+        if arg.startswith("--engine="):
+            return arg.split("=", 1)[1].lower()
+    return _DEFAULT_ENGINE
+
+
 def _maybe_reexec_early() -> None:
     if "--mix-only" in sys.argv[1:] or "--prepare-ref" in sys.argv[1:]:
+        return
+    if _parse_engine(sys.argv[1:]) == _METAL_ENGINE:
         return
     official_root = _parse_official_root(sys.argv[1:]).expanduser().resolve()
     official_py = official_root / ".venv" / "bin" / "python"
@@ -78,6 +94,7 @@ def main() -> None:
         lang: str = typer.Option("zh", "--lang"),
         engine: EngineMode = typer.Option(EngineMode.INDEXTTS2, "--engine"),
         official_root: Path = typer.Option(DEFAULT_OFFICIAL_ROOT, "--official-root"),
+        metal_cfm_steps: int = typer.Option(16, "--metal-cfm-steps"),
         ref_audio: Path | None = typer.Option(None, "--ref-audio"),
         checkpoints: Path | None = typer.Option(None, "--checkpoints"),
         emotion: str = typer.Option("calm", "--emotion"),
@@ -121,7 +138,7 @@ def main() -> None:
             return
 
         needs_indextts = not mix_only
-        if needs_indextts:
+        if needs_indextts and engine != EngineMode.INDEXTTS2_METAL:
             maybe_reexec_in_official_venv(official_root=official_root, enabled=True)
 
         for seg in seg_dirs:
@@ -131,6 +148,7 @@ def main() -> None:
                 lang=lang,
                 engine_mode=engine,
                 indextts_official_root=str(official_root),
+                indextts_metal_cfm_steps=metal_cfm_steps,
                 indextts_checkpoints=str(checkpoints) if checkpoints else None,
                 indextts_ref_audio=str(ref_audio) if ref_audio else None,
                 indextts_emotion=emotion,

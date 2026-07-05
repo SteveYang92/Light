@@ -7,7 +7,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 from light_tts.assemble import PlacedSegment, assemble_timeline
-from light_tts.audio_io import concat_with_crossfade, read_wav, trim_edge_silence, write_wav
+from light_tts.audio_io import (
+    compress_internal_silence,
+    concat_with_crossfade,
+    read_wav,
+    trim_edge_silence,
+    write_wav,
+)
 from light_tts.config import AlignMode, EngineMode, MixMode, TtsConfig
 from light_tts.cues_loader import Cue, find_cues_json, load_cues, resolve_cues_path, resolve_dub_cues_path
 from light_tts.dub import _preview_timeline_duration, run_dub, run_mix_only
@@ -61,7 +67,6 @@ def test_merge_speaker_turns_splits_by_qwen_chars() -> None:
     assert len(turns) > 1
     assert all(len(t.text) <= 40 for t in turns)
     assert all(t.text.endswith("。") for t in turns)
-
 
 def test_resolve_cues_path_accepts_directory(tmp_path: Path) -> None:
     run_dir = tmp_path / "my_run"
@@ -197,10 +202,38 @@ def test_resolve_indextts_yaml_prefers_unified_name(tmp_path: Path) -> None:
 def test_is_official_indextts_chunk_settings() -> None:
     v2 = TtsConfig(output_dir="/tmp", engine_mode=EngineMode.INDEXTTS2, indextts_chunk_chars=99)
     v15 = TtsConfig(output_dir="/tmp", engine_mode=EngineMode.INDEXTTS15, indextts_chunk_chars=88)
+    metal = TtsConfig(output_dir="/tmp", engine_mode=EngineMode.INDEXTTS2_METAL, indextts_chunk_chars=66)
     qwen = TtsConfig(output_dir="/tmp", engine_mode=EngineMode.MLX, qwen_chunk_chars=77)
     assert v2.chunk_chars() == 99
     assert v15.chunk_chars() == 88
+    assert metal.chunk_chars() == 66
     assert qwen.chunk_chars() == 77
+    assert metal.is_indextts_dub
+    assert metal.is_indextts_metal
+    assert not metal.is_official_indextts
+    assert not metal.indextts_supports_emotion
+
+
+def test_config_indextts2_metal_yaml(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "indextts.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "engine: indextts2_metal",
+                "metal_root: /tmp/metal",
+                "metal_url: http://127.0.0.1:9999",
+                "metal_cfm_steps: 20",
+                "metal_manage_server: true",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    cfg = TtsConfig.from_yaml(cfg_path, output_dir=str(tmp_path))
+    assert cfg.engine_mode == EngineMode.INDEXTTS2_METAL
+    assert cfg.indextts_metal_root == "/tmp/metal"
+    assert cfg.indextts_metal_url == "http://127.0.0.1:9999"
+    assert cfg.indextts_metal_cfm_steps == 20
+    assert cfg.indextts_metal_manage_server is True
 
 
 def test_config_indextts15_fast_defaults(tmp_path: Path) -> None:
@@ -325,6 +358,25 @@ def test_trim_edge_silence_removes_gaps() -> None:
     assert len(trimmed) / sr == pytest.approx(0.32, abs=0.05)
 
 
+def test_compress_internal_silence_collapses_long_pauses() -> None:
+    sr = 24000
+    speech = np.ones(int(0.2 * sr), dtype=np.float32) * 0.2
+    long_pause = np.zeros(int(0.8 * sr), dtype=np.float32)
+    short_pause = np.zeros(int(0.1 * sr), dtype=np.float32)
+    samples = np.concatenate([speech, long_pause, speech, short_pause, speech])
+    compressed = compress_internal_silence(samples, sr, min_gap_s=0.28, keep_gap_s=0.12)
+    assert len(compressed) / sr == pytest.approx(0.82, abs=0.03)
+
+
+def test_compress_internal_silence_keeps_short_breaks() -> None:
+    sr = 24000
+    speech = np.ones(int(0.15 * sr), dtype=np.float32) * 0.2
+    short_pause = np.zeros(int(0.15 * sr), dtype=np.float32)
+    samples = np.concatenate([speech, short_pause, speech])
+    compressed = compress_internal_silence(samples, sr, min_gap_s=0.28, keep_gap_s=0.12)
+    assert len(compressed) == len(samples)
+
+
 def test_concat_with_crossfade_joins_without_gap() -> None:
     sr = 24000
     a = np.ones(int(0.2 * sr), dtype=np.float32) * 0.2
@@ -360,6 +412,7 @@ def test_place_turn_by_cues_aligns_each_display_cue() -> None:
         speaker="__default__",
         start=0.6,
         slot_end=13.9,
+        last_cue_end=13.9,
         text="一。二。",
         lang="zh",
         cue_ids=("a", "b"),
@@ -426,6 +479,28 @@ def test_fit_duration_speeds_up_long() -> None:
     result = fit_duration(samples, sr, target_duration=2.0, max_duration=2.0, atempo_max=1.28, allow_trim=True)
     assert result.atempo > 1.0
     assert len(result.samples) / sr <= 2.05
+
+
+def test_normalize_speech_rate_slows_down_fast_turn() -> None:
+    from light_tts.sync import normalize_speech_rate
+
+    sr = 24000
+    samples = np.ones(int(2.0 * sr), dtype=np.float32) * 0.1
+    normalized, atempo = normalize_speech_rate(samples, sr, target_duration=2.3, atempo_min=0.88, atempo_max=1.28)
+    assert atempo == pytest.approx(2.0 / 2.3, abs=0.02)
+    assert len(normalized) / sr == pytest.approx(2.3, abs=0.08)
+
+
+def test_normalize_speech_rate_speeds_up_slow_turn() -> None:
+    from light_tts.sync import normalize_speech_rate
+
+    sr = 24000
+    samples = np.ones(int(3.0 * sr), dtype=np.float32) * 0.1
+    normalized, atempo = normalize_speech_rate(
+        samples, sr, target_duration=2.5, atempo_min=0.88, atempo_max=1.28
+    )
+    assert atempo == pytest.approx(1.2, abs=0.02)
+    assert len(normalized) / sr == pytest.approx(2.5, abs=0.08)
 
 
 def test_fit_duration_same_speaker_may_overflow() -> None:
@@ -571,10 +646,50 @@ def test_run_dub_indextts2_mock_engine(tmp_path: Path) -> None:
     assert sr == 24000
 
 
+def test_run_dub_indextts2_metal_mock_engine(tmp_path: Path) -> None:
+    out_dir = tmp_path / "output"
+    out_dir.mkdir()
+    ref = out_dir / "tts" / "ref.wav"
+    ref.parent.mkdir(parents=True)
+    ref.write_bytes(b"RIFF")
+    (out_dir / "translations" / "raw.json").parent.mkdir(parents=True)
+    (out_dir / "translations" / "raw.json").write_text(CUES_JSON.read_text(encoding="utf-8"), encoding="utf-8")
+
+    config = TtsConfig(
+        output_dir=str(out_dir),
+        lang="zh",
+        engine_mode=EngineMode.MOCK,
+        mix_mode=MixMode.REPLACE,
+        preview=True,
+        preview_duration_s=10.0,
+        indextts_chunk_chars=40,
+    )
+    config.engine_mode = EngineMode.INDEXTTS2_METAL
+
+    from light_tts import synthesize as synth_mod
+    from light_tts.engine import create_engine
+
+    engine = create_engine(TtsConfig(output_dir=str(out_dir), engine_mode=EngineMode.MOCK))
+    cues = load_cues(out_dir / "translations" / "raw.json", lang="zh")
+    turns = merge_speaker_turns(cues, max_turn_duration_s=None, max_turn_chars=40, min_turn_chars=10)
+    speaker_map, placed, sr, _placed_turns = synth_mod.synthesize_turns(
+        turns,
+        cues,
+        config,
+        segments_dir=out_dir / "tts" / "preview" / "segments",
+        engine=engine,
+    )
+    assert speaker_map
+    assert placed
+    assert sr == 24000
+
+
 def test_indextts2_engine_sample_rate() -> None:
     from light_tts.engine.indextts import IndexTTS2Engine, OfficialIndexTTSEngine
+    from light_tts.engine.indextts_metal import IndexTTS2MetalEngine
 
     assert IndexTTS2Engine.sample_rate == INDEXTTS2_SAMPLE_RATE == 22050
+    assert IndexTTS2MetalEngine.sample_rate == INDEXTTS2_SAMPLE_RATE
     assert OfficialIndexTTSEngine is IndexTTS2Engine
     assert variant_spec("1.5").sample_rate == INDEXTTS15_SAMPLE_RATE == 24000
     assert variant_spec("2.0").sample_rate == INDEXTTS2_SAMPLE_RATE == 22050
@@ -591,6 +706,7 @@ def test_resume_skips_cached_segment_with_wrong_sample_rate(tmp_path: Path) -> N
         speaker="SPEAKER_00",
         start=0.0,
         slot_end=2.0,
+        last_cue_end=2.0,
         text="测试",
         lang="zh",
         cue_ids=("c1",),
@@ -626,6 +742,7 @@ def test_resume_regenerates_when_cached_sr_mismatch_indextts15(tmp_path: Path) -
         speaker="SPEAKER_00",
         start=0.0,
         slot_end=2.0,
+        last_cue_end=2.0,
         text="测试",
         lang="zh",
         cue_ids=("c1",),
@@ -792,6 +909,7 @@ def test_retime_turn_cues_partitions_interval() -> None:
         speaker="__default__",
         start=0.0,
         slot_end=10.0,
+        last_cue_end=10.0,
         text="一二三",
         lang="zh",
         cue_ids=("a", "b", "c"),
@@ -815,6 +933,7 @@ def test_turn_retime_placement_no_atempo(tmp_path: Path) -> None:
         speaker="__default__",
         start=0.0,
         slot_end=2.0,
+        last_cue_end=2.0,
         text="测试",
         lang="zh",
         cue_ids=("a",),
@@ -838,8 +957,8 @@ def test_turn_retime_no_overlap_between_turns(tmp_path: Path) -> None:
         Cue("b", 5.0, 7.0, "二", "__default__", "zh"),
     ]
     turns = [
-        SpeakerTurn("turn_0000", "__default__", 0.0, 2.0, "一", "zh", ("a",)),
-        SpeakerTurn("turn_0001", "__default__", 5.0, 7.0, "二", "zh", ("b",)),
+        SpeakerTurn("turn_0000", "__default__", 0.0, 2.0, 2.0, "一", "zh", ("a",)),
+        SpeakerTurn("turn_0001", "__default__", 5.0, 7.0, 7.0, "二", "zh", ("b",)),
     ]
     segments_dir = tmp_path / "segments"
     segments_dir.mkdir()
@@ -855,3 +974,73 @@ def test_turn_retime_no_overlap_between_turns(tmp_path: Path) -> None:
     assert len(placed) == 2
     end0 = placed[0].start + len(placed[0].samples) / sr
     assert placed[1].start >= end0 + config.speaker_gap_s - 0.001
+
+
+def test_turn_retime_preserves_source_gap_when_tts_finishes_early() -> None:
+    from light_tts.synthesize import _place_turn_natural
+
+    sr = 22050
+    samples = np.ones(int(23.0 * sr), dtype=np.float32) * 0.2
+    prev_turn = SpeakerTurn(
+        turn_id="turn_0001",
+        speaker="__default__",
+        start=21.986,
+        slot_end=80.462,
+        last_cue_end=74.747,
+        text="上一段",
+        lang="zh",
+        cue_ids=("a",),
+    )
+    turn = SpeakerTurn(
+        turn_id="turn_0002",
+        speaker="__default__",
+        start=80.542,
+        slot_end=110.85,
+        last_cue_end=108.881,
+        text="尤其是在太平洋战场",
+        lang="zh",
+        cue_ids=("b",),
+    )
+    config = TtsConfig(output_dir=".", speech_offset=0.05, speaker_gap_s=0.08)
+    segment, end = _place_turn_natural(
+        turn, samples, sr, config, prev_end=48.502, prev_turn=prev_turn
+    )
+    source_gap = turn.start - prev_turn.last_cue_end
+    assert source_gap == pytest.approx(5.795, abs=0.01)
+    assert segment.start == pytest.approx(48.502 + source_gap, abs=0.001)
+    assert end == pytest.approx(segment.start + 23.0, abs=0.01)
+
+
+def test_turn_retime_preserves_short_gap_between_onoda_turns() -> None:
+    from light_tts.synthesize import _place_turn_natural
+
+    sr = 22050
+    prev_turn = SpeakerTurn(
+        turn_id="turn_0002",
+        speaker="__default__",
+        start=80.542,
+        slot_end=110.85,
+        last_cue_end=108.881,
+        text="太平洋战场",
+        lang="zh",
+        cue_ids=("a",),
+    )
+    turn = SpeakerTurn(
+        turn_id="turn_0003",
+        speaker="__default__",
+        start=110.93,
+        slot_end=123.374,
+        last_cue_end=121.153,
+        text="按亚洲惯例",
+        lang="zh",
+        cue_ids=("b",),
+    )
+    samples = np.ones(int(11.2 * sr), dtype=np.float32) * 0.2
+    config = TtsConfig(output_dir=".", speech_offset=0.05, speaker_gap_s=0.08)
+    prev_end = 103.593
+    segment, _ = _place_turn_natural(
+        turn, samples, sr, config, prev_end=prev_end, prev_turn=prev_turn
+    )
+    source_gap = turn.start - prev_turn.last_cue_end
+    assert source_gap == pytest.approx(2.049, abs=0.01)
+    assert segment.start - prev_end == pytest.approx(source_gap, abs=0.001)

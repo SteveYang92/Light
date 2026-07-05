@@ -28,8 +28,7 @@ def retime_turn_cues(
         return []
     if audio_duration <= 0:
         return [
-            TimedCue(cue_id=cue.cue_id, start=audio_start, end=audio_start, text=cue.text.strip())
-            for cue in cue_list
+            TimedCue(cue_id=cue.cue_id, start=audio_start, end=audio_start, text=cue.text.strip()) for cue in cue_list
         ]
 
     weights = [max(1, len(c.text.strip())) for c in cue_list]

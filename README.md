@@ -206,6 +206,9 @@ uv run python scripts/indextts_dub_batch.py output/<episode> --merge --mix duck
 # 等价 CLI
 uv run light-tts dub output/<run> --engine indextts2 --lang zh --skip-mix --resume
 uv run light-tts dub output/<run> --engine indextts15 --lang zh --skip-mix --preview
+
+# IndexTTS2 Metal（Apple Silicon，需先起 mtts server — 见 vendor/INDEX-TTS2-METAL.md）
+uv run python scripts/indextts_dub.py output/<run> --engine indextts2_metal --lang zh --skip-mix --preview
 ```
 
 配置见 `packages/light-tts/src/light_tts/assets/indextts.yaml`（run 目录可放 `indextts.yaml` 或旧名 `indextts2.yaml` 覆盖）。默认 `align_mode: turn_retime`：配音按 turn 自然播放，**观看 `video_dub.mp4` 时请加载 `{lang}_dub.srt`**（如 `zh_dub.srt`）；原 `zh.srt` 对应英文字幕时间轴，不保证与中文配音对齐。多说话人时在 yaml 里配置 `speaker_refs`。

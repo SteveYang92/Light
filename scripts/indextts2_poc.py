@@ -348,7 +348,9 @@ def main() -> int:
     output_dir = (args.output_dir or run_dir / "tts_indextts").resolve()
     official_root = args.official_root.resolve()
     checkpoints = (args.checkpoints or official_root / "checkpoints").resolve()
-    ref_audio = (args.ref_audio or output_dir / "ref.wav").resolve()
+    ref_audio = (args.ref_audio or run_dir / "tts" / "ref.wav").resolve()
+    if not ref_audio.is_file():
+        ref_audio = (output_dir / "ref.wav").resolve()
     chunks_dir = output_dir / "chunks"
     preview_path = output_dir / "preview.wav"
     manifest_path = output_dir / "manifest.json"

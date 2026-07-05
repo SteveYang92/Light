@@ -21,15 +21,21 @@ class FitResult:
 
 
 def _apply_atempo(samples: np.ndarray, sample_rate: int, atempo: float) -> np.ndarray:
-    """Time-stretch via ffmpeg ``atempo`` (chain filters when factor > 2.0)."""
+    """Time-stretch via ffmpeg ``atempo`` (chain filters when factor exceeds 0.5–2.0)."""
     if abs(atempo - 1.0) < 0.01:
         return samples
     filters: list[str] = []
     remaining = atempo
-    while remaining > 1.01:
-        step = min(remaining, 2.0)
-        filters.append(f"atempo={step:.4f}")
-        remaining /= step
+    if remaining > 1.0:
+        while remaining > 1.01:
+            step = min(remaining, 2.0)
+            filters.append(f"atempo={step:.4f}")
+            remaining /= step
+    else:
+        while remaining < 0.99:
+            step = max(remaining, 0.5)
+            filters.append(f"atempo={step:.4f}")
+            remaining /= step
     filter_str = ",".join(filters)
     with tempfile.TemporaryDirectory(prefix="light-tts-sync-") as tmp:
         tmp_path = Path(tmp)
@@ -180,6 +186,25 @@ def fit_duration(
     padded = np.zeros(target_samples, dtype=np.float32)
     padded[: len(samples)] = samples
     return FitResult(samples=padded, sample_rate=sample_rate, atempo=1.0, trimmed=False)
+
+
+def normalize_speech_rate(
+    samples: np.ndarray,
+    sample_rate: int,
+    target_duration: float,
+    *,
+    atempo_min: float = 0.88,
+    atempo_max: float = 1.28,
+    tolerance: float = 0.08,
+) -> tuple[np.ndarray, float]:
+    """Bidirectionally time-stretch speech toward *target_duration* (IndexTTS has no speed knob)."""
+    if target_duration <= 0 or len(samples) == 0:
+        return samples, 1.0
+    actual = len(samples) / sample_rate
+    if abs(actual - target_duration) <= target_duration * tolerance:
+        return samples, 1.0
+    atempo = min(max(actual / target_duration, atempo_min), atempo_max)
+    return _apply_atempo(samples, sample_rate, atempo), atempo
 
 
 def fit_budget(

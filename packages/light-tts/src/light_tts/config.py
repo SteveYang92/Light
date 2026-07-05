@@ -36,6 +36,7 @@ class EngineMode(StrEnum):
     MOCK = "mock"
     INDEXTTS2 = "indextts2"
     INDEXTTS15 = "indextts15"
+    INDEXTTS2_METAL = "indextts2_metal"
 
 
 class AlignMode(StrEnum):
@@ -78,6 +79,7 @@ class TtsConfig:
     atempo_max_cross: float = 1.42
     speaker_gap_s: float = 0.08
     max_turn_duration_s: float = 120.0
+    max_inter_cue_gap_s: float = 2.0
     max_inter_speaker_pause_s: float = 0.75
     allow_trim: bool = False
     per_cue: bool = False
@@ -116,10 +118,25 @@ class TtsConfig:
     indextts_use_fast: bool = True
     indextts_max_text_tokens_per_segment: int = 100
     indextts_segments_bucket_max_size: int = 4
+    indextts_metal_root: str = "vendor/index-tts2-metal"
+    indextts_metal_url: str = field(default_factory=lambda: os.environ.get("MIT2_SERVER_URL", "http://127.0.0.1:3456"))
+    indextts_metal_host: str = "127.0.0.1"
+    indextts_metal_port: int = 3456
+    indextts_metal_cfm_steps: int = 16
+    indextts_metal_manage_server: bool = False
+    indextts_normalize_rate: bool = True
 
     @property
     def is_official_indextts(self) -> bool:
         return self.engine_mode in (EngineMode.INDEXTTS2, EngineMode.INDEXTTS15)
+
+    @property
+    def is_indextts_dub(self) -> bool:
+        return self.engine_mode in (EngineMode.INDEXTTS2, EngineMode.INDEXTTS15, EngineMode.INDEXTTS2_METAL)
+
+    @property
+    def is_indextts_metal(self) -> bool:
+        return self.engine_mode == EngineMode.INDEXTTS2_METAL
 
     @property
     def indextts_resolved_version(self) -> IndexTTSVersion:
@@ -129,7 +146,7 @@ class TtsConfig:
 
     @property
     def indextts_supports_emotion(self) -> bool:
-        return self.indextts_resolved_version == "2.0"
+        return self.is_official_indextts and self.indextts_resolved_version == "2.0"
 
     @property
     def effective_align_mode(self) -> AlignMode:
@@ -148,12 +165,12 @@ class TtsConfig:
         return self.effective_align_mode in (AlignMode.TURN_RETIME, AlignMode.SUBTITLE_ALIGNED)
 
     def chunk_chars(self) -> int:
-        if self.is_official_indextts:
+        if self.is_indextts_dub:
             return self.indextts_chunk_chars
         return self.qwen_chunk_chars
 
     def chunk_min_chars(self) -> int:
-        if self.is_official_indextts:
+        if self.is_indextts_dub:
             return self.indextts_chunk_min_chars
         return self.qwen_chunk_min_chars
 
@@ -163,6 +180,8 @@ class TtsConfig:
         engine_raw = str(data.get("engine", "")).lower()
         if engine_raw == "indextts15":
             engine_mode = EngineMode.INDEXTTS15
+        elif engine_raw == "indextts2_metal":
+            engine_mode = EngineMode.INDEXTTS2_METAL
         elif engine_raw in ("indextts2", "indextts"):
             engine_mode = EngineMode.INDEXTTS2
         else:
@@ -216,6 +235,18 @@ class TtsConfig:
                 continue
             if key == "official_root":
                 cfg.indextts_official_root = str(value)
+                continue
+            if key == "metal_root":
+                cfg.indextts_metal_root = str(value)
+                continue
+            if key == "metal_url":
+                cfg.indextts_metal_url = str(value)
+                continue
+            if key == "metal_cfm_steps":
+                cfg.indextts_metal_cfm_steps = int(value)
+                continue
+            if key == "metal_manage_server":
+                cfg.indextts_metal_manage_server = bool(value)
                 continue
             if key == "checkpoints":
                 cfg.indextts_checkpoints = str(value) if value else None

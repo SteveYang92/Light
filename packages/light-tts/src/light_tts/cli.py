@@ -19,7 +19,11 @@ def dub(
     model: str = typer.Option(DEFAULT_MODEL, "--model", help="HuggingFace mlx-community model id"),
     voices: str = typer.Option("", "--voices", help="Path to voices.yaml"),
     mix: MixMode = typer.Option(MixMode.DUCK, "--mix", help="Audio mix mode"),
-    engine: EngineMode = typer.Option(EngineMode.MLX, "--engine", help="mlx | http | mock | indextts2 | indextts15"),
+    engine: EngineMode = typer.Option(
+        EngineMode.MLX,
+        "--engine",
+        help="mlx | http | mock | indextts2 | indextts15 | indextts2_metal",
+    ),
     mlx_url: str = typer.Option("", "--mlx-url", help="mlx_audio.server base URL (http engine)"),
     official_root: Path = typer.Option(
         Path("vendor/index-tts"),
@@ -28,6 +32,10 @@ def dub(
     ),
     ref_audio: Path | None = typer.Option(None, "--ref-audio", help="Speaker reference WAV (IndexTTS)"),
     checkpoints: Path | None = typer.Option(None, "--checkpoints", help="IndexTTS checkpoints dir"),
+    metal_root: Path = typer.Option(Path("vendor/index-tts2-metal"), "--metal-root", help="index-tts2-metal root"),
+    metal_url: str = typer.Option("", "--metal-url", help="mtts HTTP base URL (indextts2_metal)"),
+    metal_cfm_steps: int = typer.Option(16, "--metal-cfm-steps", help="CFM steps for indextts2_metal"),
+    metal_manage_server: bool = typer.Option(False, "--metal-manage-server", help="Auto-start mtts server"),
     emotion: str = typer.Option("calm", "--emotion", help="IndexTTS2 emotion (indextts2 only)"),
     emotion_weight: float = typer.Option(0.6, "--emotion-weight", help="IndexTTS2 emotion weight"),
     num_beams: int = typer.Option(3, "--num-beams", help="IndexTTS2 GPT beam width"),
@@ -64,6 +72,10 @@ def dub(
         mlx_server_url=mlx_url or os.environ.get("MLX_AUDIO_URL", "http://127.0.0.1:8000"),
         indextts_official_root=str(official_root),
         indextts_checkpoints=str(checkpoints) if checkpoints else None,
+        indextts_metal_root=str(metal_root),
+        indextts_metal_url=metal_url or os.environ.get("MIT2_SERVER_URL", "http://127.0.0.1:3456"),
+        indextts_metal_cfm_steps=metal_cfm_steps,
+        indextts_metal_manage_server=metal_manage_server,
         indextts_ref_audio=str(ref_audio) if ref_audio else None,
         indextts_emotion=emotion,
         indextts_emotion_weight=emotion_weight,
@@ -98,7 +110,11 @@ def poc_cmd(
     out: str = typer.Option(..., "--out", help="Output directory for WAV files"),
     model: str = typer.Option(DEFAULT_MODEL, "--model", help="Qwen3-TTS model id"),
     max_cues: int = typer.Option(3, "--max-cues", help="Max cues to synthesize"),
-    engine: EngineMode = typer.Option(EngineMode.MLX, "--engine", help="mlx | http | mock | indextts2 | indextts15"),
+    engine: EngineMode = typer.Option(
+        EngineMode.MLX,
+        "--engine",
+        help="mlx | http | mock | indextts2 | indextts15 | indextts2_metal",
+    ),
 ) -> None:
     """Phase 0 POC: synthesize a few cues to WAV (no timeline mix)."""
     run_poc(

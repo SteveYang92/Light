@@ -22,7 +22,7 @@ from .speaker_map import (
     voice_for_cue,
     voice_for_speaker,
 )
-from .sync import compute_subtitle_aligned_start, compute_turn_placed_start, fit_budget, fit_duration
+from .sync import compute_subtitle_aligned_start, compute_turn_placed_start, fit_budget, fit_duration, normalize_speech_rate
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -156,10 +156,23 @@ def _place_turn_natural(
     sample_rate: int,
     config: TtsConfig,
     prev_end: float | None,
+    *,
+    prev_turn: SpeakerTurn | None = None,
 ) -> tuple[PlacedSegment, float]:
-    """Place a full turn without time-stretch or per-cue splitting."""
+    """Place a full turn for turn_retime without inflating source pauses.
+
+    When the prior clip finishes before its last subtitle cue ends, keep only the
+    source pause from that cue end to this turn's scheduled start — not the full
+    unused slot up to ``turn.start``.
+    """
     scheduled = turn.start + config.speech_offset
-    start = scheduled if prev_end is None else max(scheduled, prev_end + config.speaker_gap_s)
+    if prev_end is None or prev_turn is None:
+        start = scheduled
+    elif prev_end <= prev_turn.last_cue_end + 1e-3:
+        source_gap = max(config.speaker_gap_s, turn.start - prev_turn.last_cue_end)
+        start = prev_end + source_gap
+    else:
+        start = max(scheduled, prev_end + config.speaker_gap_s)
     segment = PlacedSegment(start=start, samples=samples.astype(np.float32), sample_rate=sample_rate)
     end = start + len(samples) / sample_rate
     return segment, end
@@ -227,12 +240,13 @@ def _synthesize_turn(
     speech_samples = trim_edge_silence(samples, sample_rate)
     speech_actual = len(speech_samples) / sample_rate if sample_rate > 0 else 0.0
     too_long = speech_actual > max(slot, natural_target_s) * config.tts_outlier_ratio
-    invalid = not config.is_official_indextts and (
+    invalid = not config.is_indextts_dub and (
         len(speech_samples) == 0 or _is_model_cap_outlier(actual, sample_rate, len(samples)) or (monologue and too_long)
     )
-    if len(speech_samples) == 0 and config.is_official_indextts:
+    if len(speech_samples) == 0 and config.is_indextts_dub:
         invalid = True
 
+    rate_atempo = 1.0
     status = "ok"
     if invalid:
         logger.warning("%s invalid Qwen output %.1fs — skipping chunk", turn.turn_id, actual)
@@ -240,6 +254,18 @@ def _synthesize_turn(
         status = "failed"
     else:
         samples = speech_samples
+        if config.is_indextts_dub and config.indextts_normalize_rate:
+            atempo_max = config.atempo_max_monologue if monologue else config.atempo_max
+            samples, rate_atempo = normalize_speech_rate(
+                samples,
+                sample_rate,
+                natural_target_s,
+                atempo_min=config.atempo_min,
+                atempo_max=atempo_max,
+            )
+            speech_actual = len(samples) / sample_rate if sample_rate > 0 else 0.0
+        else:
+            rate_atempo = 1.0
 
     if len(samples) > 0:
         write_wav(out_path, samples, sample_rate)
@@ -255,6 +281,7 @@ def _synthesize_turn(
         "max_tokens": max_tokens,
         "raw_duration_s": round(actual, 3),
         "speech_duration_s": round(speech_actual, 3),
+        "rate_atempo": round(rate_atempo, 3),
         "status": status,
     }
     return samples, sample_rate, stat
@@ -271,7 +298,7 @@ def synthesize_turns(
 ) -> tuple[dict[str, str], list[PlacedSegment], int, list[SpeakerTurn]]:
     """Synthesize merged speaker turns (default dub path)."""
     tts_engine = engine or create_engine(config)
-    if config.is_official_indextts:
+    if config.is_indextts_dub:
         speaker_map = build_indextts_speaker_map(turns)
     else:
         speaker_map = build_speaker_voice_map(turns, config)
@@ -284,9 +311,10 @@ def synthesize_turns(
     stats: list[dict[str, object]] = []
     sample_rate = tts_engine.sample_rate
     prev_end: float | None = None
+    prev_turn: SpeakerTurn | None = None
 
     for turn_index, turn in enumerate(turns):
-        if config.is_official_indextts:
+        if config.is_indextts_dub:
             voice = turn.speaker.strip() or "__default__"
             language = "Chinese"
             instruct = None
@@ -332,7 +360,9 @@ def synthesize_turns(
 
         align_mode = config.effective_align_mode
         if align_mode == AlignMode.TURN_RETIME and monologue:
-            segment, prev_end = _place_turn_natural(turn, samples, sample_rate, config, prev_end)
+            segment, prev_end = _place_turn_natural(
+                turn, samples, sample_rate, config, prev_end, prev_turn=prev_turn
+            )
             placed.append(segment)
             placed_turns.append(turn)
             stat["final_duration_s"] = round(len(samples) / sample_rate, 3)
@@ -340,6 +370,7 @@ def synthesize_turns(
             stat["trimmed"] = False
             stat["align_mode"] = align_mode.value
             stats.append(stat)
+            prev_turn = turn
             continue
 
         if monologue and align_mode == AlignMode.SUBTITLE_ALIGNED:
@@ -361,6 +392,7 @@ def synthesize_turns(
                 stat["placed_start_s"] = round(sub_segments[0].start, 3)
             stat["trimmed"] = False
             stats.append(stat)
+            prev_turn = turn
             continue
 
         if monologue:
@@ -409,6 +441,7 @@ def synthesize_turns(
         stat["placed_start_s"] = round(start, 3)
         stat["trimmed"] = fitted.trimmed
         stats.append(stat)
+        prev_turn = turn
 
     if stats_path is not None:
         stats_path.parent.mkdir(parents=True, exist_ok=True)
@@ -425,7 +458,7 @@ def synthesize_cues(
 ) -> tuple[dict[str, str], list[PlacedSegment], int]:
     """Synthesize each display cue separately (debug / legacy)."""
     tts_engine = engine or create_engine(config)
-    if config.is_official_indextts:
+    if config.is_indextts_dub:
         speaker_map = build_indextts_speaker_map(cues)
     else:
         speaker_map = build_speaker_voice_map(cues, config)
@@ -436,7 +469,7 @@ def synthesize_cues(
 
     for i, cue in enumerate(cues):
         next_cue = cues[i + 1] if i + 1 < len(cues) else None
-        if config.is_official_indextts:
+        if config.is_indextts_dub:
             voice = cue.speaker.strip() or "__default__"
             language = "Chinese"
             instruct = None
@@ -495,7 +528,7 @@ def synthesize_cues(
             speed=speed,
             max_tokens=(
                 None
-                if config.is_official_indextts
+                if config.is_indextts_dub
                 else _max_tokens_for_duration(
                     target,
                     min_tokens=config.qwen_max_tokens_min,
@@ -543,6 +576,7 @@ def reassemble_turns_from_segments(
     stats: list[dict[str, object]] = []
     sample_rate: int | None = None
     prev_end: float | None = None
+    prev_turn: SpeakerTurn | None = None
     align_mode = config.effective_align_mode
 
     for turn_index, turn in enumerate(turns):
@@ -559,7 +593,9 @@ def reassemble_turns_from_segments(
         atempo_max = config.atempo_max_monologue if monologue else config.atempo_max_cross
 
         if align_mode == AlignMode.TURN_RETIME and monologue:
-            segment, prev_end = _place_turn_natural(turn, samples, sr, config, prev_end)
+            segment, prev_end = _place_turn_natural(
+                turn, samples, sr, config, prev_end, prev_turn=prev_turn
+            )
             placed.append(segment)
             placed_turns.append(turn)
             stats.append(
@@ -576,6 +612,7 @@ def reassemble_turns_from_segments(
                     "align_mode": align_mode.value,
                 }
             )
+            prev_turn = turn
             continue
 
         if monologue and align_mode == AlignMode.SUBTITLE_ALIGNED:
@@ -674,7 +711,7 @@ def reassemble_turns_from_segments(
 
 
 def print_speaker_map(speaker_map: dict[str, str], *, config: TtsConfig | None = None) -> None:
-    if config and config.is_official_indextts:
+    if config and config.is_indextts_dub:
         table = Table(title="Speaker → Reference audio")
         table.add_column("Speaker")
         table.add_column("Ref WAV")
@@ -701,7 +738,7 @@ def save_voice_map(path: Path, speaker_map: dict[str, str], config: TtsConfig) -
         "engine": config.engine_mode.value,
         "speakers": speaker_map,
     }
-    if config.is_official_indextts:
+    if config.is_indextts_dub:
         payload["ref_audio"] = {speaker: str(resolve_ref_audio_path(config, speaker)) for speaker in speaker_map}
         if config.indextts_supports_emotion:
             payload["emotion"] = config.indextts_emotion
