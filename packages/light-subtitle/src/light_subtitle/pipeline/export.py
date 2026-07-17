@@ -5,7 +5,16 @@ from pathlib import Path
 
 from light_models import Segment, SubtitleCue, Word, is_cjk, seconds_to_srt, seconds_to_vtt
 
-from ..fonts import (
+from .. import logger
+from ..style.box import (
+    PILFontMeasurer,
+    TextMeasurer,
+    boxed_script_info,
+    boxed_style_lines,
+    build_bilingual_boxed_events,
+)
+from ..style.config import SubtitleStyleConfig
+from ..style.fonts import (
     ASS_V4_PLUS_STYLE_FORMAT,
     FontConfig,
     annotation_style_line,
@@ -245,6 +254,8 @@ def export_bilingual_ass(
     output_path: str,
     source_segments: list[Segment] | None = None,
     font: str | None = None,
+    style: SubtitleStyleConfig | None = None,
+    measurer: TextMeasurer | None = None,
 ) -> None:
     """Export bilingual ASS with ZH as the anchor and EN derived from segment words.
 
@@ -267,13 +278,40 @@ def export_bilingual_ass(
 
     Parameter order is ``(en_cues, zh_cues)`` to match the call site
     ``export_bilingual_ass(source_fmt, target_fmt, ...)``.
+
+    When *style* has ``box_enabled`` (the default), the exported file is
+    self-contained: a fixed 1920x1080 PlayRes, per-language rounded background
+    boxes drawn as vector shapes sized by measuring the actual burn font
+    (Pillow), and one text Dialogue per visual line.  Falls back to the plain
+    outline style when the font file cannot be located (with a warning).
+    *measurer* injects a fake ``TextMeasurer`` for tests.
     """
     from light_models import seconds_to_ass
 
+    from ..style.fonts import resolve_font_file  # local: tests patch the module attr
+
     font_name = _resolved_font(font)
+    cfg = style or SubtitleStyleConfig()
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     groups = _build_bilingual_groups(en_cues, zh_cues, source_segments)
+
+    if cfg.box_enabled:
+        font_file = None if measurer is not None else resolve_font_file(font_name)
+        if measurer is not None or font_file is not None:
+            m = measurer if measurer is not None else PILFontMeasurer(font_file, family=font_name)
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(boxed_script_info())
+                f.write("[V4+ Styles]\n")
+                f.write(ASS_V4_PLUS_STYLE_FORMAT)
+                for line in boxed_style_lines(font_name, cfg):
+                    f.write(line + "\n")
+                f.write("\n[Events]\n")
+                f.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
+                for line in build_bilingual_boxed_events(groups, font_name, m, cfg):
+                    f.write(line + "\n")
+            return
+        logger.warning(f"  未找到字体文件用于盒尺寸测量 ({font_name})，双语 ASS 回退为无盒样式")
 
     with open(output, "w", encoding="utf-8") as f:
         f.write("[Script Info]\n")

@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from .style.config import SubtitleStyleConfig
+
 
 class AsrEngine(StrEnum):
     """ASR engine type."""
@@ -60,6 +62,7 @@ class SubtitleConfig:
     annotate: bool = False  # Generate secondary subtitle annotations
     annotation_width: int = 30  # Annotation box width (% of screen, 1–100)
     font: str = "PingFang SC"  # ASS subtitle font (resolved via system fallback chain)
+    style: SubtitleStyleConfig = field(default_factory=SubtitleStyleConfig)  # Bilingual subtitle box theme
     optimize_entry_points: bool = False  # Auto-fix low-confidence entry points in pace
     transcript_words: list | None = None  # Runtime: word list for entry optimization
 
@@ -85,6 +88,8 @@ class SubtitleConfig:
     def from_yaml(cls, path: str) -> "SubtitleConfig":
         with open(path) as f:
             data = yaml.safe_load(f)
+        if isinstance(data, dict) and isinstance(data.get("style"), dict):
+            data = {**data, "style": SubtitleStyleConfig.from_dict(data["style"])}
         return cls(**data)
 
     def clone_for_segment(self, *, input_path: str, output_dir: str) -> "SubtitleConfig":

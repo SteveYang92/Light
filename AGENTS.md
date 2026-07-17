@@ -9,6 +9,7 @@ packages/
 ├── light-models/        共享数据契约（Word, Segment, SubtitleCue, is_cjk…）
 ├── light-subtitle/      ASR → 翻译 → 字幕流水线
 │   ├── pipeline/        ASR → correct → punct → segment → translate → subtitle → export
+│   ├── style/           字幕样式（字体解析、圆角盒 SubtitleStyleConfig、盒几何/ASS 生成）
 │   ├── step_registry.py / step_plan.py / run_state.py / state_hydrate.py  # 步骤注册与 resume
 │   └── language/        语言处理（英语/CJK 断句、标点、显示约定）
 ├── light-qc/            独立 QC 引擎（规则 + LLM）

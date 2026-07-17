@@ -153,6 +153,11 @@ def run(
     ),
     glossary: str = typer.Option("", "--glossary", help="Path to YAML glossary"),
     config_file: str = typer.Option("", "-c", "--config", help="YAML config file"),
+    style_config: str = typer.Option(
+        "",
+        "--style-config",
+        help="YAML style overrides for bilingual subtitle boxes (see light_subtitle/style/config.py)",
+    ),
     # ── Long-video splitting ─────────────────────────
     split_threshold: float = typer.Option(
         2700.0,
@@ -263,6 +268,11 @@ def run(
             font=font,
             split_threshold=split_threshold,
         )
+
+    if style_config:
+        from .style.config import SubtitleStyleConfig
+
+        config.style = SubtitleStyleConfig.load_yaml(style_config)
 
     # ═══════════════════════════════════════════════════════
     #  4. Process: split if long, otherwise run directly

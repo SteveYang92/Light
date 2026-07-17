@@ -8,7 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import logger
+from .. import logger
 
 # CJK-first chain; Latin fallback at the end.
 DEFAULT_FALLBACKS: tuple[str, ...] = (
@@ -35,6 +35,7 @@ BILINGUAL_ASS_EN_FONT_SIZE = 12
 def bilingual_ass_en_font_tag() -> str:
     """Inline ASS override prefix for English text in bilingual Dialogue lines."""
     return f"{{\\fs{BILINGUAL_ASS_EN_FONT_SIZE}}}"
+
 
 # ASS V4+ style header shared by bilingual and annotation exports.
 ASS_V4_PLUS_STYLE_FORMAT = (
@@ -200,6 +201,40 @@ def write_patched_ass(
         ),
         encoding="utf-8",
     )
+
+
+def resolve_font_file(font_name: str) -> Path | None:
+    """Locate the font *file* for *font_name* (needed for Pillow text measurement).
+
+    Order: ``fc-match -f %{file}`` when fontconfig exists, then known macOS
+    system font paths.  Returns None when no file can be found (callers fall
+    back to non-measured rendering).
+    """
+    if shutil.which("fc-match") is not None:
+        try:
+            result = subprocess.run(
+                ["fc-match", "-f", "%{file}", font_name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            candidate = Path(result.stdout.strip()) if result.returncode == 0 else None
+            if candidate and candidate.is_file():
+                return candidate
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
+    macos_fonts = {
+        "pingfangsc": "/System/Library/Fonts/PingFang.ttc",
+        "hiraginosansgb": "/System/Library/Fonts/Hiragino Sans GB.ttc",
+        "arial": "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "arialunicodems": "/Library/Fonts/Arial Unicode.ttf",
+    }
+    path = macos_fonts.get(_normalize_font_name(font_name))
+    if path and Path(path).is_file():
+        return Path(path)
+    return None
 
 
 def bilingual_style_line(font_name: str, margin_v: int = BILINGUAL_MARGIN_V) -> str:

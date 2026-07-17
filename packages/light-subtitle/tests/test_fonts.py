@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
-from light_subtitle.fonts import (
+from light_subtitle.style.fonts import (
     BILINGUAL_ASS_ZH_FONT_SIZE,
     FontConfig,
     bilingual_ass_en_font_tag,
@@ -65,7 +65,7 @@ def test_write_patched_ass(tmp_path: Path) -> None:
 
 
 def test_resolve_font_without_fc_match_returns_primary() -> None:
-    with patch("light_subtitle.fonts.shutil.which", return_value=None):
+    with patch("light_subtitle.style.fonts.shutil.which", return_value=None):
         assert resolve_font(FontConfig(primary="My Preferred")) == "My Preferred"
 
 
@@ -82,24 +82,24 @@ def test_resolve_font_uses_fc_match_chain() -> None:
         return Result()
 
     with (
-        patch("light_subtitle.fonts.shutil.which", return_value="/usr/bin/fc-match"),
-        patch("light_subtitle.fonts.subprocess.run", side_effect=fake_fc_match),
+        patch("light_subtitle.style.fonts.shutil.which", return_value="/usr/bin/fc-match"),
+        patch("light_subtitle.style.fonts.subprocess.run", side_effect=fake_fc_match),
     ):
         resolved = resolve_font(FontConfig(primary="MissingFont"))
         assert resolved == "Noto Sans CJK SC"
 
 
 def test_parse_fc_family_takes_first_alias_only() -> None:
-    from light_subtitle.fonts import _parse_fc_family
+    from light_subtitle.style.fonts import _parse_fc_family
 
     assert _parse_fc_family("PingFang SC,蘋方-簡,苹方-简") == "PingFang SC"
     assert _parse_fc_family("Noto Sans CJK SC") == "Noto Sans CJK SC"
 
 
 def test_fc_match_family_strips_comma_aliases() -> None:
-    from light_subtitle.fonts import _fc_match_family
+    from light_subtitle.style.fonts import _fc_match_family
 
-    with patch("light_subtitle.fonts.subprocess.run") as mock_run:
+    with patch("light_subtitle.style.fonts.subprocess.run") as mock_run:
 
         class Result:
             returncode = 0
@@ -110,7 +110,7 @@ def test_fc_match_family_strips_comma_aliases() -> None:
 
 
 def test_bilingual_style_line_has_no_extra_commas_in_font_field() -> None:
-    from light_subtitle.fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, bilingual_style_line
+    from light_subtitle.style.fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, bilingual_style_line
 
     line = bilingual_style_line("PingFang SC")
     fields = line.removeprefix("Style:").split(",", 3)
@@ -133,8 +133,8 @@ def test_candidate_chain_deduplicates_primary_in_fallbacks() -> None:
         return Result()
 
     with (
-        patch("light_subtitle.fonts.shutil.which", return_value="/usr/bin/fc-match"),
-        patch("light_subtitle.fonts.subprocess.run", side_effect=fake_fc_match),
+        patch("light_subtitle.style.fonts.shutil.which", return_value="/usr/bin/fc-match"),
+        patch("light_subtitle.style.fonts.subprocess.run", side_effect=fake_fc_match),
     ):
         resolve_font(FontConfig(primary="PingFang SC"))
         assert calls[0] == "PingFang SC"

@@ -15,8 +15,9 @@ from unittest.mock import patch
 
 import pytest
 from light_models import Segment, SubtitleCue, Word
-from light_subtitle.fonts import bilingual_ass_en_font_tag
 from light_subtitle.pipeline.export import export_bilingual_ass, export_bilingual_vtt
+from light_subtitle.style.config import SubtitleStyleConfig
+from light_subtitle.style.fonts import bilingual_ass_en_font_tag
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,8 @@ def _seg(unit_id: str, start: float, end: float, text: str) -> Segment:
 
 def _write(tmp_path: Path, en: list[SubtitleCue], zh: list[SubtitleCue], segs: list[Segment] | None = None) -> Path:
     out = tmp_path / "bilingual.ass"
-    export_bilingual_ass(en, zh, str(out), source_segments=segs)
+    # box_enabled=False: pairing tests assert the legacy plain-style Dialogue text.
+    export_bilingual_ass(en, zh, str(out), source_segments=segs, style=SubtitleStyleConfig(box_enabled=False))
     return out
 
 
@@ -76,7 +78,7 @@ def _write_both(
 ) -> tuple[Path, Path]:
     ass_path = tmp_path / "bilingual.ass"
     vtt_path = tmp_path / "bilingual.vtt"
-    export_bilingual_ass(en, zh, str(ass_path), source_segments=segs)
+    export_bilingual_ass(en, zh, str(ass_path), source_segments=segs, style=SubtitleStyleConfig(box_enabled=False))
     export_bilingual_vtt(en, zh, str(vtt_path), source_segments=segs)
     return ass_path, vtt_path
 
@@ -635,7 +637,8 @@ def test_single_style_and_font(tmp_path: Path) -> None:
     zh = [SubtitleCue(cue_id="zh_0", unit_id="u0", start=1.0, end=2.0, text="嗨", lang="zh")]
     out = tmp_path / "bilingual.ass"
     with patch("light_subtitle.pipeline.export.resolve_font", return_value="CustomFont"):
-        export_bilingual_ass(en, zh, str(out), font="CustomFont")
+        # box_enabled=False: this asserts the legacy plain style layout.
+        export_bilingual_ass(en, zh, str(out), font="CustomFont", style=SubtitleStyleConfig(box_enabled=False))
     text = out.read_text(encoding="utf-8")
 
     style_lines = [ln for ln in text.splitlines() if ln.startswith("Style:")]

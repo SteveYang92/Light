@@ -506,6 +506,7 @@ def _write_bilingual_exports(
             str(out / "bilingual.ass"),
             source_segments=orch.state.composed_segments,
             font=orch.config.font,
+            style=orch.config.style,
         )
         export_module.export_bilingual_vtt(
             source_fmt,
