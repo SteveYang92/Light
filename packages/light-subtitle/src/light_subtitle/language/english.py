@@ -547,6 +547,7 @@ def _build_english_cues(
     original: SubtitleCue,
     lines: list[str],
     max_lines: int,
+    max_chars: int = 42,
     import_UnitWordIndex: type | None = None,
     import_chunk_times: type | None = None,
 ) -> list[SubtitleCue]:
@@ -580,6 +581,21 @@ def _build_english_cues(
 
     if len(balanced) <= max_lines:
         return [_make_english_cue(original, balanced)]
+
+    # A tiny trailing line (≤ 3 chars) would become an orphan cue after
+    # chunking (QC TinyCue): fold it into the previous line when it fits,
+    # otherwise shift one word down to make the tail big enough to show.
+    while len(balanced) > max_lines and len(balanced[-1].strip()) <= 3:
+        tiny = balanced[-1].strip()
+        prev_words = balanced[-2].split(" ")
+        if len(balanced[-2]) + 1 + len(tiny) <= max_chars:
+            balanced[-2] = balanced[-2] + " " + tiny
+            balanced.pop()
+        elif len(prev_words) > 1:
+            balanced[-1] = prev_words[-1] + " " + tiny
+            balanced[-2] = " ".join(prev_words[:-1])
+        else:
+            break
 
     word_idx = import_UnitWordIndex.from_words(original.words or [])
     en_cps = 25
@@ -649,7 +665,7 @@ def split_english(cue: SubtitleCue, text: str, config: SubtitleConfig) -> list[S
             lines = _merge_lines(lines, max_chars)
 
     if lines:
-        return _build_english_cues(cue, lines, max_lines)
+        return _build_english_cues(cue, lines, max_lines, max_chars)
     return [_make_english_cue(cue, [text])]
 
 

@@ -313,6 +313,12 @@ def _can_stand_alone(cue: SubtitleCue, config: SubtitleConfig) -> bool:
         # Single modal particle → fragment
         if len(text) <= 2 and all(c in CJK_SENTENCE_PARTICLES for c in text):
             return False
+        # Tiny (≤ 3 display chars) and clearly unfinished → attach to a
+        # neighbour.  Judge by display text: trailing clause punct is
+        # stripped before display (strip_punct), so don't count it.
+        tiny = text.rstrip("，、；：")
+        if len(tiny) <= 3 and tiny[-1] not in "。！？…":
+            return False
         return True
 
     # ═══════════════════════════════════════════════════════════════
@@ -322,6 +328,13 @@ def _can_stand_alone(cue: SubtitleCue, config: SubtitleConfig) -> bool:
     first_char = text.lstrip()[0] if text.lstrip() else ""
 
     if len(text) <= 2:
+        return False
+
+    # Tiny (≤ 3 display chars) and clearly unfinished → attach to a
+    # neighbour.  Judge by display text: trailing clause punct is
+    # stripped before display (strip_punct), so don't count it.
+    tiny = text.rstrip(",.;:")
+    if len(tiny) <= 3 and tiny[-1] not in ".!?…":
         return False
 
     # Starts with lowercase → continuation (unless known exception)
@@ -334,64 +347,6 @@ def _can_stand_alone(cue: SubtitleCue, config: SubtitleConfig) -> bool:
         return False
 
     return True
-
-
-# ── Cosmetic fix: lightweight text-only repair for merge failures ──
-
-
-def _remove_first_char(text: str, ch: str) -> str:
-    """Remove the first occurrence of *ch* from *text*, handling newlines."""
-    idx = text.find(ch)
-    if idx == -1:
-        return text
-    return text[:idx] + text[idx + 1 :]
-
-
-def _cosmetic_fix(prev: SubtitleCue, curr: SubtitleCue) -> bool:
-    """Try a text-only fix when full merge is structurally impossible.
-
-    Only moves 1-2 characters between cues. Never changes timing or line count.
-    Returns True if prev and/or curr were modified in-place.
-    """
-    curr_text = curr.text.replace("\n", "").strip()
-    if not curr_text:
-        return False
-
-    prev_lines = prev.text.split("\n")
-    prev_last = prev_lines[-1]
-
-    # Case 1: leading CJK clause punctuation → move to prev's last line
-    if curr_text[0] in CJK_CLAUSE_PUNCT:
-        prev_lines[-1] = prev_last + curr_text[0]
-        prev.text = "\n".join(prev_lines)
-        curr.text = _remove_first_char(curr.text, curr_text[0])
-        if not curr.text.strip():
-            prev.end = max(prev.end, curr.end)
-            prev.merged_from = _absorbed_unit_ids(prev, curr)
-        return True
-
-    # Case 2: single non-alpha orphan → append to prev
-    if len(curr_text) == 1 and (not curr_text.isalpha() or "\u4e00" <= curr_text <= "\u9fff"):
-        prev_lines[-1] = prev_last + curr_text
-        prev.text = "\n".join(prev_lines)
-        prev.end = max(prev.end, curr.end)
-        prev.words = (prev.words or []) + (curr.words or [])
-        prev.merged_from = _absorbed_unit_ids(prev, curr)
-        curr.text = ""  # absorbed into prev
-        return True
-
-    # Case 3: standalone conjunction → append to prev
-    if _is_conjunction(curr_text):
-        sep = "" if prev.lang == "zh" else " "
-        prev_lines[-1] = prev_last + sep + curr_text
-        prev.text = "\n".join(prev_lines)
-        prev.end = max(prev.end, curr.end)
-        prev.words = (prev.words or []) + (curr.words or [])
-        prev.merged_from = _absorbed_unit_ids(prev, curr)
-        curr.text = ""  # absorbed into prev
-        return True
-
-    return False
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -441,16 +396,15 @@ def _merge_short_adjacent(cues, config):
 
         # ── 2. Backward merge: curr cannot stand alone → merge into prev ──
         gap = curr.start - prev.end
-        if not _can_stand_alone(curr, config) and (prev.unit_id == curr.unit_id or gap <= 0.3):
+        # Tiny cues (≤ 3 display chars, trailing clause punct excluded)
+        # are display-invalid regardless of pause length — attach across
+        # a wider gap than normal fragments.
+        gap_max = 1.0 if len(curr_text.rstrip("，、；：,.;:")) <= 3 else 0.3
+        if not _can_stand_alone(curr, config) and (prev.unit_id == curr.unit_id or gap <= gap_max):
             merged = _try_merge(prev, curr, config)
             if merged is not None:
                 result[-1:] = merged
                 continue
-            # Full merge failed → try cosmetic fix (1-2 char move only)
-            if _cosmetic_fix(prev, curr):
-                result[-1] = prev
-                if not curr.text.strip():
-                    continue  # curr absorbed
 
         # ── 3. Can stand alone → keep as-is ──
         result.append(curr)
