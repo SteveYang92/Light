@@ -69,6 +69,7 @@ packages/
 ├── light-subtitle/      ASR → 翻译 → 字幕流水线
 ├── light-tts/           字幕配音（IndexTTS2 官方 / Metal 加速 / Qwen3-TTS）
 │   ├── pipeline/        ASR → correct → punct → segment → translate → subtitle → export
+│   ├── style/           字幕样式（字体解析、圆角盒主题配置、盒几何/ASS 生成）
 │   ├── step_registry.py 声明式步骤注册表（StepId + run/hydrate/progress）
 │   ├── step_plan.py     运行时 plan 构建与 resume 解析
 │   └── language/        语言处理（英语/CJK 断句、标点、显示约定）
@@ -152,22 +153,39 @@ uv run light-subtitle -i input.mp4 --resume-from correct
 uv run light-subtitle -i input.mp4 --target-lang zh --resume-from subtitle
 ```
 
-完整参数见 `uv run light-subtitle --help`。`--font` 控制 ASS 导出字体（默认 `PingFang SC`，按系统字体链回退）；`pack` 子命令同样支持 `--font`。
+完整参数见 `uv run light-subtitle --help`。`--font` 控制 ASS 导出字体（默认 `PingFang SC`，按系统字体链回退）。
+
+**双语字幕样式**：`bilingual.ass` 导出即自含圆角背景盒（中英文各一个整块盒，盒随文字宽高自适应，多行一个盒），固定 1920×1080 PlayRes，任意 16:9 分辨率下等比缩放。样式参数可用 `--style-config <yaml>` 覆盖（字段见 `packages/light-subtitle/src/light_subtitle/style/config.py`，如 `box_enabled: false` 可关盒回退描边样式）：
+
+```yaml
+# style.yaml 示例（均为默认值）
+box_enabled: true
+bg_opacity: 0.70          # 盒不透明度
+corner_radius_scale: 0.25 # 圆角 = 0.25 × 行高
+pad_h_scale: 0.45         # 横向内边距 = 0.45 × 字号
+pad_v_scale: 0.18         # 纵向内边距 = 0.18 × 字号
+block_gap: 6              # 中英文盒间距（1080p 像素）
+zh_font_size: 75
+en_font_size: 45
+margin_v: 75
+margin_lr: 40             # 左右安全边距，触发折行的最大行宽
+line_spacing: 1.25        # 多行堆叠行距（× 行高）
+```
 
 #### pack — 烧录字幕到视频
 
-`pack` 是 `light-subtitle` 的子命令，把字幕硬烧进视频生成自包含 MP4（`{slug}_pack.mp4`）。自动识别主字幕：优先 `bilingual.ass`（双语，中上英下），回退 `zh.srt`（单语中文）。可选叠加 `annotations.ass` 副图层。
+`pack` 是 `light-subtitle` 的子命令，把字幕硬烧进视频生成自包含 MP4（`{slug}_pack.mp4`）。自动识别主字幕：优先 `bilingual.ass`（双语，中上英下，自含圆角盒，按导出字体原样烧录），回退 `zh.srt`（单语中文，`--font` 生效）。可选叠加 `annotations.ass` 副图层（`--font` 生效）。
 
 ```bash
 # 单语运行后烧中文字幕
 uv run light-subtitle -i input.mp4 --target-lang zh -o output
 uv run light-subtitle pack output
 
-# 双语 + 指定字体
+# 双语 + 指定字体（导出时定稿，pack 原样烧录）
 uv run light-subtitle -i input.mp4 --target-lang zh --bilingual --font "PingFang SC" -o output
 uv run light-subtitle pack output
 
-# 指定编码器/字体/视频（--font 对双语 ASS 与 SRT 均生效，含系统回退链）
+# 指定编码器/字体/视频（--font 仅影响 zh.srt 与 annotations 烧录）
 uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video path/to/video.mp4
 ```
 
@@ -390,7 +408,7 @@ output/
 │   └── asr_whisperx.json         ASR 词级结果（引擎名随 --asr 变化）
 ├── {slug}.en.srt / {slug}.en.vtt   源语字幕（短视频/合并后带 slug 前缀）
 ├── {slug}.zh.srt / {slug}.zh.vtt   译语字幕
-├── {slug}.bilingual.ass            双语 ASS（单 Dialogue 合并：ZH 行 + \N + EN 单行，字号见 fonts.BILINGUAL_ASS_*）
+├── {slug}.bilingual.ass            双语 ASS（自含圆角盒：固定 1080p PlayRes + 矢量盒，样式见 style/config.py）
 ├── {slug}.annotations.ass          副字幕注解（--annotate）
 ├── cues.json                     字幕 cue 列表
 ├── transcript.json               标准化转录（含 word 时间戳，供 QC）
