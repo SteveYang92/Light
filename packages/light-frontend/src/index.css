@@ -172,29 +172,36 @@ body {
   font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
   line-height: 1.4;
   pointer-events: none;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000,
-    0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+/* Block box per language (Netflix/Apple style): one rounded pill shrink-wrapping
+   all lines, mirroring the boxed bilingual.ass burn.  `width: fit-content` keeps
+   the divs block-level (ZH/EN stack vertically) while hugging the text width. */
+.vjs-light-bilingual-zh,
+.vjs-light-bilingual-en {
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 0.32em;
+  padding: 0.18em 0.5em;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .vjs-light-bilingual-zh {
   font-size: 1em;
   font-family: inherit;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 .vjs-light-bilingual-en {
   /* Web EN line uses 0.7em (independent of ASS BILINGUAL_ASS_EN_FONT_SIZE) */
-  margin-top: 0.15em;
+  margin-top: 0.35em;
   font-size: 0.7em;
   font-family: "Helvetica Neue", Arial, sans-serif;
   line-height: 1.35;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 /* Bilingual is two lines — shrink in embedded mobile player; fullscreen keeps touch default */
