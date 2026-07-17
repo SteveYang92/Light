@@ -1,8 +1,8 @@
 {
-  "total_cues": 74,
+  "total_cues": 76,
   "errors": 1,
-  "warnings": 3,
-  "suggestions": 11,
+  "warnings": 4,
+  "suggestions": 10,
   "passed": false,
   "bilingual": false,
   "source_lang": "en",
@@ -21,7 +21,7 @@
       "severity": "warning",
       "category": "硬性规则",
       "rule": "EntryPointConfidence",
-      "cue_id": 28,
+      "cue_id": 29,
       "time": "00:01:36,311",
       "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
       "fix": "对齐可能偏早，建议根据音频确认入点"
@@ -29,28 +29,37 @@
     {
       "severity": "warning",
       "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 15,
+      "time": "00:00:45,315",
+      "detail": "尾cue仅4个字符 '的文本Y'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
       "rule": "OverlappingContent",
-      "cue_id": 25,
+      "cue_id": 26,
       "time": "00:01:25,842",
-      "detail": "与上一条字幕信息重叠 (相似度 45%)",
+      "detail": "与上一条字幕信息重叠 (相似度 57%)",
       "fix": "检查是否为 segment 过度切分导致的内容重复"
     },
     {
       "severity": "warning",
       "category": "柔性策略",
       "rule": "OverlappingContent",
-      "cue_id": 39,
+      "cue_id": 40,
       "time": "00:02:20,018",
-      "detail": "与上一条字幕信息重叠 (相似度 53%)",
+      "detail": "与上一条字幕信息重叠 (相似度 47%)",
       "fix": "检查是否为 segment 过度切分导致的内容重复"
     },
     {
       "severity": "suggestion",
       "category": "硬性规则",
       "rule": "MissingPunctuation",
-      "cue_id": 70,
+      "cue_id": 72,
       "time": "00:04:37,206",
-      "detail": "中文句尾可能缺少感叹号: '因为它太低效了'",
+      "detail": "中文句尾可能缺少感叹号: '因为它效率太低了'",
       "fix": "如为感叹句，添加 ！"
     },
     {
@@ -66,7 +75,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 27,
+      "cue_id": 28,
       "time": "00:01:31,566",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -75,7 +84,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 51,
+      "cue_id": 52,
       "time": "00:03:12,146",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -84,7 +93,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 59,
+      "cue_id": 61,
       "time": "00:03:49,469",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.008s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -93,7 +102,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 61,
+      "cue_id": 63,
       "time": "00:03:56,055",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -102,7 +111,16 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 73,
+      "cue_id": 69,
+      "time": "00:04:27,203",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 75,
       "time": "00:04:51,417",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.078s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -111,16 +129,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "TranslationQuality",
-      "cue_id": 46,
-      "time": "00:02:51,494",
-      "detail": "包含填充词 '那个'，建议省略",
-      "fix": "删除填充词，保持字幕简洁"
-    },
-    {
-      "severity": "suggestion",
-      "category": "柔性策略",
-      "rule": "TranslationQuality",
-      "cue_id": 48,
+      "cue_id": 49,
       "time": "00:03:00,241",
       "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
       "fix": "使用更自然的中文口语表达"
@@ -129,16 +138,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "TranslationQuality",
-      "cue_id": 52,
-      "time": "00:03:18,211",
-      "detail": "包含填充词 '就是说'，建议省略",
-      "fix": "删除填充词，保持字幕简洁"
-    },
-    {
-      "severity": "suggestion",
-      "category": "柔性策略",
-      "rule": "TranslationQuality",
-      "cue_id": 64,
+      "cue_id": 66,
       "time": "00:04:14,560",
       "detail": "包含填充词 '那个'，建议省略",
       "fix": "删除填充词，保持字幕简洁"

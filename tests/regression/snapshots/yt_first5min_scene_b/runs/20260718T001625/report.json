@@ -1,8 +1,8 @@
 {
-  "total_cues": 74,
-  "errors": 1,
-  "warnings": 3,
-  "suggestions": 11,
+  "total_cues": 77,
+  "errors": 3,
+  "warnings": 5,
+  "suggestions": 13,
   "passed": false,
   "bilingual": false,
   "source_lang": "en",
@@ -10,18 +10,45 @@
   "issues": [
     {
       "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 52,
+      "time": "00:03:12,146",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "error",
       "category": "柔性策略",
       "rule": "BadWordSplit",
       "cue_id": 8,
-      "time": "00:00:24,137 → 00:00:27,017",
+      "time": "00:00:23,281 → 00:00:27,017",
       "detail": "英文词/名被跨cue切断: #8末'…JEPA' → #9首'JEPA…' (合并为'JEPAJEPA')",
       "fix": "将'JEPAJEPA'保留在同一个cue中"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "CompoundWords",
+      "cue_id": 52,
+      "time": "00:03:12,146",
+      "detail": "复合词 '精心' 被换行拆散",
+      "fix": "将'精心'保持在同一行"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 8,
+      "time": "00:00:23,281",
+      "detail": "入点偏离首个词语 0.856s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:00:24,137"
     },
     {
       "severity": "warning",
       "category": "硬性规则",
       "rule": "EntryPointConfidence",
-      "cue_id": 28,
+      "cue_id": 29,
       "time": "00:01:36,311",
       "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
       "fix": "对齐可能偏早，建议根据音频确认入点"
@@ -30,28 +57,46 @@
       "severity": "warning",
       "category": "柔性策略",
       "rule": "OverlappingContent",
-      "cue_id": 25,
-      "time": "00:01:25,842",
-      "detail": "与上一条字幕信息重叠 (相似度 45%)",
+      "cue_id": 10,
+      "time": "00:00:29,570",
+      "detail": "与上一条字幕信息重叠 (相似度 42%)",
       "fix": "检查是否为 segment 过度切分导致的内容重复"
     },
     {
       "severity": "warning",
       "category": "柔性策略",
       "rule": "OverlappingContent",
-      "cue_id": 39,
+      "cue_id": 26,
+      "time": "00:01:25,842",
+      "detail": "与上一条字幕信息重叠 (相似度 46%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 40,
       "time": "00:02:20,018",
-      "detail": "与上一条字幕信息重叠 (相似度 53%)",
+      "detail": "与上一条字幕信息重叠 (相似度 47%)",
       "fix": "检查是否为 segment 过度切分导致的内容重复"
     },
     {
       "severity": "suggestion",
       "category": "硬性规则",
       "rule": "MissingPunctuation",
-      "cue_id": 70,
+      "cue_id": 73,
       "time": "00:04:37,206",
-      "detail": "中文句尾可能缺少感叹号: '因为它太低效了'",
+      "detail": "中文句尾可能缺少感叹号: '因为它效率太低了'",
       "fix": "如为感叹句，添加 ！"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 7,
+      "time": "00:00:20,396",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
     },
     {
       "severity": "suggestion",
@@ -66,7 +111,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 27,
+      "cue_id": 28,
       "time": "00:01:31,566",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -75,7 +120,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 51,
+      "cue_id": 52,
       "time": "00:03:12,146",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -84,7 +129,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 59,
+      "cue_id": 61,
       "time": "00:03:49,469",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.008s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -93,7 +138,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 61,
+      "cue_id": 63,
       "time": "00:03:56,055",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -102,7 +147,16 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "ExitPointPrecision",
-      "cue_id": 73,
+      "cue_id": 70,
+      "time": "00:04:27,203",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 76,
       "time": "00:04:51,417",
       "detail": "出点紧贴语音结束，阅读 padding 仅 0.078s（不足 0.08s）",
       "fix": "将结束时间延后 0.2-0.5s"
@@ -111,7 +165,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "TranslationQuality",
-      "cue_id": 46,
+      "cue_id": 47,
       "time": "00:02:51,494",
       "detail": "包含填充词 '那个'，建议省略",
       "fix": "删除填充词，保持字幕简洁"
@@ -120,7 +174,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "TranslationQuality",
-      "cue_id": 48,
+      "cue_id": 49,
       "time": "00:03:00,241",
       "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
       "fix": "使用更自然的中文口语表达"
@@ -129,7 +183,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "TranslationQuality",
-      "cue_id": 52,
+      "cue_id": 53,
       "time": "00:03:18,211",
       "detail": "包含填充词 '就是说'，建议省略",
       "fix": "删除填充词，保持字幕简洁"
@@ -138,7 +192,7 @@
       "severity": "suggestion",
       "category": "柔性策略",
       "rule": "TranslationQuality",
-      "cue_id": 64,
+      "cue_id": 67,
       "time": "00:04:14,560",
       "detail": "包含填充词 '那个'，建议省略",
       "fix": "删除填充词，保持字幕简洁"
