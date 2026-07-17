@@ -15,15 +15,18 @@ layout produces — it no longer performs its own splitting.
 from __future__ import annotations
 
 from ... import logger
+from ...usage.tracker import merge_token_usage
+from . import compress
 
 
-def correct(cues, config):
+def correct(cues, config, usage_out: dict | None = None):
     """Adjust cue timing for readability.
 
-    Runs duration fix, gap resolution, CPS enforcement, min-gap guard, reading padding.
-    Scene B/C alignment is handled by run() before prepare.
+    Runs duration fix, gap resolution, CPS enforcement (borrow time, then
+    compress over-limit translations), min-gap guard, reading padding.
+    *usage_out* collects token usage when LLM compression runs.
     """
-    return _apply_time_corrections(cues, config)
+    return _apply_time_corrections(cues, config, usage_out)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -31,7 +34,7 @@ def correct(cues, config):
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _apply_time_corrections(cues, config):
+def _apply_time_corrections(cues, config, usage_out: dict | None = None):
     """Full time-correction pipeline.
 
     Order matters: each step assumes the previous step's output shape.
@@ -67,6 +70,16 @@ def _apply_time_corrections(cues, config):
     # max_duration cap in _enforce_cps_ceiling ensures no post-hoc
     # re-check is needed; the cue list shape stays the same.
     result = _enforce_cps_ceiling(result, config)
+
+    # Step 4b: translated cues still over the CPS ceiling get compressed
+    # by the LLM (shorter wording, same meaning); originals are kept when
+    # compression declines, for QC to flag.
+    if config.target_lang:
+        over = _over_cps_indices(result, config)
+        if over:
+            compress_usage = compress.compress_over_cps(result, over, config)
+            if compress_usage and usage_out is not None:
+                merge_token_usage(usage_out, compress_usage)
 
     # Step 5: ensure all gaps >= MIN_GAP
     for i in range(1, len(result)):
@@ -184,21 +197,30 @@ def _fix_cue_duration(cue, config):
     """Enforce min/max duration constraints.
 
     - Too-short cues: stretch to min_duration.
-    - Overlong cues: cap end time to start + max_duration (merged cues exempt).
+    - Overlong cues: cap end time to start + max_duration.
     """
     duration = cue.end - cue.start
     if duration < config.min_duration - 0.001:
         cue.end = cue.start + config.min_duration
     elif duration > config.max_duration:
-        if cue.merged_from:
-            logger.info(
-                f"  Pace: merged cue max_duration exempt | {cue.unit_id} | "
-                f"duration={duration:.2f}s (limit={config.max_duration}s) | "
-                f"merged_from={cue.merged_from}"
-            )
-        else:
-            cue.end = cue.start + config.max_duration
+        cue.end = cue.start + config.max_duration
     return [cue]
+
+
+def _over_cps_indices(cues, config) -> list[int]:
+    """Indices of translated cues still exceeding the CPS ceiling."""
+    over = []
+    for i, cue in enumerate(cues):
+        if cue.lang != config.target_lang:
+            continue
+        duration = cue.end - cue.start
+        if duration <= 0:
+            continue
+        limit = config.cps_limit if cue.lang == "zh" else config.cps_limit_en
+        chars = len(cue.text.replace("\n", ""))
+        if chars / duration > limit:
+            over.append(i)
+    return over
 
 
 def _enforce_cps_ceiling(cues, config):
@@ -228,8 +250,7 @@ def _enforce_cps_ceiling(cues, config):
         shortage = needed - duration
 
         # Cap shortage so CPS extension never pulls duration past max_duration.
-        if not cue.merged_from:
-            shortage = min(shortage, max(0, config.max_duration - duration))
+        shortage = min(shortage, max(0, config.max_duration - duration))
 
         if shortage <= 0:
             result.append(cue)
