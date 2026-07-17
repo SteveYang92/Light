@@ -88,33 +88,31 @@ def hydrate_context_from_cache(orch: Orchestrator) -> None:
     orch.config.content_summary = orch.state.content_summary
 
 
-def hydrate_compose_segments(orch: Orchestrator) -> None:
-    """Hydrate composed segments and rebuild ``raw_source_cues`` from them.
+def hydrate_plan_segments(orch: Orchestrator) -> None:
+    """Hydrate planned units and rebuild ``raw_source_cues`` from them.
 
-    Reads ``compose/compose.json`` (re-running compose+split if absent) and
-    ``compose/segment_words.json`` for word-level timing.  The English
-    source cues are rebuilt from composed units so the EN track shares the
+    Reads ``plan/plan.json`` (re-running the planner if absent) and
+    ``plan/segment_words.json`` for word-level timing.  The English
+    source cues are rebuilt from planned units so the EN track shares the
     same ``unit_id`` graph as the translated track.
     """
     hydrate_segments_from_disk(orch)
     hydrate_context_from_cache(orch)
-    compose_dir = _out(orch.config) / "compose"
-    orch.state.composed_segments = translate_pipeline.load_compose_segments(
-        compose_dir, orch.state.segments, orch.config
-    )
-    _attach_segment_words(orch.state.composed_segments, compose_dir)
+    plan_dir = _out(orch.config) / "plan"
+    orch.state.composed_segments = translate_pipeline.load_plan_segments(plan_dir, orch.state.segments, orch.config)
+    _attach_segment_words(orch.state.composed_segments, plan_dir)
     orch.state.raw_source_cues = build_source_cues(orch.state.composed_segments, orch.state.source_lang)
 
 
-def _attach_segment_words(segments: list[Segment], compose_dir: Path) -> None:
-    """Re-attach word timing from ``segment_words.json`` to composed segments.
+def _attach_segment_words(segments: list[Segment], plan_dir: Path) -> None:
+    """Re-attach word timing from ``segment_words.json`` to planned units.
 
-    ``load_compose_segments`` rebuilds ``Segment`` objects from
-    ``compose.json`` with ``words=[]``; this refills words so pace can do
+    ``load_plan_segments`` rebuilds ``Segment`` objects from
+    ``plan.json`` with ``words=[]``; this refills words so pace can do
     word-boundary alignment.  Mirrors the logic in
     ``translate.load_cached_translation``.
     """
-    seg_words_path = compose_dir / "segment_words.json"
+    seg_words_path = plan_dir / "segment_words.json"
     if not seg_words_path.exists():
         return
     with open(seg_words_path, encoding="utf-8") as f:
@@ -135,7 +133,7 @@ def hydrate_partial_cues(orch: Orchestrator) -> None:
 
 
 def hydrate_translated_cues(orch: Orchestrator) -> None:
-    hydrate_compose_segments(orch)
+    hydrate_plan_segments(orch)
     tx_dir = _out(orch.config) / "translations"
     orch.state.translated_cues, orch.state.translation_usage = translate_pipeline.load_cached_translation(
         tx_dir, orch.config
@@ -143,7 +141,7 @@ def hydrate_translated_cues(orch: Orchestrator) -> None:
 
 
 def hydrate_subtitle_export(orch: Orchestrator) -> None:
-    hydrate_compose_segments(orch)
+    hydrate_plan_segments(orch)
     raw = _out(orch.config) / "translations" / "raw.json"
     if raw.exists():
         hydrate_translated_cues(orch)

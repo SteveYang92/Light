@@ -1,4 +1,4 @@
-"""Translation pipeline — compose → split overlong → translate → evaluate → refine → save artifacts.
+"""Translation pipeline — plan cue boundaries → translate → evaluate → refine → save artifacts.
 
 Usage::
 
@@ -20,15 +20,13 @@ from ... import logger
 from ...config import SubtitleConfig
 from ...usage.tracker import merge_token_usage, pick_usage_fields, save_step_usage
 from .. import export
-from .compose import compose_segments
+from .. import plan as plan_pipeline
 from .context import TranslateContext as TranslateContext
 from .evaluate import evaluate_translations, get_low_score_cues, scores_to_dict
-from .merge_apply import covered_unit_ids
 from .refine import refine_translations
-from .split import split_overlong_units
+from .translate import covered_unit_ids, translate_missing
 from .translate import load_partial_cues as load_partial_cues
 from .translate import run as _translate_live
-from .translate import translate_missing
 
 
 @dataclass
@@ -39,37 +37,17 @@ class TranslateResult:
     usage: dict | None = None
 
 
-def _compose_and_split(
+def _plan_units(
     segments: list[Segment],
     config: SubtitleConfig,
-    compose_dir: Path,
+    plan_dir: Path,
 ) -> tuple[list[Segment], dict | None]:
-    """Compose fragments → split overlong units → save debug compose.json."""
-    compose_dir.mkdir(parents=True, exist_ok=True)
-
-    translation_segments = compose_segments(segments)
-    logger.info(f"  Compose: {len(segments)} segments → {len(translation_segments)} translation units")
-
-    translation_segments, split_usage = split_overlong_units(translation_segments, config)
-    logger.info(f"  Split overlong: → {len(translation_segments)} units after splitting")
-    if split_usage:
-        save_step_usage(compose_dir / "usage.json", split_usage)
-
-    # Debug: save compose results (after splitting).
-    compose_out = [
-        {
-            "unit_id": s.unit_id,
-            "start": round(s.start, 3),
-            "end": round(s.end, 3),
-            "duration": round(s.end - s.start, 1),
-            "speaker": s.speaker,
-            "text": s.source_text,
-        }
-        for s in translation_segments
-    ]
-    (compose_dir / "compose.json").write_text(json.dumps(compose_out, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    return translation_segments, split_usage
+    """Plan cue units with the LLM boundary planner; persist ``plan/plan.json``."""
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    translation_segments, plan_usage = plan_pipeline.run(segments, config, plan_dir)
+    if plan_usage:
+        save_step_usage(plan_dir / "usage.json", plan_usage)
+    return translation_segments, plan_usage
 
 
 def load_cached_translation(
@@ -78,7 +56,7 @@ def load_cached_translation(
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Load translated cues and usage from cached raw.json / usage.json.
 
-    If ``compose/segment_words.json`` exists, word timing is re-attached to each
+    If ``plan/segment_words.json`` exists, word timing is re-attached to each
     cue by matching ``unit_id``, enabling word-boundary alignment in the pace step.
     """
     raw_path = tx_dir / "raw.json"
@@ -98,9 +76,9 @@ def load_cached_translation(
         for c in raw_data
     ]
 
-    compose_dir = tx_dir.parent / "compose"
-    _attach_words_to_cues(translated_cues, compose_dir)
-    _attach_speakers_from_compose(translated_cues, compose_dir, tx_dir)
+    plan_dir = tx_dir.parent / "plan"
+    _attach_words_to_cues(translated_cues, plan_dir)
+    _attach_speakers_from_plan(translated_cues, plan_dir)
 
     usage: dict | None = None
     usage_path = tx_dir / "usage.json"
@@ -133,8 +111,8 @@ def _save_translation_artifacts(
         export.export_json_file(payload, str(tx_dir / "usage.json"))
 
 
-def _segment_words_path(compose_dir: Path) -> Path:
-    return compose_dir / "segment_words.json"
+def _segment_words_path(plan_dir: Path) -> Path:
+    return plan_dir / "segment_words.json"
 
 
 def _words_from_unit_chain(unit_ids: list[str], seg_words_map: dict[str, list[dict]]) -> list[Word]:
@@ -147,13 +125,13 @@ def _words_from_unit_chain(unit_ids: list[str], seg_words_map: dict[str, list[di
     return words
 
 
-def _attach_words_to_cues(cues: list[SubtitleCue], compose_dir: Path) -> None:
-    """Re-attach word timing from ``compose/segment_words.json``.
+def _attach_words_to_cues(cues: list[SubtitleCue], plan_dir: Path) -> None:
+    """Re-attach word timing from ``plan/segment_words.json``.
 
-    Uses ``unit_id`` plus ``merged_from`` (in chain order) so display-merged
-    translation cues get the full ASR span, not just the head split part.
+    Uses ``unit_id`` plus ``merged_from`` (in chain order) so cues that
+    absorbed other units get the full ASR span, not just the head unit.
     """
-    seg_words_path = _segment_words_path(compose_dir)
+    seg_words_path = _segment_words_path(plan_dir)
     if not seg_words_path.exists():
         return
     with open(seg_words_path, encoding="utf-8") as f:
@@ -165,36 +143,23 @@ def _attach_words_to_cues(cues: list[SubtitleCue], compose_dir: Path) -> None:
             cue.words = words
 
 
-def _load_compose_speaker_map(compose_dir: Path, tx_dir: Path) -> dict[str, str]:
-    """Speaker labels keyed by compose ``unit_id`` (supports legacy ``translations/compose.json``)."""
-    for path in (compose_dir / "compose.json", tx_dir / "compose.json"):
-        if not path.exists():
-            continue
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-        if not isinstance(data, list):
-            continue
-        return {
-            item["unit_id"]: item.get("speaker", "")
-            for item in data
-            if isinstance(item, dict) and "unit_id" in item
-        }
-    return {}
-
-
-def _attach_speakers_from_compose(cues: list[SubtitleCue], compose_dir: Path, tx_dir: Path) -> None:
-    """Fill empty cue speakers from compose metadata on resume."""
-    speaker_by_unit = _load_compose_speaker_map(compose_dir, tx_dir)
-    if not speaker_by_unit:
+def _attach_speakers_from_plan(cues: list[SubtitleCue], plan_dir: Path) -> None:
+    """Fill empty cue speakers from ``plan/plan.json`` metadata on resume."""
+    plan_path = plan_dir / "plan.json"
+    if not plan_path.exists():
         return
+    with open(plan_path, encoding="utf-8") as f:
+        data = json.load(f)
+    speaker_by_unit = {
+        item["unit_id"]: item.get("speaker", "") for item in data.get("units", []) if isinstance(item, dict)
+    }
     for cue in cues:
-        if cue.speaker:
-            continue
-        cue.speaker = speaker_by_unit.get(cue.unit_id, "")
+        if not cue.speaker:
+            cue.speaker = speaker_by_unit.get(cue.unit_id, "")
 
 
-def _save_translation_segment_words(translation_segments: list[Segment], compose_dir: Path) -> None:
-    """Save per-unit word-level timing to ``compose/segment_words.json``."""
+def _save_translation_segment_words(translation_segments: list[Segment], plan_dir: Path) -> None:
+    """Save per-unit word-level timing to ``plan/segment_words.json``."""
     data: dict[str, list[dict]] = {}
     for seg in translation_segments:
         if seg.words:
@@ -202,8 +167,8 @@ def _save_translation_segment_words(translation_segments: list[Segment], compose
                 {"text": w.text, "start": w.start, "end": w.end, "confidence": w.confidence, "speaker": w.speaker}
                 for w in seg.words
             ]
-    compose_dir.mkdir(parents=True, exist_ok=True)
-    _segment_words_path(compose_dir).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    _segment_words_path(plan_dir).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _evaluate_and_refine(
@@ -349,10 +314,10 @@ def _retry_missing_translations(
 
 def _find_duplicate_translations(translated_cues: list[SubtitleCue]) -> set[str]:
     """Return unit_ids of cues that share near-identical translation text
-    with another cue in the same merged-unit group.
+    with another cue in the same split group.
 
-    LLM-split overlong units (e.g. ``mu0621_u0629_0`` … ``_6``) sometimes
-    receive the same translation text for different sub-units when the LLM
+    Word-level split units (e.g. ``p0007_0``, ``p0007_1``) sometimes
+    receive the same translation text for different parts when the LLM
     maps unit_ids incorrectly.  Detecting duplicates lets the retry step
     re-translate the suspect units individually.
     """
@@ -361,7 +326,7 @@ def _find_duplicate_translations(translated_cues: list[SubtitleCue]) -> set[str]
 
     groups: dict[str, list[SubtitleCue]] = defaultdict(list)
     for c in translated_cues:
-        m = re.match(r"(mu?\d+)", c.unit_id)
+        m = re.match(r"(p\d+)", c.unit_id)
         if m:
             groups[m.group(1)].append(c)
 
@@ -411,7 +376,7 @@ def _find_timestamp_mismatches(
 
 # ── Public step helpers (used by step_registry) ───────────────────────────────
 
-compose_and_split = _compose_and_split
+plan_units = _plan_units
 save_segment_words = _save_translation_segment_words
 attach_words_to_cues = _attach_words_to_cues
 retry_missing = _retry_missing_translations
@@ -419,31 +384,16 @@ evaluate_and_refine = _evaluate_and_refine
 save_artifacts = _save_translation_artifacts
 
 
-def load_compose_segments(tx_dir: Path, segments: list[Segment], config: SubtitleConfig) -> list[Segment]:
-    """Rebuild translation segments from compose.json when resuming mid-translate."""
-    compose_path = tx_dir / "compose.json"
-    if not compose_path.exists():
-        return _compose_and_split(segments, config, tx_dir)[0]
+def load_plan_segments(plan_dir: Path, segments: list[Segment], config: SubtitleConfig) -> list[Segment]:
+    """Rebuild translation units from ``plan/plan.json`` when resuming mid-translate.
 
-    with open(compose_path, encoding="utf-8") as f:
-        compose_data = json.load(f)
-
-    # Directly reconstruct Segment objects from compose.json.
-    # No need to re-run compose/split (which makes LLM calls) when
-    # the persisted data already contains the correct unit IDs.
-    rebuilt: list[Segment] = []
-    for item in compose_data:
-        rebuilt.append(
-            Segment(
-                unit_id=item["unit_id"],
-                start=item.get("start", 0.0),
-                end=item.get("end", 0.0),
-                speaker=item.get("speaker", ""),
-                source_text=item.get("text", ""),
-                words=[],
-            )
-        )
-    return rebuilt
+    Falls back to re-running the planner (LLM calls) only when plan.json
+    is absent.
+    """
+    units = plan_pipeline.load_plan_units(plan_dir)
+    if units is not None:
+        return units
+    return _plan_units(segments, config, plan_dir)[0]
 
 
 # ── Main entry point ──────────────────────────────────────────────────────────
@@ -458,7 +408,7 @@ def run(
     """Run the full translation pipeline.
 
     Steps:
-      1. Compose segments → split overlong units.
+      1. Plan cue boundaries (LLM planner).
       2. Translate via LLM.
       3. Retry any missing translations (LLM parse failures).
       4. Evaluate quality + refine low-scoring cues.
@@ -470,13 +420,13 @@ def run(
     tx_dir = output_dir / "translations"
     tx_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Step 1: Compose → split overlong ───────────────────────────
+    # ── Step 1: Plan cue boundaries ─────────────────────────────
 
-    compose_dir = output_dir / "compose"
-    translation_segments, _split_usage = _compose_and_split(segments, config, compose_dir)
+    plan_dir = output_dir / "plan"
+    translation_segments, _plan_usage = _plan_units(segments, config, plan_dir)
 
     # Persist word-level timing for resume / pace re-attachment.
-    _save_translation_segment_words(translation_segments, compose_dir)
+    _save_translation_segment_words(translation_segments, plan_dir)
 
     # Live translation.
     logger.info("  Translating...")

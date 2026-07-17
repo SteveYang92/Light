@@ -1,4 +1,4 @@
-"""Tests for load_cached_translation word re-attachment from compose/."""
+"""Tests for load_cached_translation word re-attachment from plan/."""
 
 from __future__ import annotations
 
@@ -11,18 +11,21 @@ from light_subtitle.pipeline import subtitle as sub_mod
 from light_subtitle.pipeline.translate import load_cached_translation, save_segment_words
 
 
-def test_load_cached_translation_attaches_speakers_from_compose(tmp_path: Path) -> None:
-    compose_dir = tmp_path / "compose"
+def test_load_cached_translation_attaches_speakers_from_plan(tmp_path: Path) -> None:
+    plan_dir = tmp_path / "plan"
     tx_dir = tmp_path / "translations"
-    compose_dir.mkdir()
+    plan_dir.mkdir()
     tx_dir.mkdir()
 
-    (compose_dir / "compose.json").write_text(
+    (plan_dir / "plan.json").write_text(
         json.dumps(
-            [
-                {"unit_id": "u0", "start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "hi"},
-                {"unit_id": "u1", "start": 1.0, "end": 2.0, "speaker": "SPEAKER_01", "text": "yo"},
-            ]
+            {
+                "version": 1,
+                "units": [
+                    {"unit_id": "p0000", "start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "hi"},
+                    {"unit_id": "p0001", "start": 1.0, "end": 2.0, "speaker": "SPEAKER_01", "text": "yo"},
+                ],
+            }
         ),
         encoding="utf-8",
     )
@@ -31,7 +34,7 @@ def test_load_cached_translation_attaches_speakers_from_compose(tmp_path: Path) 
             [
                 {
                     "cue_id": "zh_0000",
-                    "unit_id": "u0",
+                    "unit_id": "p0000",
                     "start": 0.0,
                     "end": 1.0,
                     "text": "你好",
@@ -39,7 +42,7 @@ def test_load_cached_translation_attaches_speakers_from_compose(tmp_path: Path) 
                 },
                 {
                     "cue_id": "zh_0001",
-                    "unit_id": "u1",
+                    "unit_id": "p0001",
                     "start": 1.0,
                     "end": 2.0,
                     "text": "嗨",
@@ -54,14 +57,14 @@ def test_load_cached_translation_attaches_speakers_from_compose(tmp_path: Path) 
     assert [c.speaker for c in cues] == ["SPEAKER_00", "SPEAKER_01"]
 
 
-def test_load_cached_translation_attaches_words_from_compose_dir(tmp_path: Path) -> None:
-    compose_dir = tmp_path / "compose"
+def test_load_cached_translation_attaches_words_from_plan_dir(tmp_path: Path) -> None:
+    plan_dir = tmp_path / "plan"
     tx_dir = tmp_path / "translations"
-    compose_dir.mkdir()
+    plan_dir.mkdir()
     tx_dir.mkdir()
 
     seg = Segment(
-        unit_id="mu0001_u0002_0",
+        unit_id="p0000_0",
         start=1.0,
         end=3.5,
         speaker="",
@@ -71,12 +74,12 @@ def test_load_cached_translation_attaches_words_from_compose_dir(tmp_path: Path)
             Word(text="world", start=2.0, end=3.5, confidence=1.0),
         ],
     )
-    save_segment_words([seg], compose_dir)
+    save_segment_words([seg], plan_dir)
 
     raw = [
         {
             "cue_id": "zh_0000",
-            "unit_id": "mu0001_u0002_0",
+            "unit_id": "p0000_0",
             "start": 1.0,
             "end": 3.5,
             "text": "你好世界",
@@ -95,9 +98,9 @@ def test_load_cached_translation_attaches_words_from_compose_dir(tmp_path: Path)
 
 def test_load_cached_translation_ignores_stale_translations_segment_words(tmp_path: Path) -> None:
     """Legacy ``translations/segment_words.json`` must not be used."""
-    compose_dir = tmp_path / "compose"
+    plan_dir = tmp_path / "plan"
     tx_dir = tmp_path / "translations"
-    compose_dir.mkdir()
+    plan_dir.mkdir()
     tx_dir.mkdir()
 
     (tx_dir / "raw.json").write_text(
@@ -125,15 +128,15 @@ def test_load_cached_translation_ignores_stale_translations_segment_words(tmp_pa
 
 
 def test_load_cached_translation_chains_words_for_merged_from(tmp_path: Path) -> None:
-    """Display-merged cues must attach words for head + merged_from units."""
-    compose_dir = tmp_path / "compose"
+    """Cues with merged_from chains attach words for head + absorbed units."""
+    plan_dir = tmp_path / "plan"
     tx_dir = tmp_path / "translations"
-    compose_dir.mkdir()
+    plan_dir.mkdir()
     tx_dir.mkdir()
 
     segments = [
         Segment(
-            unit_id="mu0045_u0046_0_0",
+            unit_id="p0003_0",
             start=1.0,
             end=2.0,
             speaker="",
@@ -141,7 +144,7 @@ def test_load_cached_translation_chains_words_for_merged_from(tmp_path: Path) ->
             words=[Word(text="So", start=1.0, end=1.2, confidence=1.0)],
         ),
         Segment(
-            unit_id="mu0045_u0046_0_1",
+            unit_id="p0003_1",
             start=2.1,
             end=4.0,
             speaker="",
@@ -152,17 +155,17 @@ def test_load_cached_translation_chains_words_for_merged_from(tmp_path: Path) ->
             ],
         ),
     ]
-    save_segment_words(segments, compose_dir)
+    save_segment_words(segments, plan_dir)
 
     raw = [
         {
             "cue_id": "zh_0000",
-            "unit_id": "mu0045_u0046_0_0",
+            "unit_id": "p0003_0",
             "start": 1.0,
             "end": 4.0,
             "text": "所以在幽默的背后，是一种尽可能贴近宇宙真理的追求。",
             "lang": "zh",
-            "merged_from": ["mu0045_u0046_0_1"],
+            "merged_from": ["p0003_1"],
         }
     ]
     (tx_dir / "raw.json").write_text(json.dumps(raw), encoding="utf-8")

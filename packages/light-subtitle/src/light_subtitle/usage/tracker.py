@@ -16,7 +16,7 @@ STEP_USAGE_ARTIFACTS: dict[str, str] = {
     "correct": "transcript_correct/usage.json",
     "punct": "punct_restore/usage.json",
     "context": "context/usage.json",
-    "translate.compose_split": "compose/usage.json",
+    "translate.plan": "plan/usage.json",
     "translate": "translations/usage.json",
     "annotate": "annotations/usage.json",
 }

@@ -27,8 +27,8 @@ from .pipeline.translate.translate import run as translate_live
 from .state_hydrate import (
     hydrate_asr_audio,
     hydrate_asr_words,
-    hydrate_compose_segments,
     hydrate_partial_cues,
+    hydrate_plan_segments,
     hydrate_segments_from_disk,
     hydrate_subtitle_export,
     hydrate_transcript_words,
@@ -85,8 +85,8 @@ def _tx_dir(config: SubtitleConfig) -> Path:
     return _out(config) / "translations"
 
 
-def _compose_dir(config: SubtitleConfig) -> Path:
-    return _out(config) / "compose"
+def _plan_dir(config: SubtitleConfig) -> Path:
+    return _out(config) / "plan"
 
 
 def _subtitle_artifact_paths(config: SubtitleConfig) -> tuple[Path, ...]:
@@ -94,11 +94,11 @@ def _subtitle_artifact_paths(config: SubtitleConfig) -> tuple[Path, ...]:
         return (
             _tx_dir(config) / "raw.json",
             _out(config) / "segment" / "segment.json",
-            _compose_dir(config) / "compose.json",
+            _plan_dir(config) / "plan.json",
         )
     return (
         _out(config) / "segment" / "segment.json",
-        _compose_dir(config) / "compose.json",
+        _plan_dir(config) / "plan.json",
     )
 
 
@@ -206,35 +206,36 @@ def _translate_progress_end(orch: Orchestrator) -> None:
     orch._progress("translate", 1.0, f"翻译完成 ({len(orch.state.translated_cues)} 条)")
 
 
-def _compose_progress_start(orch: Orchestrator) -> None:
-    orch._progress("compose", 0.0, "组合翻译单元中...")
+def _plan_progress_start(orch: Orchestrator) -> None:
+    orch._progress("compose", 0.0, "规划字幕边界中...")
 
 
-def _compose_progress_end(orch: Orchestrator) -> None:
+def _plan_progress_end(orch: Orchestrator) -> None:
     orch._progress(
         "compose",
         1.0,
-        f"组合完成 ({len(orch.state.composed_segments)} 个单元)",
+        f"规划完成 ({len(orch.state.composed_segments)} 条 cue)",
     )
 
 
 def _run_translate_compose(orch: Orchestrator) -> None:
-    """Shared compose+split step.
+    """Shared cue-planning step.
 
     Runs for both monolingual English and bilingual runs.  Builds
-    ``orch.state.composed_segments`` from the pause-based ``segments`` and
-    rebuilds ``raw_source_cues`` from those composed units so the English
-    track shares the same ``unit_id`` graph as the translated track.
+    ``orch.state.composed_segments`` from the pause-based ``segments`` via
+    the LLM boundary planner, and rebuilds ``raw_source_cues`` from those
+    planned units so the English track shares the same ``unit_id`` graph
+    as the translated track.
     """
-    compose_dir = _compose_dir(orch.config)
-    compose_dir.mkdir(parents=True, exist_ok=True)
+    plan_dir = _plan_dir(orch.config)
+    plan_dir.mkdir(parents=True, exist_ok=True)
     if not orch.state.composed_segments:
-        orch.state.composed_segments, split_usage = translate_pipeline.compose_and_split(
-            orch.state.segments, orch.config, compose_dir
+        orch.state.composed_segments, plan_usage = translate_pipeline.plan_units(
+            orch.state.segments, orch.config, plan_dir
         )
-        if split_usage:
-            orch.usage_tracker.record("translate.compose_split", split_usage)
-    translate_pipeline.save_segment_words(orch.state.composed_segments, compose_dir)
+        if plan_usage:
+            orch.usage_tracker.record("translate.plan", plan_usage)
+    translate_pipeline.save_segment_words(orch.state.composed_segments, plan_dir)
     orch.state.raw_source_cues = build_source_cues(orch.state.composed_segments, orch.state.source_lang)
 
 
@@ -299,7 +300,7 @@ def _run_translate_save(orch: Orchestrator) -> None:
 
 
 def _hydrate_translate_mid(orch: Orchestrator) -> None:
-    hydrate_compose_segments(orch)
+    hydrate_plan_segments(orch)
     hydrate_partial_cues(orch)
 
 
@@ -451,9 +452,12 @@ def _format_source(orch: Orchestrator) -> list[SubtitleCue]:
 def _format_target(orch: Orchestrator) -> list[SubtitleCue]:
     if not orch.state.translated_cues:
         return []
-    translate_pipeline.attach_words_to_cues(orch.state.translated_cues, _compose_dir(orch.config))
+    translate_pipeline.attach_words_to_cues(orch.state.translated_cues, _plan_dir(orch.config))
     orch.config.transcript_words = orch.state.words
-    formatted = subtitle.run(orch.state.translated_cues, orch.config)
+    compress_usage: dict = {}
+    formatted = subtitle.run(orch.state.translated_cues, orch.config, compress_usage)
+    if compress_usage:
+        orch.usage_tracker.record("subtitle.compress", compress_usage)
     return strip_punct.strip_chinese_punct(formatted)
 
 
@@ -656,24 +660,24 @@ def build_step_definitions(config: SubtitleConfig) -> list[StepDefinition]:
         StepDefinition(
             id=StepId.TRANSLATE_COMPOSE,
             run=_run_translate_compose,
-            artifacts=lambda c: (_out(c) / "segment" / "segment.json", _compose_dir(c) / "compose.json"),
-            progress_start=_compose_progress_start,
-            progress_end=_compose_progress_end,
-            hydrate=hydrate_compose_segments,
+            artifacts=lambda c: (_out(c) / "segment" / "segment.json", _plan_dir(c) / "plan.json"),
+            progress_start=_plan_progress_start,
+            progress_end=_plan_progress_end,
+            hydrate=hydrate_plan_segments,
             enabled=lambda _c: True,
         ),
         StepDefinition(
             id=StepId.TRANSLATE_TRANSLATE,
             run=_run_translate_translate,
-            artifacts=lambda c: (_compose_dir(c) / "compose.json",),
+            artifacts=lambda c: (_plan_dir(c) / "plan.json",),
             progress_start=_translate_progress_start,
-            hydrate=hydrate_compose_segments,
+            hydrate=hydrate_plan_segments,
             enabled=lambda c: bool(c.target_lang and c.llm_api_key),
         ),
         StepDefinition(
             id=StepId.TRANSLATE_RETRY,
             run=_run_translate_retry,
-            artifacts=lambda c: (_compose_dir(c) / "compose.json",),
+            artifacts=lambda c: (_plan_dir(c) / "plan.json",),
             hydrate=_hydrate_translate_mid,
             enabled=lambda c: bool(c.target_lang and c.llm_api_key),
         ),

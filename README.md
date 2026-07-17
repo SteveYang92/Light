@@ -3,7 +3,7 @@
 视频/音频 → 高质量字幕全自动流水线。一条命令完成听写、矫正、断句、翻译与导出；也可通过 Web 界面提交链接、实时查看进度并播放。
 
 ```
-输入 → ASR → 矫正 → 标点 → 断句 → compose+split(共享) → 翻译(可选) → 字幕格式化 → 导出(SRT/VTT/ASS/JSON) → QC
+输入 → ASR → 矫正 → 标点 → 断句 → plan 规划(共享) → 翻译(可选) → 字幕格式化 → 导出(SRT/VTT/ASS/JSON) → QC
 ```
 
 ## 功能与特性
@@ -13,8 +13,8 @@
 - **一键出字幕**：支持本地视频/音频，Web 端支持 YouTube、B站、X 等链接（yt-dlp）
 - **词级时间轴**：WhisperX（默认）或 whisper.cpp + 对齐，为后续断句与 QC 提供精确时间戳
 - **听写后处理**：LLM 转录矫正、标点恢复，减少 ASR 常见错误
-- **智能断句**：按语义与语言规则切分（英语 Netflix 规范、中文 CPS/行宽约束），而非硬切时长
-- **可读性优化**：自动控制每行字数、阅读速度（CPS）、最短/最长显示时长、词边界对齐
+- **智能断句**：LLM 统一规划 cue 边界（看得见时长/阅读速度/行宽全部预算），代码只做硬性检查，不靠词表打分
+- **可读性优化**：自动控制每行字数、阅读速度（CPS，超限自动压缩译文）、最短/最长显示时长、词边界对齐
 
 ### 翻译
 
@@ -414,9 +414,9 @@ output/
 ├── transcript.json               标准化转录（含 word 时间戳，供 QC）
 ├── segment/
 │   └── segment.json              语义断句单元（pause-based 原始分段）
-├── compose/
-│   ├── compose.json              compose+split 翻译单元（单语/双语共享，对齐用 unit_id 图）
-│   └── segment_words.json        组合单元的词级时间戳（resume 重建用）
+├── plan/
+│   ├── plan.json                 LLM 规划的 cue 边界（单语/双语共享，对齐用 unit_id 图）
+│   └── segment_words.json        规划单元的词级时间戳（resume 重建用）
 ├── context/                      翻译上下文（glossary + summary）
 ├── translations/
 │   ├── partial.json              翻译中间结果
