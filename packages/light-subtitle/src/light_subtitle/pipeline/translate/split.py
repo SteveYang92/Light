@@ -57,7 +57,6 @@ _WEAK_BOUNDARY_WORDS = {"like", "now", "well", "okay", "ok"}
 _PREPOSITIONS = {
     "of",
     "in",
-    "to",
     "for",
     "with",
     "on",
