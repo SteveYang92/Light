@@ -48,8 +48,9 @@ def _text_events(events: list[str], style: str) -> list[str]:
     return [e for e in events if f",{style}," in e]
 
 
-def _margin_vs(events: list[str]) -> list[int]:
-    return [int(e.split(",")[7]) for e in events]
+def _pos_ys(events: list[str]) -> list[int]:
+    """Extract the \\pos y of each text event (absolute placement, MarginV unused)."""
+    return [int(re.search(r"\\pos\(-?\d+,(-?\d+)\)", e).group(1)) for e in events]
 
 
 # ── rounded rect path ───────────────────────────────────
@@ -99,13 +100,13 @@ def test_one_box_per_language_and_per_line_text_events() -> None:
     assert len(en_texts) == 1
     assert all(e.startswith("Dialogue: 1,") for e in zh_texts + en_texts)
 
-    # Multi-line ZH: first reading line sits on top, so MarginV descends in
-    # emission order (\an2: larger MarginV = higher on screen).
+    # Multi-line ZH: first reading line sits on top, so \pos y ascends in
+    # emission order (smaller y = higher on screen).
     assert "你好" in zh_texts[0] and "世界" in zh_texts[1]
-    mvs = _margin_vs(zh_texts)
-    assert mvs == sorted(mvs, reverse=True)
+    ys = _pos_ys(zh_texts)
+    assert ys == sorted(ys)
     # ZH block sits above EN block.
-    assert min(_margin_vs(zh_texts)) > max(_margin_vs(en_texts))
+    assert max(_pos_ys(zh_texts)) < min(_pos_ys(en_texts))
 
 
 def test_box_width_wraps_text() -> None:
@@ -142,9 +143,10 @@ def test_zh_only_and_en_only_groups() -> None:
     assert _text_events(en_only, ZH_STYLE_NAME) == []
 
 
-def test_en_bottom_margin_anchors_at_config_margin_v() -> None:
+def test_en_bottom_line_anchors_at_config_margin_v() -> None:
     events = build_bilingual_boxed_events([(None, "bottom line", 0.0, 1.0)], "F", MEASURER, CONFIG)
-    assert _margin_vs(_text_events(events, EN_STYLE_NAME)) == [CONFIG.margin_v]
+    # Bottom line's line-box bottom sits at PLAY_RES_Y - margin_v.
+    assert _pos_ys(_text_events(events, EN_STYLE_NAME)) == [PLAY_RES_Y - CONFIG.margin_v]
     # EN box bottom stays inside the frame.
     path = _box_events(events)[0].split("}", 1)[1]
     ys = [int(y) for y in re.findall(r"-?\d+", path)[1::2]]

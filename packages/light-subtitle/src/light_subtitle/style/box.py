@@ -1,11 +1,13 @@
-"""Rounded background boxes for bilingual ASS subtitles.
+r"""Rounded background boxes for bilingual ASS subtitles.
 
 Geometry is computed in a fixed 1920x1080 PlayRes design space (see
 ``style.config``); libass scales proportionally to the video at render time.
 Each language block (ZH / EN) gets ONE rounded-rect drawing event wrapping all
 its lines (block box, Netflix/Apple style), plus one text Dialogue per visual
 line so vertical placement never depends on libass line-pitch matching the
-measurer's.
+measurer's.  Text events use absolute ``\pos`` rather than margins: renderer-
+level margins (mpv/IINA fullscreen letterbox) only shift margin-positioned
+text, which would detach it from the absolutely-placed box drawings.
 
 Text measurement uses Pillow against the actual font file, so box sizes wrap
 the rendered glyphs (wrap effect).  A measurer with the same duck type can be
@@ -159,7 +161,7 @@ class _LangBlock:
     pad_h: float
     pad_v: float
     radius: int
-    base_margin_v: float = 0.0  # MarginV of the bottom text line
+    base_bottom_y: float = 0.0  # frame y of the bottom line's line-box bottom
     box: tuple[int, int, int, int] = (0, 0, 0, 0)  # x0, y0, x1, y1
 
     def lay_out(self, text_bottom_y: float, measurer: TextMeasurer) -> None:
@@ -167,7 +169,7 @@ class _LangBlock:
         width = max(measurer.line_width(line, self.size) for line in self.lines)
         half = width / 2 + self.pad_h
         # libass bottom-aligns each line's line box (ascender+descender = one
-        # line height) at the line's MarginV; the configured leading only
+        # line height) at the line's \pos y; the configured leading only
         # lives *between* lines, so the block is (n-1) pitches + 1 line
         # height tall — using n * pitch here would leave extra space at the
         # top and the text would sit low inside the box.
@@ -179,7 +181,7 @@ class _LangBlock:
             round(_CENTER_X + half),
             round(y1),
         )
-        self.base_margin_v = PLAY_RES_Y - text_bottom_y
+        self.base_bottom_y = text_bottom_y
 
 
 def _make_block(
@@ -278,9 +280,14 @@ def build_bilingual_boxed_events(
             )
             events.append(f"Dialogue: 0,{start},{end},{BOX_STYLE_NAME},,0,0,0,,{drawing}")
             for k, line in enumerate(block.lines):
-                # First reading line goes on top: with \an2 a larger MarginV
-                # sits higher, and base_margin_v anchors the bottom line.
-                margin_v = round(block.base_margin_v + (len(block.lines) - 1 - k) * block.pitch)
-                events.append(f"Dialogue: 1,{start},{end},{block.style_name},,0,0,{margin_v},,{line}")
+                # Absolute \pos (not MarginV): renderer-level margins, e.g.
+                # mpv/IINA extending the frame into fullscreen letterbox bars,
+                # shift margin-positioned text but not \pos text or drawings —
+                # absolute placement keeps text glued to its box everywhere.
+                # First reading line goes on top (smallest y).
+                y = round(block.base_bottom_y - (len(block.lines) - 1 - k) * block.pitch)
+                events.append(
+                    f"Dialogue: 1,{start},{end},{block.style_name},,0,0,0,,{{\\an2\\pos({_CENTER_X},{y})}}{line}"
+                )
 
     return events
