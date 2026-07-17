@@ -67,7 +67,7 @@ uv sync
 packages/
 ├── light-models/        共享数据契约（Word, Segment, SubtitleCue, is_cjk…）
 ├── light-subtitle/      ASR → 翻译 → 字幕流水线
-├── light-tts/           字幕配音（官方 IndexTTS2 / Qwen3-TTS）
+├── light-tts/           字幕配音（IndexTTS2 官方 / Metal 加速 / Qwen3-TTS）
 │   ├── pipeline/        ASR → correct → punct → segment → translate → subtitle → export
 │   ├── step_registry.py 声明式步骤注册表（StepId + run/hydrate/progress）
 │   ├── step_plan.py     运行时 plan 构建与 resume 解析
@@ -173,17 +173,26 @@ uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video
 
 > 需 `ffmpeg-full`（Homebrew）提供 libass 支持：`brew install ffmpeg-full`
 
-#### light-tts — 字幕配音（官方 IndexTTS2 / Qwen3-TTS）
+#### light-tts — 字幕配音（IndexTTS2 / Qwen3-TTS）
 
 `light-tts` 读取 `translations/raw.json`（LLM 翻译带标点），合成配音轨并混音为 `{slug}_dub.mp4`。
 
-**IndexTTS（推荐，旁白克隆）** — 从 `ref.wav` 零样本克隆，适合长视频单说话人旁白：
+**IndexTTS（推荐，旁白克隆）** — 从 `ref.wav` 零样本克隆，适合长视频单说话人旁白。
+
+| 引擎 | 平台 | 音质 | 速度 | 说明 |
+|------|------|------|------|------|
+| `indextts2`（默认） | MPS / CUDA | **最好** | 较慢 | 官方 PyTorch，支持 `emotion` / `num_beams` |
+| `indextts2_metal` | Apple Silicon | 略逊 | **快** | 原生 `mtts`，迭代/preview 用；定稿建议官方 |
+| `indextts15` | MPS / CUDA | — | 中等 | 24000 Hz，无 emotion 向量 |
+
+参考音放在 `output/<run>/tts/ref.wav`（或 `--ref-audio` / yaml `ref_audio`）。**请用原视频干净旁白片段，不要用 dub 回灌**（易糊、口音飘）。
+
+##### 官方 IndexTTS2 / 1.5
 
 ```bash
 # 一次性：init submodule + 官方 uv 环境 + checkpoints（见 vendor/INDEX-TTS.md）
 ./scripts/setup_indextts_official.sh
 # 可选 v1.5 权重：./scripts/setup_indextts_official.sh --with-v15
-# 准备参考音：output/<run>/tts/ref.wav（或 --ref-audio）
 
 # Preview（前 3 分钟，默认 IndexTTS 2.0）
 uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
@@ -206,14 +215,50 @@ uv run python scripts/indextts_dub_batch.py output/<episode> --merge --mix duck
 # 等价 CLI
 uv run light-tts dub output/<run> --engine indextts2 --lang zh --skip-mix --resume
 uv run light-tts dub output/<run> --engine indextts15 --lang zh --skip-mix --preview
-
-# IndexTTS2 Metal（Apple Silicon，需先起 mtts server — 见 vendor/INDEX-TTS2-METAL.md）
-uv run python scripts/indextts_dub.py output/<run> --engine indextts2_metal --lang zh --skip-mix --preview
 ```
 
-配置见 `packages/light-tts/src/light_tts/assets/indextts.yaml`（run 目录可放 `indextts.yaml` 或旧名 `indextts2.yaml` 覆盖）。默认 `align_mode: turn_retime`：配音按 turn 自然播放，**观看 `video_dub.mp4` 时请加载 `{lang}_dub.srt`**（如 `zh_dub.srt`）；原 `zh.srt` 对应英文字幕时间轴，不保证与中文配音对齐。多说话人时在 yaml 里配置 `speaker_refs`。
+##### IndexTTS2 Metal（Apple Silicon 加速）
 
-已有 segment WAV 时仅重排时间轴与字幕（不重跑 IndexTTS）：
+详见 [vendor/INDEX-TTS2-METAL.md](vendor/INDEX-TTS2-METAL.md)。模型与 `mtts` 二进制不进 git，需本地安装：
+
+```bash
+./scripts/setup_indextts2_metal.sh
+
+# 起 server（CFM steps 在启动时设定，改后需重启）
+MIT2_CFM_STEPS=20 vendor/index-tts2-metal/mtts --server \
+  --host 127.0.0.1 --port 3456 \
+  --model_bundle vendor/index-tts2-metal/bin \
+  --voice_store vendor/index-tts2-metal/voices
+
+# Dub / preview（换 ref.wav 后删 tts/metal_voices.json 以重 clone）
+uv run python scripts/indextts_dub.py output/<run> \
+  --engine indextts2_metal --metal-cfm-steps 20 --lang zh --skip-mix --preview
+
+# 整集 batch
+uv run python scripts/indextts_dub_batch.py output/<episode> \
+  --engine indextts2_metal --metal-cfm-steps 20 --skip-mix --resume
+
+# RTF 对比（官方 vs Metal）
+uv run python scripts/indextts2_rtf_compare.py --run-dir output/<run>/.seg1 --cfm-steps 20
+```
+
+`cfm_steps` 常用 **12–25**（默认 16）：越大音质越好、越慢。若 server 已在外部运行，须用 `MIT2_CFM_STEPS` 重启 server；`--metal-cfm-steps` 仅在 Light 自动起 server（`metal_manage_server: true`）时生效。
+
+##### 配置与重排
+
+配置见 `packages/light-tts/src/light_tts/assets/indextts.yaml`（run 目录可放 `indextts.yaml` 覆盖）。常用项：
+
+| 键 | 默认 | 说明 |
+|----|------|------|
+| `engine` | `indextts2` | `indextts2` / `indextts2_metal` / `indextts15` |
+| `align_mode` | `turn_retime` | 自然 turn 播放 + 导出 `{lang}_dub.srt` |
+| `num_beams` | `3` | 官方 2.0 质量（Metal 无效） |
+| `metal_cfm_steps` | `16` | Metal CFM 步数（server 启动时） |
+| `indextts_normalize_rate` | `false` | 按 ~0.22s/字 stretch turn（可开以统一语速，可能略发飘） |
+
+默认 `align_mode: turn_retime`：配音按 turn 自然播放，**观看 `video_dub.mp4` 时请加载 `{lang}_dub.srt`**（如 `zh_dub.srt`）；原 `zh.srt` 对应英文字幕时间轴，不保证与中文配音对齐。turn 间空档保留原字幕 cue 间隔（不会因 TTS 提前结束而放大）。多说话人时在 yaml 里配置 `speaker_refs`。
+
+已有 segment WAV 时仅重排时间轴与字幕（不重跑 TTS）：
 
 ```bash
 uv run python scripts/indextts_dub.py output/<run> --reassemble
