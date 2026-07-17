@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
-from light_subtitle.fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, bilingual_ass_en_font_tag
 from light_subtitle.pack import PackConfig, run_pack
+from light_subtitle.style.fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, bilingual_ass_en_font_tag
 
 BILINGUAL_ASS = (
     "[Script Info]\nScriptType: v4.00+\n\n[V4+ Styles]\n"
@@ -22,7 +22,8 @@ BILINGUAL_ASS = (
 
 
 def test_run_pack_patches_bilingual_ass_font(tmp_path: Path) -> None:
-    """Pack must patch bilingual.ass Fontname from --font before ass= burn."""
+    """Pack burns bilingual.ass as-is — it is self-contained since export
+    (fixed PlayRes, measured boxes), so no font patching temp file is made."""
     (tmp_path / "video.mp4").write_bytes(b"\x00")
     (tmp_path / "bilingual.ass").write_text(BILINGUAL_ASS, encoding="utf-8")
 
@@ -54,8 +55,8 @@ def test_run_pack_patches_bilingual_ass_font(tmp_path: Path) -> None:
 
     assert captured_cmd, "ffmpeg should have been invoked"
     filter_arg = captured_cmd[0][captured_cmd[0].index("-filter_complex") + 1]
-    assert "bilingual.patched.ass" in filter_arg
-    assert "ResolvedFont" not in filter_arg  # font is inside patched file, not filter string
+    assert f"ass={tmp_path / 'bilingual.ass'}" in filter_arg
+    assert "patched" not in filter_arg  # bilingual burns as-is, no patched temp file
 
 
 def test_run_pack_srt_uses_bottom_margin(tmp_path: Path) -> None:

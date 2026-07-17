@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import logger
-from .fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, FontConfig, resolve_font, write_patched_ass
+from .style.fonts import BILINGUAL_ASS_ZH_FONT_SIZE, BILINGUAL_MARGIN_V, FontConfig, resolve_font, write_patched_ass
 
 # ── Constants ───────────────────────────────────────────
 
@@ -101,16 +101,10 @@ def run_pack(config: PackConfig) -> None:
             filters.append(f"ass={patched_annot}")
 
         if sub_kind == "bilingual":
-            patched_sub = temp_dir / "bilingual.patched.ass"
-            write_patched_ass(
-                sub_path,
-                resolved_font,
-                patched_sub,
-                margin_v=BILINGUAL_MARGIN_V,
-                margin_v_styles={"Bilingual"},
-            )
-            filters.append(f"ass={patched_sub}")
-            logger.info(f"  双语 ASS 已应用 --font → {resolved_font}")
+            # bilingual.ass is self-contained since export: fixed PlayRes,
+            # measured rounded boxes, per-line events — burn as-is.  --font
+            # only affects the annotation pass and the SRT fallback.
+            filters.append(f"ass={sub_path}")
         else:
             filters.append(
                 f"subtitles={sub_path}:force_style="
