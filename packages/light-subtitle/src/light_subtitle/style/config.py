@@ -35,10 +35,10 @@ class SubtitleStyleConfig:
     pad_h_scale: float = 0.45
     """Horizontal box padding as a fraction of the language's font size."""
 
-    pad_v_scale: float = 0.18
+    pad_v_scale: float = 0.12
     """Vertical box padding as a fraction of the language's font size."""
 
-    block_gap: int = 6
+    block_gap: int = 2
     """Vertical gap between the ZH box and the EN box."""
 
     zh_font_size: int = 75
@@ -53,7 +53,7 @@ class SubtitleStyleConfig:
     margin_lr: int = 40
     """Left/right safe margins; text wraps at PLAY_RES_X - 2 * margin_lr."""
 
-    line_spacing: float = 1.25
+    line_spacing: float = 1.12
     """Multiplier on the font's line height (ASS Fontsize) when stacking lines."""
 
     extra: dict[str, Any] = field(default_factory=dict)
