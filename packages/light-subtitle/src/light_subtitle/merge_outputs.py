@@ -756,23 +756,29 @@ def _dedup_annotation_terms(cues: list[tuple]) -> list[tuple]:
     return deduped
 
 
-def _dedup_bilingual_ass_overlaps(
-    events: list[tuple[float, float, str, list[str]]],
-) -> list[tuple[float, float, str, list[str]]]:
-    """Remove adjacent overlapping ASS Dialogue events (main subtitle stream).
+_BilingualGroup = tuple[float, float, list[list[str]]]
 
-    Mirrors ``_dedup_srt_overlaps``: when two adjacent events overlap (prev.end
-    > cur.start + tol), keep the later one — bilingual main cues from
-    overlapping segments should not double-display.
+
+def _dedup_bilingual_ass_overlaps(groups: list[_BilingualGroup]) -> list[_BilingualGroup]:
+    """Remove adjacent overlapping bilingual cue groups (main subtitle stream).
+
+    Mirrors ``_dedup_srt_overlaps``: when two adjacent cue groups overlap
+    (prev.end > cur.start + tol), keep the later one — bilingual main cues
+    from overlapping segments should not double-display.
+
+    Operates on whole cue groups (box + text events sharing one start/end),
+    never on individual Dialogue events: event-level dedup would treat the
+    box/EN/ZH events of a single cue as overlapping duplicates and strip all
+    but the last one.
     """
-    if len(events) < 2:
-        return events
-    deduped: list[tuple[float, float, str, list[str]]] = [events[0]]
-    for event in events[1:]:
-        if deduped[-1][1] > event[0] + 0.001:
-            deduped[-1] = event
+    if len(groups) < 2:
+        return groups
+    deduped: list[_BilingualGroup] = [groups[0]]
+    for group in groups[1:]:
+        if deduped[-1][1] > group[0] + 0.001:
+            deduped[-1] = group
         else:
-            deduped.append(event)
+            deduped.append(group)
     return deduped
 
 
@@ -791,6 +797,10 @@ def _merge_bilingual_ass(
     boundary filtering like the SRT/VTT mergers, and overlap dedup via
     ``_dedup_bilingual_ass_overlaps`` (keep later cue on overlap) rather than
     annotation term dedup.
+
+    One display cue spans several Dialogue events with identical start/end
+    (rounded-box drawing + text per language), so consecutive events sharing
+    one time range within a segment are grouped and survive dedup together.
     """
     has_any = any((seg / "bilingual.ass").exists() for seg in seg_dirs)
     if not has_any:
@@ -798,7 +808,7 @@ def _merge_bilingual_ass(
 
     N = len(seg_dirs)
     header_lines: list[str] = []
-    all_events: list[tuple[float, float, str, list[str]]] = []
+    all_groups: list[_BilingualGroup] = []
     in_header = True
 
     for k, seg in enumerate(seg_dirs):
@@ -807,6 +817,7 @@ def _merge_bilingual_ass(
             continue
         offset = offsets[k]
         seg_dur = durations[k]
+        current_key: tuple[float, float] | None = None
         for line in ass_path.read_text(encoding="utf-8").splitlines(keepends=True):
             if not line.startswith("Dialogue:"):
                 if in_header:
@@ -818,9 +829,11 @@ def _merge_bilingual_ass(
                 continue
             try:
                 start = _ass_to_seconds(fields[1])
+                end = _ass_to_seconds(fields[2])
             except ValueError:
                 continue
             global_start = start + offset
+            global_end = end + offset
             if split_points and N == len(split_points) - 1:
                 if k > 0 and global_start < split_points[k] - _EPS:
                     continue
@@ -831,21 +844,25 @@ def _merge_bilingual_ass(
                     continue
                 if k < N - 1 and start > seg_dur - 12:
                     continue
-            end = _ass_to_seconds(fields[2]) + offset
             fields[1] = _seconds_to_ass(global_start)
-            fields[2] = _seconds_to_ass(end)
-            all_events.append((global_start, end, fields[9], fields))
+            fields[2] = _seconds_to_ass(global_end)
+            key = (global_start, global_end)
+            if key == current_key and all_groups:
+                all_groups[-1][2].append(fields)
+            else:
+                all_groups.append((global_start, global_end, [fields]))
+                current_key = key
 
-    if not all_events:
+    if not all_groups:
         return
 
-    all_events.sort(key=lambda e: e[0])
-    all_events = _dedup_bilingual_ass_overlaps(all_events)
-    event_lines = [",".join(fields) + "\n" for _, _, _, fields in all_events]
+    all_groups.sort(key=lambda g: (g[0], g[1]))
+    all_groups = _dedup_bilingual_ass_overlaps(all_groups)
+    event_lines = [",".join(fields) + "\n" for _, _, group in all_groups for fields in group]
 
     out = output_dir / f"{slug}.bilingual.ass"
     out.write_text("".join(header_lines + event_lines), encoding="utf-8")
-    print(f"  Merged bilingual.ass: {len(event_lines)} cues → {out.name}", file=sys.stderr)
+    print(f"  Merged bilingual.ass: {len(all_groups)} cues → {out.name}", file=sys.stderr)
 
 
 def _merge_bilingual_vtt(
