@@ -41,11 +41,11 @@ class SubtitleStyleConfig:
     block_gap: int = 2
     """Vertical gap between the ZH box and the EN box."""
 
-    zh_font_size: int = 75
-    """ZH font size (equivalent to legacy 20 at the libass default 288 PlayRes)."""
+    zh_font_size: int = 65
+    """ZH font size in 1080p PlayRes pixels."""
 
-    en_font_size: int = 45
-    """EN font size (equivalent to legacy 12 at the libass default 288 PlayRes)."""
+    en_font_size: int = 39
+    """EN font size in 1080p PlayRes pixels."""
 
     margin_v: int = 75
     """Bottom margin of the EN text block."""

@@ -151,13 +151,13 @@ box_enabled: true
 bg_opacity: 0.70          # 盒不透明度
 corner_radius_scale: 0.25 # 圆角 = 0.25 × 行高
 pad_h_scale: 0.45         # 横向内边距 = 0.45 × 字号
-pad_v_scale: 0.18         # 纵向内边距 = 0.18 × 字号
-block_gap: 6              # 中英文盒间距（1080p 像素）
-zh_font_size: 75
-en_font_size: 45
+pad_v_scale: 0.12         # 纵向内边距 = 0.12 × 字号
+block_gap: 2              # 中英文盒间距（1080p 像素）
+zh_font_size: 65
+en_font_size: 39
 margin_v: 75
 margin_lr: 40             # 左右安全边距，触发折行的最大行宽
-line_spacing: 1.25        # 多行堆叠行距（× 行高）
+line_spacing: 1.12        # 多行堆叠行距（× 行高）
 ```
 
 #### pack — 烧录字幕到视频
