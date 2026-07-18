@@ -240,7 +240,7 @@ def test_run_splits_overlong_group_at_word_level(tmp_path: Path) -> None:
         patch("light_subtitle.pipeline.plan.planner.plan_groups", return_value=([[0, 1]], None)),
         patch("light_subtitle.pipeline.plan.planner.split_span", return_value=([(0, 5), (5, 10)], None)),
     ):
-        units, _ = plan_module.run(segs, _config(), tmp_path)
+        units, _ = plan_module.run(segs, _config(llm_api_key="fake"), tmp_path)
 
     assert [u.unit_id for u in units] == ["p0000_0", "p0000_1"]
     assert units[0].start == 0.0 and units[0].end == 4.9
@@ -255,7 +255,7 @@ def test_run_overlong_falls_back_to_gap_split(tmp_path: Path) -> None:
         patch("light_subtitle.pipeline.plan.planner.plan_groups", return_value=([[0, 1]], None)),
         patch("light_subtitle.pipeline.plan.planner.split_span", return_value=(None, None)),
     ):
-        units, _ = plan_module.run(segs, _config(max_duration=3.0), tmp_path)
+        units, _ = plan_module.run(segs, _config(max_duration=3.0, llm_api_key="fake"), tmp_path)
     assert len(units) >= 3  # 9.9s split into ≤3s parts at silence gaps
 
 

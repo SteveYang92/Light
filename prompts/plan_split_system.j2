@@ -9,7 +9,7 @@ A JSON object:
 
 ## Task
 
-Choose break points so every resulting part (last end − first start) is within "max_duration". A break is expressed as the word index AFTER which to cut: {"after": 23} means part one ends at word 23 and the next part starts at word 24.
+Choose break points so every resulting part (last end − first start) fits within "max_duration" ({{ max_duration }}s). The validator tolerates up to {{ soft_max_duration }}s — if no clean boundary exists within {{ max_duration }}s, prefer a slightly longer part over a stub cue or an unnatural mid-phrase cut. A break is expressed as the word index AFTER which to cut: {"after": 23} means part one ends at word 23 and the next part starts at word 24.
 
 ## Boundary quality
 

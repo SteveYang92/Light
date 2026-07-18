@@ -18,10 +18,10 @@ Decide cue boundaries by grouping CONSECUTIVE fragment ids. Every fragment id mu
 
 ## Budgets
 
-1. Each cue's audio duration (last end − first start) should be 1.0–5.0 s. Never exceed {{ max_duration }} s when a reasonable boundary exists.
+1. Each cue's audio duration (last end − first start) should be {{ min_duration }}–{{ max_duration }} s. Never exceed {{ max_duration }} s when a reasonable boundary exists.
 2. A cue translates to roughly 8 target-language characters per second of audio; keep a cue under ~48 such characters (two display lines). Prefer one more cue over one unreadably dense cue.
 3. A cue must never mix fragments with different non-empty "speaker" labels.
-4. If one sentence exceeds the duration budget and no good fragment boundary exists inside it, keep it as one cue anyway — a later step will split it at the word level.
+4. If a <em>single</em> fragment (not a group) already exceeds the duration budget on its own, keep it as one cue — a later step will split it at the word level.  But when a group contains more than one fragment, <em>never</em> let its total duration exceed the budget — always split at an existing fragment boundary instead.
 
 ## Boundary quality
 
