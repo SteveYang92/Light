@@ -1,0 +1,96 @@
+{
+  "baseline_run_id": "20260718T011719",
+  "current_run_id": "20260718T153903",
+  "errors_delta": 1,
+  "warnings_delta": 0,
+  "suggestions_delta": -3,
+  "rule_changes": [
+    {
+      "rule": "TranscriptionCoverage",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    {
+      "rule": "ReadingSpeed",
+      "before": 3,
+      "after": 4,
+      "delta": 1
+    },
+    {
+      "rule": "WordGapAnomaly",
+      "before": 33,
+      "after": 30,
+      "delta": -3
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 26,
+      "time": "00:01:21,920",
+      "detail": "阅读速度 26.9 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 66,
+      "time": "00:03:39,883",
+      "detail": "入点偏离首个词语 0.286s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:03:40,169"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:04:52,077",
+      "detail": "转录词 ' of' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 1,
+      "time": "00:00:01,650",
+      "detail": "词 ' a' 与 ' controversial' 之间间隔 0.400s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 6,
+      "time": "00:00:17,875",
+      "detail": "词 ' language' 与 ' and' 之间间隔 0.400s，远超中位数 0.070s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 12,
+      "time": "00:00:38,313",
+      "detail": "词 ' output' 与 ' Y' 之间间隔 0.420s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    }
+  ],
+  "degraded": true,
+  "reasons": [
+    "Strict rule 'ReadingSpeed' degraded: 3 → 4",
+    "2 new issues introduced"
+  ]
+}

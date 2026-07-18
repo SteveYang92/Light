@@ -120,3 +120,21 @@ def test_pace_skips_compression_without_target_lang() -> None:
     with patch("light_subtitle.pipeline.subtitle.pace.compress.compress_over_cps") as m:
         pace.correct(cues, config)
     assert not m.called
+
+
+def test_fix_cue_duration_bounded_exemption_for_merged() -> None:
+    from light_subtitle.pipeline.subtitle.pace import _fix_cue_duration
+
+    merged = _cue("合并后的较长字幕", 0.0, 6.6)
+    merged.merged_from = ["p2"]
+    out = _fix_cue_duration(merged, _config(max_duration=5.0))
+    assert out[0].end == 6.6  # within ×1.5 bound → untouched
+
+    over = _cue("更长的字幕", 0.0, 8.0)
+    over.merged_from = ["p2"]
+    out = _fix_cue_duration(over, _config(max_duration=5.0))
+    assert out[0].end == 7.5  # hard-capped at ×1.5
+
+    plain = _cue("普通字幕", 0.0, 6.6)
+    out = _fix_cue_duration(plain, _config(max_duration=5.0))
+    assert out[0].end == 5.0  # plain cues still capped at max_duration

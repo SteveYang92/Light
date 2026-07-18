@@ -112,7 +112,9 @@ def _save_translation_artifacts(
 
 
 def _segment_words_path(plan_dir: Path) -> Path:
-    return plan_dir / "segment_words.json"
+    """Word timing file, preferring the joined graph when a join pass ran."""
+    joined = plan_dir / "segment_words.joined.json"
+    return joined if joined.exists() else plan_dir / "segment_words.json"
 
 
 def _words_from_unit_chain(unit_ids: list[str], seg_words_map: dict[str, list[dict]]) -> list[Word]:
@@ -125,13 +127,16 @@ def _words_from_unit_chain(unit_ids: list[str], seg_words_map: dict[str, list[di
     return words
 
 
-def _attach_words_to_cues(cues: list[SubtitleCue], plan_dir: Path) -> None:
-    """Re-attach word timing from ``plan/segment_words.json``.
+def _attach_words_to_cues(cues: list[SubtitleCue], plan_dir: Path, *, prefer_joined: bool = True) -> None:
+    """Re-attach word timing from ``plan/segment_words[.joined].json``.
 
     Uses ``unit_id`` plus ``merged_from`` (in chain order) so cues that
-    absorbed other units get the full ASR span, not just the head unit.
+    absorbed other units get the full ASR span.  ``prefer_joined`` reads
+    the joined graph when present (post-join resumes); the join pass
+    itself must attach from the original graph (``prefer_joined=False``)
+    because its 1:1 cues still reference the original unit ids.
     """
-    seg_words_path = _segment_words_path(plan_dir)
+    seg_words_path = _segment_words_path(plan_dir) if prefer_joined else plan_dir / "segment_words.json"
     if not seg_words_path.exists():
         return
     with open(seg_words_path, encoding="utf-8") as f:
@@ -144,8 +149,10 @@ def _attach_words_to_cues(cues: list[SubtitleCue], plan_dir: Path) -> None:
 
 
 def _attach_speakers_from_plan(cues: list[SubtitleCue], plan_dir: Path) -> None:
-    """Fill empty cue speakers from ``plan/plan.json`` metadata on resume."""
-    plan_path = plan_dir / "plan.json"
+    """Fill empty cue speakers from plan metadata on resume (joined graph preferred)."""
+    plan_path = plan_dir / "plan.joined.json"
+    if not plan_path.exists():
+        plan_path = plan_dir / "plan.json"
     if not plan_path.exists():
         return
     with open(plan_path, encoding="utf-8") as f:
@@ -372,6 +379,11 @@ def _find_timestamp_mismatches(
         if abs(c.start - seg.start) > tolerance:
             suspect_ids.add(c.unit_id)
     return suspect_ids
+
+
+def attach_words_original(cues: list[SubtitleCue], plan_dir: Path) -> None:
+    """Attach word timing from the ORIGINAL (pre-join) graph — join pass input."""
+    _attach_words_to_cues(cues, plan_dir, prefer_joined=False)
 
 
 # ── Public step helpers (used by step_registry) ───────────────────────────────

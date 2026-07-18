@@ -197,13 +197,18 @@ def _fix_cue_duration(cue, config):
     """Enforce min/max duration constraints.
 
     - Too-short cues: stretch to min_duration.
-    - Overlong cues: cap end time to start + max_duration.
+    - Overlong cues: cap end time to start + max_duration.  Join-merged
+      cues (``merged_from`` non-empty) get the same bounded headroom the
+      join pass was validated against (max_duration × 1.5) — still a hard
+      cap, not an exemption.
     """
     duration = cue.end - cue.start
     if duration < config.min_duration - 0.001:
         cue.end = cue.start + config.min_duration
-    elif duration > config.max_duration:
-        cue.end = cue.start + config.max_duration
+    else:
+        max_dur = config.max_duration * 1.5 if cue.merged_from else config.max_duration
+        if duration > max_dur:
+            cue.end = cue.start + max_dur
     return [cue]
 
 
@@ -249,8 +254,10 @@ def _enforce_cps_ceiling(cues, config):
         needed = chars / limit
         shortage = needed - duration
 
-        # Cap shortage so CPS extension never pulls duration past max_duration.
-        shortage = min(shortage, max(0, config.max_duration - duration))
+        # Cap shortage so CPS extension never pulls duration past the cue's
+        # duration bound (max_duration, or ×1.5 for join-merged cues).
+        dur_cap = config.max_duration * 1.5 if cue.merged_from else config.max_duration
+        shortage = min(shortage, max(0, dur_cap - duration))
 
         if shortage <= 0:
             result.append(cue)

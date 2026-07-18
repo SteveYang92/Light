@@ -23,6 +23,7 @@ from ...usage.tracker import merge_token_usage
 _MAX_ATTEMPTS = 2  # initial try + one retry with validation feedback
 _SOFT_MAX_RATIO = 1.15  # tolerance on the duration cap when accepting splits
 _MIN_PART_WORDS = 3  # split parts smaller than this read as stubs (QC TinyCue)
+_MIN_PART_DURATION = 1.0  # seconds; shorter parts are unreadable flash cues
 
 
 # ── Global pass: segment-level grouping ───────────────────
@@ -191,6 +192,8 @@ def _break_problems(breaks: list[int], words: list[Word], max_duration: float) -
         dur = words[e - 1].end - words[s].start
         if dur > max_duration * _SOFT_MAX_RATIO:
             problems.append(f"part words[{s}:{e}] is {dur:.1f}s, over the {max_duration * _SOFT_MAX_RATIO:.1f}s cap")
+        elif dur < _MIN_PART_DURATION and len(ranges) > 1:
+            problems.append(f"part words[{s}:{e}] is {dur:.1f}s, under the {_MIN_PART_DURATION}s minimum")
     return problems
 
 

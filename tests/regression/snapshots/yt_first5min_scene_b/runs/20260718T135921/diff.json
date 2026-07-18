@@ -1,0 +1,80 @@
+{
+  "baseline_run_id": "20260718T011814",
+  "current_run_id": "20260718T135921",
+  "errors_delta": 0,
+  "warnings_delta": 1,
+  "suggestions_delta": 0,
+  "rule_changes": [
+    {
+      "rule": "ExitPointPrecision",
+      "before": 6,
+      "after": 8,
+      "delta": 2
+    },
+    {
+      "rule": "EntryPointConfidence",
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    {
+      "rule": "TranslationQuality",
+      "before": 4,
+      "after": 2,
+      "delta": -2
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 28,
+      "time": "00:01:36,311",
+      "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 11,
+      "time": "00:00:34,311",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.018s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 27,
+      "time": "00:01:31,566",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 46,
+      "time": "00:02:51,494",
+      "detail": "包含填充词 '那个'，建议省略",
+      "fix": "删除填充词，保持字幕简洁"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "TranslationQuality",
+      "cue_id": 48,
+      "time": "00:03:00,241",
+      "detail": "翻译腔：'然而' → 建议使用 '但' / '不过'",
+      "fix": "使用更自然的中文口语表达"
+    }
+  ],
+  "degraded": false,
+  "reasons": [
+    "3 new issues introduced"
+  ]
+}

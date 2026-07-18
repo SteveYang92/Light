@@ -17,6 +17,9 @@ _MERGE_GAP_MAX = 3.0  # seconds
 # Split parts smaller than this read as stubs on screen (QC TinyCue).
 _MIN_PART_WORDS = 3
 
+# Split parts shorter than this are unreadable flash cues.
+_MIN_PART_DURATION = 1.0  # seconds
+
 
 def merge_fragments(segments: list[Segment]) -> list[list[int]]:
     """Group consecutive segment indices into sentence-complete groups.
@@ -60,11 +63,11 @@ def split_at_gaps(words: list[Word], max_duration: float) -> list[tuple[int, int
 
 
 def _merge_stub_parts(parts: list[tuple[int, int]], words: list[Word]) -> list[tuple[int, int]]:
-    """Fold parts with fewer than ``_MIN_PART_WORDS`` words back into the
-    cheaper neighbour — a small duration overflow beats a stub cue."""
+    """Fold stub parts (few words or flash duration) back into the cheaper
+    neighbour — a small duration overflow beats a stub cue."""
     merged = list(parts)
     while len(merged) > 1:
-        stub = next((i for i, (s, e) in enumerate(merged) if e - s < _MIN_PART_WORDS), None)
+        stub = next((i for i, (s, e) in enumerate(merged) if _is_stub(s, e, words)), None)
         if stub is None:
             break
         if stub == 0:
@@ -84,6 +87,10 @@ def _merge_stub_parts(parts: list[tuple[int, int]], words: list[Word]) -> list[t
             continue
         del merged[stub]
     return merged
+
+
+def _is_stub(s: int, e: int, words: list[Word]) -> bool:
+    return e - s < _MIN_PART_WORDS or words[e - 1].end - words[s].start < _MIN_PART_DURATION
 
 
 def _best_cut(words: list[Word], start: int, end: int) -> int:

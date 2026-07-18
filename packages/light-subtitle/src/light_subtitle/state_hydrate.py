@@ -14,6 +14,7 @@ from .language import detect_source_lang
 from .pipeline import context_prep as context_prep_pipeline
 from .pipeline import translate as translate_pipeline
 from .pipeline.asr.artifacts import audio_wav_path, load_asr_words
+from .pipeline.translate.join import load_joined_units
 
 if TYPE_CHECKING:
     from .orchestrator import Orchestrator
@@ -91,15 +92,17 @@ def hydrate_context_from_cache(orch: Orchestrator) -> None:
 def hydrate_plan_segments(orch: Orchestrator) -> None:
     """Hydrate planned units and rebuild ``raw_source_cues`` from them.
 
-    Reads ``plan/plan.json`` (re-running the planner if absent) and
-    ``plan/segment_words.json`` for word-level timing.  The English
-    source cues are rebuilt from planned units so the EN track shares the
-    same ``unit_id`` graph as the translated track.
+    Reads ``plan/plan.joined.json`` when a join pass already ran (else
+    ``plan/plan.json``, re-running the planner if absent) plus word-level
+    timing.  The English source cues are rebuilt from planned units so
+    the EN track shares the same ``unit_id`` graph as the translated track.
     """
     hydrate_segments_from_disk(orch)
     hydrate_context_from_cache(orch)
     plan_dir = _out(orch.config) / "plan"
-    orch.state.composed_segments = translate_pipeline.load_plan_segments(plan_dir, orch.state.segments, orch.config)
+    orch.state.composed_segments = load_joined_units(plan_dir) or translate_pipeline.load_plan_segments(
+        plan_dir, orch.state.segments, orch.config
+    )
     _attach_segment_words(orch.state.composed_segments, plan_dir)
     orch.state.raw_source_cues = build_source_cues(orch.state.composed_segments, orch.state.source_lang)
 
@@ -107,12 +110,14 @@ def hydrate_plan_segments(orch: Orchestrator) -> None:
 def _attach_segment_words(segments: list[Segment], plan_dir: Path) -> None:
     """Re-attach word timing from ``segment_words.json`` to planned units.
 
-    ``load_plan_segments`` rebuilds ``Segment`` objects from
-    ``plan.json`` with ``words=[]``; this refills words so pace can do
+    ``load_plan_segments``/``load_joined_units`` rebuild ``Segment``
+    objects with ``words=[]``; this refills words so pace can do
     word-boundary alignment.  Mirrors the logic in
     ``translate.load_cached_translation``.
     """
-    seg_words_path = plan_dir / "segment_words.json"
+    seg_words_path = plan_dir / "segment_words.joined.json"
+    if not seg_words_path.exists():
+        seg_words_path = plan_dir / "segment_words.json"
     if not seg_words_path.exists():
         return
     with open(seg_words_path, encoding="utf-8") as f:

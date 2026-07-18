@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from light_models import SubtitleCue
+from light_models import SubtitleCue, Word
 
 from . import logger
 from .config import AsrEngine, SubtitleConfig
@@ -23,6 +24,7 @@ from .pipeline.asr import align, diarize, extract_audio, transcribe, whisperx
 from .pipeline.asr.artifacts import asr_words_path, audio_wav_path, save_asr_words, save_whisper_cpp_raw
 from .pipeline.punct_restore import restore_punctuation
 from .pipeline.transcript_correct import correct_transcript
+from .pipeline.translate.join import join_cues, save_joined_units
 from .pipeline.translate.translate import run as translate_live
 from .state_hydrate import (
     hydrate_asr_audio,
@@ -58,6 +60,7 @@ class StepId(StrEnum):
     TRANSLATE_TRANSLATE = "translate.translate"
     TRANSLATE_RETRY = "translate.retry"
     TRANSLATE_EVALUATE = "translate.evaluate"
+    TRANSLATE_JOIN = "translate.join"
     TRANSLATE_SAVE = "translate.save"
     ANNOTATE = "annotate"
     SUBTITLE = "subtitle"
@@ -283,6 +286,43 @@ def _run_translate_evaluate(orch: Orchestrator) -> None:
         orch.usage_tracker.record_breakdown(eval_breakdown)
         for step_usage in eval_breakdown.values():
             merge_token_usage(orch.tx_ctx.usage, step_usage)
+    _sync_translate_state(orch)
+
+
+def _load_original_plan_units(orch: Orchestrator, plan_dir: Path) -> list:
+    """Load the planner's ORIGINAL unit graph (plan.json + original word timing).
+
+    The join pass must start from the un-joined graph: its input cues are
+    1:1 with the original unit ids, and re-runs stay idempotent even when
+    a previous join already wrote plan.joined.json.
+    """
+    units = translate_pipeline.load_plan_segments(plan_dir, orch.state.segments, orch.config)
+    words_path = plan_dir / "segment_words.json"
+    if words_path.exists():
+        with open(words_path, encoding="utf-8") as f:
+            words_map = json.load(f)
+        for u in units:
+            word_dicts = words_map.get(u.unit_id)
+            if word_dicts:
+                u.words = [Word(**w) for w in word_dicts]
+    return units
+
+
+def _run_translate_join(orch: Orchestrator) -> None:
+    """Join pass: LLM repairs dangling/flash translated cues (merge/shift)."""
+    if not _ensure_translate_ready(orch):
+        return
+    plan_dir = _plan_dir(orch.config)
+    # Partial cues carry no words; attach EN timing from the ORIGINAL
+    # graph (their unit ids predate any previous join run).
+    translate_pipeline.attach_words_original(orch.tx_ctx.translated_cues, plan_dir)
+    result = join_cues(orch.tx_ctx.translated_cues, _load_original_plan_units(orch, plan_dir), orch.config)
+    orch.tx_ctx.translated_cues = result.cues
+    orch.state.composed_segments = result.units
+    save_joined_units(result.units, plan_dir)
+    if result.usage:
+        orch.tx_ctx.usage_breakdown["translate.join"] = dict(result.usage)
+        orch.usage_tracker.record("translate.join", result.usage)
     _sync_translate_state(orch)
 
 
@@ -687,6 +727,13 @@ def build_step_definitions(config: SubtitleConfig) -> list[StepDefinition]:
             artifacts=lambda c: (_tx_dir(c) / "partial.json",),
             hydrate=_hydrate_translate_mid,
             enabled=lambda c: bool(c.target_lang and c.llm_api_key and c.evaluate_enabled),
+        ),
+        StepDefinition(
+            id=StepId.TRANSLATE_JOIN,
+            run=_run_translate_join,
+            artifacts=lambda c: (_tx_dir(c) / "partial.json",),
+            hydrate=_hydrate_translate_mid,
+            enabled=lambda c: bool(c.target_lang and c.llm_api_key),
         ),
         StepDefinition(
             id=StepId.TRANSLATE_SAVE,

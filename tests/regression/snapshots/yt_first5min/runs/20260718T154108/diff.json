@@ -1,0 +1,143 @@
+{
+  "baseline_run_id": "20260718T011719",
+  "current_run_id": "20260718T154108",
+  "errors_delta": 1,
+  "warnings_delta": 4,
+  "suggestions_delta": 1,
+  "rule_changes": [
+    {
+      "rule": "ExitPointPrecision",
+      "before": 16,
+      "after": 18,
+      "delta": 2
+    },
+    {
+      "rule": "WordGapAnomaly",
+      "before": 33,
+      "after": 32,
+      "delta": -1
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 1,
+      "after": 4,
+      "delta": 3
+    },
+    {
+      "rule": "MaxDuration",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    {
+      "rule": "TranscriptionCoverage",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "EntryPointConfidence",
+      "before": 1,
+      "after": 3,
+      "delta": 2
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 88,
+      "time": "00:04:46,434",
+      "detail": "阅读 padding 1.081s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 11,
+      "time": "00:00:34,311",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.020s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 84,
+      "time": "00:04:34,114",
+      "detail": "入点偏离首个词语 0.311s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:04:34,425"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 85,
+      "time": "00:04:36,319",
+      "detail": "入点偏离首个词语 0.887s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:04:37,206"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 67,
+      "time": "00:03:39,883",
+      "detail": "入点偏离首个词语 0.286s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:03:40,169"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 29,
+      "time": "00:01:28,909",
+      "detail": "入点首个词 ' they're' 置信度 0.33，后续词峰值 0.87（差 0.54）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 32,
+      "time": "00:01:36,416",
+      "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 88,
+      "time": "00:04:46,434",
+      "detail": "字幕时长 6.86s，超过最大 6.0s",
+      "fix": "将字幕拆分为多条"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:04:52,077",
+      "detail": "转录词 ' of' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 1,
+      "time": "00:00:01,650",
+      "detail": "词 ' a' 与 ' controversial' 之间间隔 0.400s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    }
+  ],
+  "degraded": false,
+  "reasons": [
+    "8 new issues introduced"
+  ]
+}
