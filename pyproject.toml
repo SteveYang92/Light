@@ -54,6 +54,7 @@ tts-mlx = [
 [tool.ruff]
 line-length = 120
 target-version = "py312"
+extend-exclude = ["vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "C4"]

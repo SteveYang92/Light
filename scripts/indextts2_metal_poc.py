@@ -112,9 +112,7 @@ def http_post_multipart(
         parts.append(b"\r\n")
     for name, (filename, content, content_type) in files.items():
         parts.append(f"--{boundary}\r\n".encode())
-        parts.append(
-            f'Content-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'.encode()
-        )
+        parts.append(f'Content-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'.encode())
         parts.append(f"Content-Type: {content_type}\r\n\r\n".encode())
         parts.append(content)
         parts.append(b"\r\n")

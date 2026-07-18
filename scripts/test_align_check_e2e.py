@@ -166,9 +166,7 @@ def _run_scenario(scenario: Scenario, config: SubtitleConfig, *, dry_run: bool) 
     all_segments = [_seg(f"u{i:02d}", s) for i, s in enumerate(scenario.sources)]
     batch_len = len(scenario.sources) - scenario.batch_idx
     batch = all_segments[scenario.batch_idx : scenario.batch_idx + batch_len]
-    parsed_texts = {
-        i: scenario.translations[scenario.batch_idx + i] for i in range(batch_len)
-    }
+    parsed_texts = {i: scenario.translations[scenario.batch_idx + i] for i in range(batch_len)}
     sample_indices = align_check._alignment_sample_indices(batch_len)
     payload = align_check._build_align_payload(
         batch,

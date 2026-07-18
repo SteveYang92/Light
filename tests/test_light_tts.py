@@ -68,6 +68,7 @@ def test_merge_speaker_turns_splits_by_qwen_chars() -> None:
     assert all(len(t.text) <= 40 for t in turns)
     assert all(t.text.endswith("。") for t in turns)
 
+
 def test_resolve_cues_path_accepts_directory(tmp_path: Path) -> None:
     run_dir = tmp_path / "my_run"
     run_dir.mkdir()
@@ -496,9 +497,7 @@ def test_normalize_speech_rate_speeds_up_slow_turn() -> None:
 
     sr = 24000
     samples = np.ones(int(3.0 * sr), dtype=np.float32) * 0.1
-    normalized, atempo = normalize_speech_rate(
-        samples, sr, target_duration=2.5, atempo_min=0.88, atempo_max=1.28
-    )
+    normalized, atempo = normalize_speech_rate(samples, sr, target_duration=2.5, atempo_min=0.88, atempo_max=1.28)
     assert atempo == pytest.approx(1.2, abs=0.02)
     assert len(normalized) / sr == pytest.approx(2.5, abs=0.08)
 
@@ -1002,9 +1001,7 @@ def test_turn_retime_preserves_source_gap_when_tts_finishes_early() -> None:
         cue_ids=("b",),
     )
     config = TtsConfig(output_dir=".", speech_offset=0.05, speaker_gap_s=0.08)
-    segment, end = _place_turn_natural(
-        turn, samples, sr, config, prev_end=48.502, prev_turn=prev_turn
-    )
+    segment, end = _place_turn_natural(turn, samples, sr, config, prev_end=48.502, prev_turn=prev_turn)
     source_gap = turn.start - prev_turn.last_cue_end
     assert source_gap == pytest.approx(5.795, abs=0.01)
     assert segment.start == pytest.approx(48.502 + source_gap, abs=0.001)
@@ -1038,9 +1035,7 @@ def test_turn_retime_preserves_short_gap_between_onoda_turns() -> None:
     samples = np.ones(int(11.2 * sr), dtype=np.float32) * 0.2
     config = TtsConfig(output_dir=".", speech_offset=0.05, speaker_gap_s=0.08)
     prev_end = 103.593
-    segment, _ = _place_turn_natural(
-        turn, samples, sr, config, prev_end=prev_end, prev_turn=prev_turn
-    )
+    segment, _ = _place_turn_natural(turn, samples, sr, config, prev_end=prev_end, prev_turn=prev_turn)
     source_gap = turn.start - prev_turn.last_cue_end
     assert source_gap == pytest.approx(2.049, abs=0.01)
     assert segment.start - prev_end == pytest.approx(source_gap, abs=0.001)

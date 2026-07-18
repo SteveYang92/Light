@@ -22,7 +22,13 @@ from .speaker_map import (
     voice_for_cue,
     voice_for_speaker,
 )
-from .sync import compute_subtitle_aligned_start, compute_turn_placed_start, fit_budget, fit_duration, normalize_speech_rate
+from .sync import (
+    compute_subtitle_aligned_start,
+    compute_turn_placed_start,
+    fit_budget,
+    fit_duration,
+    normalize_speech_rate,
+)
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -360,9 +366,7 @@ def synthesize_turns(
 
         align_mode = config.effective_align_mode
         if align_mode == AlignMode.TURN_RETIME and monologue:
-            segment, prev_end = _place_turn_natural(
-                turn, samples, sample_rate, config, prev_end, prev_turn=prev_turn
-            )
+            segment, prev_end = _place_turn_natural(turn, samples, sample_rate, config, prev_end, prev_turn=prev_turn)
             placed.append(segment)
             placed_turns.append(turn)
             stat["final_duration_s"] = round(len(samples) / sample_rate, 3)
@@ -593,9 +597,7 @@ def reassemble_turns_from_segments(
         atempo_max = config.atempo_max_monologue if monologue else config.atempo_max_cross
 
         if align_mode == AlignMode.TURN_RETIME and monologue:
-            segment, prev_end = _place_turn_natural(
-                turn, samples, sr, config, prev_end, prev_turn=prev_turn
-            )
+            segment, prev_end = _place_turn_natural(turn, samples, sr, config, prev_end, prev_turn=prev_turn)
             placed.append(segment)
             placed_turns.append(turn)
             stats.append(
