@@ -24,7 +24,7 @@ from .. import plan as plan_pipeline
 from .context import TranslateContext as TranslateContext
 from .evaluate import evaluate_translations, get_low_score_cues, scores_to_dict
 from .refine import refine_translations
-from .translate import covered_unit_ids, translate_missing
+from .translate import _segment_graph_fingerprint, covered_unit_ids, translate_missing
 from .translate import load_partial_cues as load_partial_cues
 from .translate import run as _translate_live
 
@@ -53,13 +53,30 @@ def _plan_units(
 def load_cached_translation(
     tx_dir: Path,
     config: SubtitleConfig,
+    current_segments: list[Segment] | None = None,
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Load translated cues and usage from cached raw.json / usage.json.
+
+    When *current_segments* is provided, verifies the plan fingerprint
+    against the stored one; returns ``([], None)`` on mismatch so the
+    pipeline falls back to a full re-translation.
 
     If ``plan/segment_words.json`` exists, word timing is re-attached to each
     cue by matching ``unit_id``, enabling word-boundary alignment in the pace step.
     """
     raw_path = tx_dir / "raw.json"
+    if not raw_path.exists():
+        return [], None
+
+    if current_segments is not None:
+        fp_current = _segment_graph_fingerprint(current_segments)
+        fp_path = tx_dir / "fingerprint.json"
+        if fp_path.exists():
+            fp_stored = json.loads(fp_path.read_text(encoding="utf-8")).get("fingerprint")
+            if fp_stored != fp_current:
+                logger.warning("  Cached translation stale (plan changed) — re-translating")
+                return [], None
+
     with open(raw_path) as f:
         raw_data = json.load(f)
     translated_cues = [
@@ -95,8 +112,13 @@ def _save_translation_artifacts(
     usage: dict | None,
     tx_dir: Path,
     breakdown: dict[str, dict] | None = None,
+    segments: list[Segment] | None = None,
 ) -> None:
-    """Save raw.json, source.json, and usage.json artifacts."""
+    """Save raw.json, source.json, and usage.json artifacts.
+
+    When *segments* is provided, also writes a plan fingerprint so resume
+    can detect plan changes and discard stale cached translations.
+    """
     export.export_raw_cues(translated_cues, str(tx_dir / "raw.json"))
     export.export_raw_cues(source_cues, str(tx_dir / "source.json"))
     if usage:
@@ -109,6 +131,9 @@ def _save_translation_artifacts(
             f"completion: {payload.get('completion_tokens', '?')})"
         )
         export.export_json_file(payload, str(tx_dir / "usage.json"))
+    if segments:
+        fp = _segment_graph_fingerprint(segments)
+        (tx_dir / "fingerprint.json").write_text(json.dumps({"fingerprint": fp}), encoding="utf-8")
 
 
 def _segment_words_path(plan_dir: Path) -> Path:
@@ -467,7 +492,14 @@ def run(
 
     # ── Step 4: Save artifacts (final cues) ──────────────────────────
 
-    _save_translation_artifacts(translated_cues, source_cues, usage, tx_dir, breakdown=usage_breakdown or None)
+    _save_translation_artifacts(
+        translated_cues,
+        source_cues,
+        usage,
+        tx_dir,
+        breakdown=usage_breakdown or None,
+        segments=translation_segments,
+    )
 
     return TranslateResult(
         translated_cues=translated_cues,

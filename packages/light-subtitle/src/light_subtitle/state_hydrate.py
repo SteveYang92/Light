@@ -141,7 +141,7 @@ def hydrate_translated_cues(orch: Orchestrator) -> None:
     hydrate_plan_segments(orch)
     tx_dir = _out(orch.config) / "translations"
     orch.state.translated_cues, orch.state.translation_usage = translate_pipeline.load_cached_translation(
-        tx_dir, orch.config
+        tx_dir, orch.config, current_segments=orch.state.composed_segments
     )
 
 

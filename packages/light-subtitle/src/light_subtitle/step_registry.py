@@ -238,6 +238,18 @@ def _run_translate_compose(orch: Orchestrator) -> None:
         )
         if plan_usage:
             orch.usage_tracker.record("translate.plan", plan_usage)
+        # New plan → stale cached data no longer matches the unit graph.
+        tx_dir = _tx_dir(orch.config)
+        for name in ("raw.json", "partial.json", "usage.json"):
+            stale = tx_dir / name
+            if stale.exists():
+                stale.unlink()
+                logger.info(f"  Discarded stale translation cache: {stale.name}")
+        for name in ("segment_words.json", "segment_words.joined.json", "plan.joined.json"):
+            stale = plan_dir / name
+            if stale.exists():
+                stale.unlink()
+                logger.info(f"  Discarded stale plan artifact: {stale.name}")
     translate_pipeline.save_segment_words(orch.state.composed_segments, plan_dir)
     orch.state.raw_source_cues = build_source_cues(orch.state.composed_segments, orch.state.source_lang)
 
@@ -335,6 +347,7 @@ def _run_translate_save(orch: Orchestrator) -> None:
         orch.tx_ctx.usage,
         _tx_dir(orch.config),
         breakdown=orch.tx_ctx.usage_breakdown or None,
+        segments=orch.state.composed_segments,
     )
     _sync_translate_state(orch)
 
