@@ -333,3 +333,52 @@ class TestStreamEndpoint:
         assert resp.status_code == 206
         assert len(resp.content) == 10
         assert resp.headers.get("content-type") == "audio/mpeg"
+
+
+# ── SSE structured reporter ─────────────────────────────
+
+
+class TestSseReporter:
+    def test_segment_maps_to_one_based_chunk(self) -> None:
+        from unittest.mock import patch
+
+        from light_backend.services.pipeline import _SseReporter
+        from light_subtitle.reporting import ProgressEvent, SegmentRef, StageStatus
+
+        emitted: list[tuple] = []
+        with patch(
+            "light_backend.services.pipeline._emit",
+            side_effect=lambda *a, **k: emitted.append((*a, k.get("chunk"), k.get("total_chunks"))),
+        ):
+            reporter = _SseReporter("video-1")
+            reporter.emit(
+                ProgressEvent(
+                    stage="asr",
+                    status=StageStatus.started,
+                    progress=0.0,
+                    message="提取音频中...",
+                    segment=SegmentRef(index=1, total=5, tag="seg2"),
+                )
+            )
+            # Run-level event (segment=None) → no chunk fields.
+            reporter.emit(
+                ProgressEvent(
+                    stage="merge", status=StageStatus.finished, progress=1.0, message="合并完成", segment=None
+                )
+            )
+
+        assert emitted == [
+            ("video-1", "asr", 0.0, "提取音频中...", 2, 5),
+            ("video-1", "merge", 1.0, "合并完成", None, None),
+        ]
+
+    def test_run_events_dropped(self) -> None:
+        from unittest.mock import patch
+
+        from light_backend.services.pipeline import _SseReporter
+        from light_subtitle.reporting import RunEvent, RunKind
+
+        emitted: list[tuple] = []
+        with patch("light_backend.services.pipeline._emit", side_effect=lambda *a: emitted.append(a)):
+            _SseReporter("video-1").emit(RunEvent(RunKind.started, {"slug": "demo"}))
+        assert emitted == []

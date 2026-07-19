@@ -18,6 +18,7 @@ import time
 from pathlib import Path
 
 from light_subtitle.config import SubtitleConfig
+from light_subtitle.reporting import ProgressEvent, RunEvent
 from light_subtitle.runner import process_video
 
 from ..database import insert_chunk, insert_run, update_run, update_video
@@ -94,6 +95,29 @@ def _emit(
 
 
 # ── Pipeline execution ──────────────────────────────────
+
+
+class _SseReporter:
+    """Structured progress reporter: ProgressEvent → SSE ``(stage, progress, message, chunk)``.
+
+    ``event.segment`` (SegmentRef, 0-based index) maps to the SSE chunk
+    fields as 1-based display numbers (``chunk=index+1``,
+    ``total_chunks=total``); run-level events (segment=None) leave the
+    chunk fields unset.  RunEvents are not surfaced on SSE today.
+    """
+
+    def __init__(self, video_id: str) -> None:
+        self._video_id = video_id
+
+    def emit(self, event: ProgressEvent | RunEvent) -> None:
+        if not isinstance(event, ProgressEvent):
+            return
+        chunk: int | None = None
+        total_chunks: int | None = None
+        if event.segment is not None:
+            chunk = event.segment.index + 1
+            total_chunks = event.segment.total
+        _emit(self._video_id, event.stage, event.progress, event.message, chunk=chunk, total_chunks=total_chunks)
 
 
 def run_pipeline(
@@ -175,11 +199,10 @@ def _run_pipeline_body(
     update_video(db_path, video_id, status="processing")
 
     # ── 3. Progress callback → SSE events ──
-    def on_progress(stage: str, progress: float, msg: str):
-        _emit(video_id, stage, progress, msg)
+    reporter = _SseReporter(video_id)
 
     # ── 4. Delegate to light-subtitle runner ──
-    result = process_video(sub_config, progress_callback=on_progress)
+    result = process_video(sub_config, progress_callback=reporter)
 
     if not result.success:
         _emit(video_id, "error", 1.0, "管线未完成（可重试断点续跑）")
