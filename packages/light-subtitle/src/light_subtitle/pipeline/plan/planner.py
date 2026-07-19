@@ -2,9 +2,9 @@
 
 Both passes follow the same contract: the LLM decides, code validates
 only hard invariants (JSON shape, coverage, order, duration cap,
-speaker purity).  Validation failures are fed back for one retry;
-persistent failure returns ``None`` so the caller can fall back to the
-deterministic insurance plan.
+speaker purity, no dangling function-word tails).  Validation failures
+are fed back for one retry; persistent failure returns ``None`` so the
+caller can fall back to the deterministic insurance plan.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
 from ...usage.tracker import merge_token_usage
+from .boundary import dangling_tail as _dangling_tail
 
 _MAX_ATTEMPTS = 2  # initial try + one retry with validation feedback
 _SOFT_MAX_RATIO = 1.15  # tolerance on the duration cap when accepting splits
@@ -204,7 +205,8 @@ def _parse_breaks(response: str) -> list[int] | None:
 
 def _break_problems(breaks: list[int], words: list[Word], max_duration: float) -> list[str]:
     """Hard checks: strictly increasing in-range breaks; each part fits
-    duration and is big enough to stand on screen."""
+    duration, is big enough to stand on screen, and does not end on a
+    dangling function word (the contract stated in the split prompt)."""
     n = len(words)
     if not breaks:
         return ["no break points returned for an overlong cue"]
@@ -225,6 +227,13 @@ def _break_problems(breaks: list[int], words: list[Word], max_duration: float) -
             problems.append(f"part words[{s}:{e}] is {dur:.2f}s, over the {cap:.2f}s cap")
         elif dur < _MIN_PART_DURATION and len(ranges) > 1:
             problems.append(f"part words[{s}:{e}] is {dur:.2f}s, under the {_MIN_PART_DURATION}s minimum")
+    for b in breaks:
+        bad = _dangling_tail(words[b])
+        if bad is not None:
+            problems.append(
+                f'break {{"after": {b}}} cuts right after "{words[b].text.strip()}", stranding it from what it '
+                f"attaches to; move the break before {bad!r} or past the phrase it introduces"
+            )
     return problems
 
 

@@ -14,7 +14,13 @@ Choose break points so every resulting part (last end − first start) fits with
 ## Boundary quality
 
 - Prefer, in order: after sentence-ending punctuation; after a clause comma/semicolon; just before a connective that opens a new clause (because, but, so, when, while, although, if, that).
-- Never cut right after a preposition, article, or auxiliary ("of", "the", "a", "is", "to", "with") — the cut would strand it from what it attaches to.
+- Never cut right after a function word — the cut would strand it from what it attaches to. This is validated and rejected. Forbidden tail words include:
+  - prepositions ("of", "to", "in", "with", "from", "about", "than", "as"...)
+  - articles/determiners/possessives ("a", "the", "this", "these", "my", "their"...)
+  - auxiliaries/modals/copulas ("is", "are", "was", "do", "don't", "have", "can", "will", "would", "must"...)
+  - subject pronouns ("I", "you", "he", "she", "we", "they", "who")
+  - conjunctions/relatives ("and", "or", "but", "if", "because", "when", "while", "that", "which", "where"...)
+  - Exception: a word carrying trailing punctuation ("it,", "you.") marks a clause boundary and is always a valid cut point.
 - Keep comparisons ("from X to Y"), coordinated pairs ("X and Y"), and verb phrases in one part.
 - Each part should have at least 3 words unless the cue is very short.
 - Prefer balanced parts over one big part plus a stub.

@@ -1,8 +1,11 @@
 """Deterministic insurance plans, used only when the LLM planner fails.
 
-These are deliberately simple — sentence-ending punctuation plus silence
-gaps, no word lists and no scoring.  They guarantee the pipeline always
-produces *a* valid plan; the LLM planner remains the main path.
+These are deliberately simple — sentence punctuation, silence gaps and
+the shared dangling-tail contract (``boundary.py``), no LLM calls.  They
+guarantee the pipeline always produces *a* valid plan; the LLM planner
+remains the main path.  ``split_at_gaps`` matters in practice: tight
+duration budgets push many disfluent sentences past the LLM validator
+onto this path, so its cuts must respect the same boundary contract.
 """
 
 from __future__ import annotations
@@ -10,6 +13,7 @@ from __future__ import annotations
 from light_models import Segment, Word
 
 from ...language import is_sentence_end
+from .boundary import dangling_tail, ends_with_clause_punct
 
 # A silence longer than this separates two thoughts regardless of punctuation.
 _MERGE_GAP_MAX = 3.0  # seconds
@@ -94,10 +98,26 @@ def _is_stub(s: int, e: int, words: list[Word]) -> bool:
 
 
 def _best_cut(words: list[Word], start: int, end: int) -> int:
-    """Cut point: the largest inter-word silence, else the midpoint word."""
-    best_i, best_gap = -1, -1.0
+    """Cut point by tier: punctuated tail > clean (non-dangling) tail > any.
+
+    Within a tier the largest inter-word silence wins; grammar outranks
+    pause length (a comma boundary beats a big gap after "and").  Falls
+    back to the midpoint word when the span has no gaps at all.
+    """
+    best_any, best_any_gap = -1, -1.0
+    best_clean, best_clean_gap = -1, -1.0
+    best_punct, best_punct_gap = -1, -1.0
     for i in range(start + 1, end):
         gap = words[i].start - words[i - 1].end
-        if gap > best_gap:
-            best_i, best_gap = i, gap
-    return best_i if best_i != -1 else (start + end) // 2
+        if gap > best_any_gap:
+            best_any, best_any_gap = i, gap
+        if ends_with_clause_punct(words[i - 1]):
+            if gap > best_punct_gap:
+                best_punct, best_punct_gap = i, gap
+        elif dangling_tail(words[i - 1]) is None and gap > best_clean_gap:
+            best_clean, best_clean_gap = i, gap
+    if best_punct != -1:
+        return best_punct
+    if best_clean != -1:
+        return best_clean
+    return best_any if best_any != -1 else (start + end) // 2

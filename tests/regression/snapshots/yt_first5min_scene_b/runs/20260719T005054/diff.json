@@ -1,0 +1,173 @@
+{
+  "baseline_run_id": "20260718T153742",
+  "current_run_id": "20260719T005054",
+  "errors_delta": 2,
+  "warnings_delta": 0,
+  "suggestions_delta": 4,
+  "rule_changes": [
+    {
+      "rule": "EntryPointConfidence",
+      "before": 1,
+      "after": 3,
+      "delta": 2
+    },
+    {
+      "rule": "LineImbalance",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "OverlappingContent",
+      "before": 4,
+      "after": 3,
+      "delta": -1
+    },
+    {
+      "rule": "ExitPointPrecision",
+      "before": 4,
+      "after": 8,
+      "delta": 4
+    },
+    {
+      "rule": "DuplicateTranslation",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    {
+      "rule": "MaxDuration",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "CompoundWords",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "DuplicateTranslation",
+      "cue_id": 69,
+      "time": "00:04:46,434",
+      "detail": "与上一条字幕相似度 95%，可能为重复翻译",
+      "fix": "删除重复的翻译，或合并为一条"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "CompoundWords",
+      "cue_id": 57,
+      "time": "00:03:49,469",
+      "detail": "复合词 '游戏' 被换行拆散",
+      "fix": "将'游戏'保持在同一行"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 25,
+      "time": "00:01:23,480",
+      "detail": "入点首个词 ' are' 置信度 0.19，后续词峰值 0.99（差 0.80）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 28,
+      "time": "00:01:36,311",
+      "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 28,
+      "time": "00:01:36,311",
+      "detail": "字幕时长 6.58s，超过最大 6.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 11,
+      "time": "00:00:34,311",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.018s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 27,
+      "time": "00:01:31,566",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 34,
+      "time": "00:02:06,812",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 45,
+      "time": "00:02:53,156",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 8,
+      "time": "00:00:23,281",
+      "detail": "入点偏离首个词语 0.856s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:00:24,137"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 39,
+      "time": "00:02:20,018",
+      "detail": "与上一条字幕信息重叠 (相似度 56%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 51,
+      "time": "00:03:12,146",
+      "detail": "双行长度失衡 72% (L1: 32字, L2: 9字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    }
+  ],
+  "degraded": false,
+  "reasons": [
+    "9 new issues introduced"
+  ]
+}

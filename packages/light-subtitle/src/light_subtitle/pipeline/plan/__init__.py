@@ -3,10 +3,12 @@
 Replaces the old compose/split/merge-review/display-merge chain: the
 planner sees the whole timed word stream together with all display
 budgets (duration, reading speed, two-line capacity) and emits cue
-boundaries directly.  Code only performs hard validation — coverage,
-order, speaker breaks, duration cap — and never scores boundaries or
-vetoes them with word lists.  If the LLM fails validation twice (or is
-unavailable), a small deterministic fallback guarantees *a* valid plan.
+boundaries directly.  Code performs hard validation only — coverage,
+order, speaker breaks, duration cap, plus the dangling-tail contract
+the split prompt itself declares (no cut right after a function word).
+It never scores boundary quality beyond that contract.  If the LLM
+fails validation twice (or is unavailable), a small deterministic
+fallback guarantees *a* valid plan.
 
 Boundary decisions reference the global word array by index, so word
 timing reaches every cue by construction and the EN/ZH tracks share one
