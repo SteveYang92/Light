@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..pipeline.punct_restore import restore_punctuation
+from ..reporting import StageStatus
 from .progress import STAGE_PUNCT
 
 if TYPE_CHECKING:
@@ -12,11 +13,11 @@ if TYPE_CHECKING:
 
 
 def _punct_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_PUNCT, 0.0, "恢复标点中...")
+    orch.emit_progress(STAGE_PUNCT, StageStatus.started, 0.0, "恢复标点中...")
 
 
 def _punct_progress_end(orch: Orchestrator) -> None:
-    orch._progress(STAGE_PUNCT, 1.0, "标点恢复完成")
+    orch.emit_progress(STAGE_PUNCT, StageStatus.finished, 1.0, "标点恢复完成")
 
 
 def _run_punct(orch: Orchestrator) -> None:

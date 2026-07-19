@@ -137,9 +137,11 @@ def run_pack(config: PackConfig) -> None:
 
         logger.info(f"  编码中... (ffmpeg {' '.join(cmd[1:4])} ...)")
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"ffmpeg 编码失败 (exit {e.returncode})") from e
+            stderr_tail = (e.stderr or "").strip()[-500:]
+            detail = f": {stderr_tail}" if stderr_tail else ""
+            raise RuntimeError(f"ffmpeg 编码失败 (exit {e.returncode}){detail}") from e
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 

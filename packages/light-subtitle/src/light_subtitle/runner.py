@@ -28,10 +28,24 @@ from .config import SubtitleConfig
 from .download import download_video, find_cached_download
 from .merge_outputs import merge_all
 from .orchestrator import Orchestrator
+from .reporting import (
+    STAGE_DONE,
+    STAGE_DOWNLOAD,
+    STAGE_MERGE,
+    STAGE_SPLIT,
+    ProgressEvent,
+    Reporter,
+    RunEvent,
+    RunKind,
+    SegmentRef,
+    StageStatus,
+    as_reporter,
+)
 from .video_split import (
     compute_split_points,
     find_existing_segments,
     find_existing_split_points,
+    segment_tag,
     should_split,
     split_video,
 )
@@ -39,6 +53,11 @@ from .video_split import (
 ProgressCallback = Callable[[str, float, str], None] | None
 
 _DEFAULT_OVERLAP = 10
+
+
+def _emit(reporter: Reporter, stage: str, status: StageStatus, progress: float, message: str) -> None:
+    """Emit a run-level progress event (segment=None)."""
+    reporter.emit(ProgressEvent(stage=stage, status=status, progress=progress, message=message, segment=None))
 
 
 @dataclass
@@ -64,18 +83,18 @@ def process_video(
     Returns a ``ProcessResult`` with the output directory, slug, and original
     video path.
     """
-    prog = progress_callback or (lambda _s, _p, _m: None)
+    reporter = as_reporter(progress_callback)
 
     # ── 1. Download (or reuse cached) ──
     if config.url:
         cached = find_cached_download(config.url, Path(config.output_dir))
         if cached is not None:
             video_path, slug = cached
-            prog("download", 1.0, "复用已下载视频")
+            _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "复用已下载视频")
         else:
-            prog("download", 0.0, "下载中…")
+            _emit(reporter, STAGE_DOWNLOAD, StageStatus.started, 0.0, "下载中…")
             video_path, slug = download_video(config.url, Path(config.output_dir))
-            prog("download", 1.0, "下载完成")
+            _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "下载完成")
         is_long = should_split(video_path, threshold=config.split_threshold)
     else:
         video_path = Path(config.input_path).resolve()
@@ -83,13 +102,30 @@ def process_video(
         is_long = should_split(video_path, threshold=config.split_threshold)
 
     work_dir = video_path.parent if config.url else Path(config.output_dir)
+
+    reporter.emit(
+        RunEvent(
+            RunKind.started,
+            {
+                "slug": slug,
+                "mode": (
+                    "bilingual"
+                    if config.bilingual
+                    else (f"translate→{config.target_lang}" if config.target_lang else "source-only")
+                ),
+                "input": str(config.url or config.input_path),
+                "output": str(work_dir),
+            },
+        )
+    )
+
     work_dir.mkdir(parents=True, exist_ok=True)
 
     # ── 2. Split / process ──
     if is_long:
-        success = _process_long(config, video_path, slug, work_dir, prog)
+        success = _process_long(config, video_path, slug, work_dir, reporter)
     else:
-        _process_short(config, video_path, work_dir, prog)
+        _process_short(config, video_path, work_dir, reporter)
         success = True
 
     return ProcessResult(output_dir=work_dir, slug=slug, video_path=video_path, success=success)
@@ -102,15 +138,15 @@ def _process_short(
     config: SubtitleConfig,
     video_path: Path,
     work_dir: Path,
-    prog: Callable[[str, float, str], None],
+    reporter: Reporter,
 ) -> None:
     """Run the pipeline directly on a short (≤45 min) video."""
     seg_config = config.clone_for_segment(
         input_path=str(video_path),
         output_dir=str(work_dir),
     )
-    Orchestrator(seg_config, progress_callback=prog).run()
-    prog("done", 1.0, "全部完成")
+    Orchestrator(seg_config, progress_callback=reporter).run()
+    _emit(reporter, STAGE_DONE, StageStatus.finished, 1.0, "全部完成")
 
 
 # ── Long video ──────────────────────────────────────────
@@ -121,7 +157,7 @@ def _process_long(
     video_path: Path,
     slug: str,
     work_dir: Path,
-    prog: Callable[[str, float, str], None],
+    reporter: Reporter,
 ) -> bool:
     """Split + pipeline + merge for videos longer than 45 minutes.
 
@@ -139,12 +175,12 @@ def _process_long(
         points = find_existing_split_points(work_dir)
         if points is None:
             points = compute_split_points(video_path, target_duration=config.split_threshold)
-        prog("split", 1.0, f"复用 {len(seg_dirs)} 个分段")
+        _emit(reporter, STAGE_SPLIT, StageStatus.finished, 1.0, f"复用 {len(seg_dirs)} 个分段")
     else:
-        prog("split", 0.0, "检测分块点…")
+        _emit(reporter, STAGE_SPLIT, StageStatus.started, 0.0, "检测分块点…")
         points = compute_split_points(video_path, target_duration=config.split_threshold)
         seg_dirs = split_video(video_path, points, overlap=overlap, seg_dir_template=".seg")
-        prog("split", 1.0, f"切分为 {len(seg_dirs)} 段")
+        _emit(reporter, STAGE_SPLIT, StageStatus.finished, 1.0, f"切分为 {len(seg_dirs)} 段")
 
     # ── Build per-segment configs ──
     seg_configs: list[SubtitleConfig] = []
@@ -176,7 +212,13 @@ def _process_long(
                 break
             asr_ready.clear()
 
-            orch = Orchestrator(cfg, progress_callback=prog, on_asr_complete=asr_ready.set, shutdown_event=shutdown)
+            orch = Orchestrator(
+                cfg,
+                progress_callback=reporter,
+                on_asr_complete=asr_ready.set,
+                shutdown_event=shutdown,
+                segment=SegmentRef(_i, len(seg_configs), segment_tag(cfg.output_dir)),
+            )
             futures.append(executor.submit(orch.run))
 
     for f in futures:
@@ -190,10 +232,14 @@ def _process_long(
         return False
 
     # ── Merge ──
-    prog("merge", 0.0, "合并分段…")
+    # Bind the merge phase to a pipeline log in work_dir (the per-segment
+    # Orchestrators logged into their own .segN/ dirs; the main thread had
+    # no file logger, so merge messages previously went nowhere on disk).
+    logger.init(work_dir)
+    _emit(reporter, STAGE_MERGE, StageStatus.started, 0.0, "合并分段…")
     merge_all(seg_dirs[0].parent, slug, overlap=overlap)
-    prog("merge", 1.0, "合并完成")
-    prog("done", 1.0, "全部完成")
+    _emit(reporter, STAGE_MERGE, StageStatus.finished, 1.0, "合并完成")
+    _emit(reporter, STAGE_DONE, StageStatus.finished, 1.0, "全部完成")
     return True
 
 

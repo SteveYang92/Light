@@ -7,6 +7,7 @@ Import explicitly from ``language.cjk``::
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import TYPE_CHECKING
 
@@ -30,6 +31,9 @@ from .base import (
 
 if TYPE_CHECKING:
     from light_subtitle.config import SubtitleConfig
+
+# Suppress jieba's "Building prefix dict..." startup messages on stderr.
+jieba.setLogLevel(logging.WARNING)
 
 # ═══════════════════════════════════════════════════════════════════
 # CJK grammatical particles

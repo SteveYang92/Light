@@ -37,18 +37,19 @@ def _get_or_load_cache(model_name: str, language: str, cpu_threads: int) -> dict
 
     with _cache_lock:
         if _cache is None or _cache.get("key") != key:
-            device = "cpu"
-            pipeline = whisperx.load_model(
-                model_name,
-                device,
-                compute_type="int8",
-                vad_method="silero",
-                threads=cpu_threads,
-            )
-            align_model, align_meta = whisperx.load_align_model(
-                language_code=language,
-                device=device,
-            )
+            with logger.capture_external_output():
+                device = "cpu"
+                pipeline = whisperx.load_model(
+                    model_name,
+                    device,
+                    compute_type="int8",
+                    vad_method="silero",
+                    threads=cpu_threads,
+                )
+                align_model, align_meta = whisperx.load_align_model(
+                    language_code=language,
+                    device=device,
+                )
             _cache = {
                 "key": key,
                 "pipeline": pipeline,
@@ -75,23 +76,24 @@ def run(audio_path: str, language: str = "en", model_name: str = "turbo") -> lis
     align_meta = cache["align_meta"]
 
     # ── 1. Load audio ──
-    audio = whisperx.load_audio(audio_path)
-
     # ── 2. Transcribe (VAD enabled by default) ──
     # batch_size > 1 merges VAD segments for faster encoder inference.
-    result = pipeline.transcribe(audio, batch_size=8)
+    with logger.capture_external_output():
+        audio = whisperx.load_audio(audio_path)
+        result = pipeline.transcribe(audio, batch_size=8)
     logger.info(f"  ASR (whisperX): {len(result['segments'])} segments ({time.time() - t0:.0f}s)")
 
     # ── 3. Align ──
-    device = "cpu"
-    result = whisperx.align(
-        result["segments"],
-        align_model,
-        align_meta,
-        audio,
-        device,
-        return_char_alignments=False,
-    )
+    with logger.capture_external_output():
+        device = "cpu"
+        result = whisperx.align(
+            result["segments"],
+            align_model,
+            align_meta,
+            audio,
+            device,
+            return_char_alignments=False,
+        )
 
     # ── 4. Extract words ──
     words: list[Word] = []

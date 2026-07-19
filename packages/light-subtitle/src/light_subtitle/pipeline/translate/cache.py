@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 from light_models import Segment, SubtitleCue
@@ -19,10 +20,12 @@ def plan_units(
     segments: list[Segment],
     config: SubtitleConfig,
     plan_dir: Path,
+    *,
+    progress: Callable[[float, str], None] | None = None,
 ) -> tuple[list[Segment], dict | None]:
     """Plan cue units with the LLM boundary planner; persist ``plan/plan.json``."""
     plan_dir.mkdir(parents=True, exist_ok=True)
-    translation_segments, plan_usage = plan_pipeline.run(segments, config, plan_dir)
+    translation_segments, plan_usage = plan_pipeline.run(segments, config, plan_dir, progress=progress)
     if plan_usage:
         save_step_usage(plan_dir / artifacts.USAGE_JSON, plan_usage)
     return translation_segments, plan_usage

@@ -11,6 +11,7 @@ from light_models import Segment, SubtitleCue, Word
 
 from . import logger
 from .config import SubtitleConfig
+from .reporting import ProgressEvent, Reporter, SegmentRef, StageStatus, as_reporter
 from .run_state import RunStateManager
 from .state_hydrate import hydrate_state
 from .step_plan import build_step_plan, resolve_start_index, validate_artifacts
@@ -70,13 +71,17 @@ class Orchestrator:
     def __init__(
         self,
         config: SubtitleConfig,
-        progress_callback: ProgressCallback = None,
+        progress_callback: Reporter | Callable[[str, float, str], None] | None = None,
         on_asr_complete: Callable[[], None] | None = None,
         shutdown_event: threading.Event | None = None,
+        segment: SegmentRef | None = None,
     ):
         self.config = config
         self.state = PipelineState()
-        self._progress = progress_callback or (lambda _s, _p, _m: None)
+        self._reporter = as_reporter(progress_callback)
+        self._segment = segment
+        self._current_stage: str | None = None
+        self._current_progress = 0.0
         self._state_mgr: RunStateManager | None = None
         self._on_asr_complete = on_asr_complete or (lambda: None)
         self._shutdown = shutdown_event or threading.Event()  # never-set sentinel
@@ -85,6 +90,14 @@ class Orchestrator:
     def _seg_tag(self) -> str:
         """Segment label extracted from output_dir (e.g. 'seg1', 'chunk_2')."""
         return segment_tag(self.config.output_dir)
+
+    def emit_progress(self, stage: str, status: StageStatus, progress: float, message: str) -> None:
+        """Emit a pipeline-stage progress event (segment-scoped)."""
+        self._current_stage = stage
+        self._current_progress = progress
+        self._reporter.emit(
+            ProgressEvent(stage=stage, status=status, progress=progress, message=message, segment=self._segment)
+        )
 
     def run(self) -> None:
         logger.init(self.config.output_dir)
@@ -150,6 +163,12 @@ class Orchestrator:
                     definition.progress_end(self)
             except Exception as exc:
                 self._state_mgr.mark_failed(step.id, exc)
+                self.emit_progress(
+                    self._current_stage or str(step.id),
+                    StageStatus.failed,
+                    self._current_progress,
+                    f"{type(exc).__name__}: {exc}",
+                )
                 raise
             self._state_mgr.mark_completed(step.id)
             logger.info(f"{tag}  ✓ {step.id} done")

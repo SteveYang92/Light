@@ -10,6 +10,7 @@ from ..cue_builder import build_source_cues
 from ..pipeline import translate as translate_pipeline
 from ..pipeline.translate.join import join_cues, save_joined_units
 from ..pipeline.translate.translate import run as translate_live
+from ..reporting import StageStatus
 from ..state_hydrate import hydrate_partial_cues, hydrate_plan_segments, sync_glossary
 from ..usage.tracker import merge_token_usage, usage_delta
 from .progress import STAGE_COMPOSE, STAGE_TRANSLATE
@@ -20,31 +21,32 @@ if TYPE_CHECKING:
 
 def _ensure_translate_ready(orch: Orchestrator) -> bool:
     if orch.config.target_lang is None:
-        orch._progress(STAGE_TRANSLATE, 1.0, "无需翻译")
+        orch.emit_progress(STAGE_TRANSLATE, StageStatus.skipped, 1.0, "无需翻译")
         return False
     if not orch.config.llm_api_key:
         logger.warning("  Translation skipped (no LLM API key). Using source cues.")
-        orch._progress(STAGE_TRANSLATE, 1.0, "跳过翻译 (无 API key)")
+        orch.emit_progress(STAGE_TRANSLATE, StageStatus.skipped, 1.0, "跳过翻译 (无 API key)")
         return False
     sync_glossary(orch)
     return True
 
 
 def _translate_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_TRANSLATE, 0.0, "翻译中...")
+    orch.emit_progress(STAGE_TRANSLATE, StageStatus.started, 0.0, "翻译中...")
 
 
 def _translate_progress_end(orch: Orchestrator) -> None:
-    orch._progress(STAGE_TRANSLATE, 1.0, f"翻译完成 ({len(orch.state.translated_cues)} 条)")
+    orch.emit_progress(STAGE_TRANSLATE, StageStatus.finished, 1.0, f"翻译完成 ({len(orch.state.translated_cues)} 条)")
 
 
 def _plan_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_COMPOSE, 0.0, "规划字幕边界中...")
+    orch.emit_progress(STAGE_COMPOSE, StageStatus.started, 0.0, "规划字幕边界中...")
 
 
 def _plan_progress_end(orch: Orchestrator) -> None:
-    orch._progress(
+    orch.emit_progress(
         STAGE_COMPOSE,
+        StageStatus.finished,
         1.0,
         f"规划完成 ({len(orch.state.composed_segments)} 条 cue)",
     )
@@ -63,7 +65,10 @@ def _run_translate_compose(orch: Orchestrator) -> None:
     plan_dir.mkdir(parents=True, exist_ok=True)
     if not orch.state.composed_segments:
         orch.state.composed_segments, plan_usage = translate_pipeline.plan_units(
-            orch.state.segments, orch.config, plan_dir
+            orch.state.segments,
+            orch.config,
+            plan_dir,
+            progress=lambda f, m: orch.emit_progress(STAGE_COMPOSE, StageStatus.progress, f, m),
         )
         if plan_usage:
             orch.usage_tracker.record("translate.plan", plan_usage)
@@ -94,6 +99,7 @@ def _run_translate_translate(orch: Orchestrator) -> None:
         tx_dir,
         glossary=orch.state.merged_glossary,
         content_summary=orch.state.content_summary,
+        progress=lambda f, m: orch.emit_progress(STAGE_TRANSLATE, StageStatus.progress, f, m),
     )
     if orch.state.translation_usage:
         orch.state.translation_usage_breakdown["translate.translate"] = dict(orch.state.translation_usage)
@@ -129,6 +135,7 @@ def _run_translate_evaluate(orch: Orchestrator) -> None:
         artifacts.translations_dir(orch.config.output_dir),
         glossary=orch.state.merged_glossary,
         content_summary=orch.state.content_summary,
+        progress=lambda f, m: orch.emit_progress(STAGE_TRANSLATE, StageStatus.progress, f, m),
     )
     if eval_breakdown:
         orch.state.translation_usage_breakdown.update(eval_breakdown)

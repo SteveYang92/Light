@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 from light_models import Segment, SubtitleCue
@@ -64,10 +65,12 @@ def run(
     *,
     glossary: dict | None = None,
     content_summary: dict | None = None,
+    progress: Callable[[float, str], None] | None = None,
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Return (translated_cues, usage_dict).
 
     When *tx_dir* is set, saves ``partial.json`` after each batch for resume.
+    *progress*, when given, receives ``(fraction, message)`` after each batch.
     """
     if not config.llm_api_key:
         return [], None
@@ -100,6 +103,8 @@ def run(
             config,
             align_system_prompt=align_system_prompt,
         )
+        if progress is not None:
+            progress(1.0, "翻译中... 1/1")
         for c in cues:
             existing[c.unit_id] = c
         ordered_1_1 = _order_cues(segments, existing)
@@ -131,7 +136,17 @@ def run(
         for chunk in batch_chunks
         if chunk
     ]
-    results = run_parallel_with_warmup(tasks, max_workers=MAX_WORKERS)
+
+    n_batches = len(tasks)
+    completed = 0
+
+    def _on_batch_done() -> None:
+        nonlocal completed
+        completed += 1
+        if progress is not None:
+            progress(completed / n_batches, f"翻译中... {completed}/{n_batches}")
+
+    results = run_parallel_with_warmup(tasks, max_workers=MAX_WORKERS, on_complete=_on_batch_done)
 
     for idx in sorted(results):
         cues, usage, batch_breakdown = results[idx]

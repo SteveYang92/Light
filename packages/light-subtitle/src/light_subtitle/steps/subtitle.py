@@ -15,6 +15,7 @@ from light_models import SubtitleCue
 from .. import artifacts
 from ..pipeline import strip_punct, subtitle
 from ..pipeline import translate as translate_pipeline
+from ..reporting import StageStatus
 from .progress import STAGE_FORMAT
 
 if TYPE_CHECKING:
@@ -22,11 +23,11 @@ if TYPE_CHECKING:
 
 
 def _format_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_FORMAT, 0.0, "格式化字幕中...")
+    orch.emit_progress(STAGE_FORMAT, StageStatus.started, 0.0, "格式化字幕中...")
 
 
 def _format_progress_end(orch: Orchestrator) -> None:
-    orch._progress(STAGE_FORMAT, 1.0, "格式化完成")
+    orch.emit_progress(STAGE_FORMAT, StageStatus.finished, 1.0, "格式化完成")
 
 
 def _format_source(orch: Orchestrator) -> list[SubtitleCue]:

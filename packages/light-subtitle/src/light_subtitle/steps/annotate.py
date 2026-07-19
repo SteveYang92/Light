@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from .. import logger
 from ..pipeline import annotate as annotate_pipeline
+from ..reporting import StageStatus
 from .progress import STAGE_ANNOTATE
 
 if TYPE_CHECKING:
@@ -14,14 +15,14 @@ if TYPE_CHECKING:
 
 def _annotate_progress_start(orch: Orchestrator) -> None:
     if orch.config.annotate and orch.state.translated_cues:
-        orch._progress(STAGE_ANNOTATE, 0.0, "生成注解中...")
+        orch.emit_progress(STAGE_ANNOTATE, StageStatus.started, 0.0, "生成注解中...")
 
 
 def _annotate_progress_end(orch: Orchestrator) -> None:
     if not orch.config.annotate or not orch.state.translated_cues:
-        orch._progress(STAGE_ANNOTATE, 1.0, "无需注解")
+        orch.emit_progress(STAGE_ANNOTATE, StageStatus.finished, 1.0, "无需注解")
     else:
-        orch._progress(STAGE_ANNOTATE, 1.0, f"注解完成 ({len(orch.state.annotations)} 条)")
+        orch.emit_progress(STAGE_ANNOTATE, StageStatus.finished, 1.0, f"注解完成 ({len(orch.state.annotations)} 条)")
 
 
 def _run_annotate(orch: Orchestrator) -> None:
@@ -36,6 +37,7 @@ def _run_annotate(orch: Orchestrator) -> None:
         orch.config.output_dir,
         glossary=orch.state.merged_glossary,
         content_summary=orch.state.content_summary,
+        progress=lambda f, m: orch.emit_progress(STAGE_ANNOTATE, StageStatus.progress, f, m),
     )
     if usage:
         orch.usage_tracker.record("annotate", usage)

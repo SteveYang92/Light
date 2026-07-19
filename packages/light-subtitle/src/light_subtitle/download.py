@@ -41,7 +41,12 @@ def download_video(url: str, output_dir: Path) -> tuple[Path, str]:
         "--no-playlist",
         url,
     ]
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        stderr_tail = (e.stderr or "").strip()[-500:]
+        detail = f": {stderr_tail}" if stderr_tail else ""
+        raise RuntimeError(f"yt-dlp download failed (exit {e.returncode}){detail}") from e
 
     # Find the downloaded file (extension may vary: .mp4, .webm, .mkv)
     candidates = list(work_dir.glob("video.*"))

@@ -20,6 +20,7 @@ Usage::
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -56,6 +57,7 @@ def refine_translations(
     *,
     glossary: dict | None = None,
     content_summary: dict | None = None,
+    progress: Callable[[float, str], None] | None = None,
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Re-translate low-quality translations with diagnostic feedback.
 
@@ -98,11 +100,15 @@ def refine_translations(
     system_prompt = _render_refine_system_prompt(config, glossary=glossary, content_summary=content_summary)
 
     # Process in small batches to amortize LLM overhead.
+    total_batches = max(1, (len(groups) + REFINE_BATCH_SIZE - 1) // REFINE_BATCH_SIZE)
     for batch_idx in range(0, len(groups), REFINE_BATCH_SIZE):
         batch = groups[batch_idx : batch_idx + REFINE_BATCH_SIZE]
+        batch_no = batch_idx // REFINE_BATCH_SIZE + 1
         batch_cues, usage = _refine_batch(batch, all_segments, cue_map, score_map, client, config, system_prompt)
         refined_cues.extend(batch_cues)
         merge_token_usage(total_usage, usage)
+        if progress is not None:
+            progress(batch_no / total_batches, f"评估精修中... {batch_no}/{total_batches}")
 
     failed = len(low_score_ids) - len(refined_cues)
     if failed > 0:
@@ -344,6 +350,7 @@ def evaluate_and_refine(
     *,
     glossary: dict | None = None,
     content_summary: dict | None = None,
+    progress: Callable[[float, str], None] | None = None,
 ) -> tuple[list[SubtitleCue], dict[str, dict] | None]:
     """Evaluate translation quality and refine low-scoring cues.
 
@@ -387,6 +394,7 @@ def evaluate_and_refine(
                 config,
                 glossary=glossary,
                 content_summary=content_summary,
+                progress=progress,
             )
             if refine_usage:
                 merge_token_usage(breakdown.setdefault("translate.refine", {}), refine_usage)

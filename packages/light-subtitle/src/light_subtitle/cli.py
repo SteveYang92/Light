@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
+import sys
 from pathlib import Path
 
 import typer
@@ -20,7 +21,9 @@ import typer
 from . import logger
 from .config import AsrEngine, SubtitleConfig
 from .download import derive_slug_from_path, download_video, find_cached_download
+from .reporting import Reporter, RunEvent, RunKind
 from .runner import process_video
+from .usage.report import load_usage_from_dir
 from .utils.whisper_utils import find_model, find_whisper
 from .video_split import segment_tag
 
@@ -193,6 +196,12 @@ def run(
             " Depends on --target-lang, --asr, etc."
         ),
     ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="输出详细日志（默认只显示进度）",
+    ),
 ):
     if ctx.invoked_subcommand is not None:
         return
@@ -211,6 +220,8 @@ def run(
     # ═══════════════════════════════════════════════════════
     #  2. Resolve input: download if URL
     # ═══════════════════════════════════════════════════════
+    # Non-verbose runs show reporter progress only (logger echo off).
+    logger.set_console_echo(verbose)
     output_base = Path(output_dir)
 
     if has_url:
@@ -286,18 +297,92 @@ def run(
     # ═══════════════════════════════════════════════════════
     #  4. Run pipeline via shared runner
     # ═══════════════════════════════════════════════════════
-    result = process_video(config)
-    work_dir = result.output_dir
+    reporter = _make_reporter(verbose)
+    try:
+        result = process_video(config, progress_callback=reporter)
+        work_dir = result.output_dir
 
-    # Rename generic outputs to slug-prefixed names for short videos.
-    # Long videos are already named by the merge step.
-    is_segment = bool(segment_tag(work_dir))
-    if not is_segment and _has_generic_outputs(work_dir):
-        # Always rename when bare names exist — e.g. after ``--resume-from
-        # subtitle`` export writes ``zh.srt`` / ``bilingual.ass`` even if an
-        # earlier run already created ``{slug}.zh.srt``.
-        _rename_outputs(work_dir, slug)
-    _cleanup_temp(work_dir)
+        # Rename generic outputs to slug-prefixed names for short videos.
+        # Long videos are already named by the merge step.
+        is_segment = bool(segment_tag(work_dir))
+        if not is_segment and _has_generic_outputs(work_dir):
+            # Always rename when bare names exist — e.g. after ``--resume-from
+            # subtitle`` export writes ``zh.srt`` / ``bilingual.ass`` even if an
+            # earlier run already created ``{slug}.zh.srt``.
+            _rename_outputs(work_dir, slug)
+        _cleanup_temp(work_dir)
+        reporter.emit(RunEvent(RunKind.finished, _finished_payload(work_dir, slug)))
+    except KeyboardInterrupt:
+        reporter.emit(RunEvent(RunKind.failed, {"error": "已中断（Ctrl+C），可用 --resume 续跑", **_log_payload()}))
+        raise
+    except SystemExit:
+        # Orchestrator's SIGINT/SIGTERM handler raises SystemExit(130).
+        reporter.emit(RunEvent(RunKind.failed, {"error": "已中断（信号），可用 --resume 续跑", **_log_payload()}))
+        raise
+    except Exception as e:
+        reporter.emit(RunEvent(RunKind.failed, {"error": f"{type(e).__name__}: {e}", **_log_payload()}))
+        raise
+    finally:
+        reporter.close()
+        logger.set_console_echo(True)
+
+
+# ═══════════════════════════════════════════════════════════
+#  Reporter helpers
+# ═══════════════════════════════════════════════════════════
+
+
+def _is_tty() -> bool:
+    """True for an interactive terminal that supports rich rendering."""
+    return sys.stdout.isatty() and not os.environ.get("NO_COLOR") and os.environ.get("TERM", "") != "dumb"
+
+
+def _make_reporter(verbose: bool) -> Reporter:
+    """Pick the progress renderer.
+
+    Verbose → plain text (full logger stream conflicts with a live view);
+    TTY → Rich live view (rich imported lazily); otherwise → plain text.
+    """
+    if verbose or not _is_tty():
+        from .reporting import PlainReporter
+
+        return PlainReporter()
+    from .reporting.rich_ui import RichReporter
+
+    return RichReporter()
+
+
+def _log_payload() -> dict:
+    """``{"log": path}`` for terminal events when a pipeline log is bound."""
+    path = logger.log_path()
+    return {"log": str(path)} if path else {}
+
+
+def _finished_payload(work_dir: Path, slug: str) -> dict:
+    """Payload for the terminal RunEvent(finished) — artifacts, usage, log."""
+    artifacts = sorted(
+        p.name for p in work_dir.glob(f"{slug}.*") if p.suffix in {".srt", ".vtt", ".ass", ".json"} and p.is_file()
+    )
+    payload: dict = {"slug": slug, "output": str(work_dir), "artifacts": artifacts, **_log_payload()}
+    usage = _usage_line(work_dir)
+    if usage:
+        payload["usage"] = usage
+    return payload
+
+
+def _usage_line(work_dir: Path) -> str:
+    """Compact ``tokens: N, ≈$X`` summary from usage_report.json (multi-segment
+    runs already aggregate per-segment reports into this file at merge time)."""
+    report = load_usage_from_dir(work_dir)
+    if report is None:
+        return ""
+    parts: list[str] = []
+    total = report.totals.get("total_tokens", 0)
+    if total:
+        parts.append(f"tokens: {total}")
+    if report.cost.total_usd is not None:
+        parts.append(f"≈${report.cost.total_usd:.4f}")
+    return ", ".join(parts)
 
 
 # ═══════════════════════════════════════════════════════════

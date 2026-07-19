@@ -9,6 +9,7 @@ from .. import logger
 from ..config import AsrEngine, SubtitleConfig
 from ..pipeline.asr import align, diarize, extract_audio, transcribe, whisperx
 from ..pipeline.asr.artifacts import save_asr_words, save_whisper_cpp_raw
+from ..reporting import StageStatus
 from ..state_hydrate import hydrate_asr_audio, hydrate_asr_words
 from .export import _export_transcript
 from .progress import STAGE_ASR
@@ -18,11 +19,11 @@ if TYPE_CHECKING:
 
 
 def _asr_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_ASR, 0.0, "提取音频中...")
+    orch.emit_progress(STAGE_ASR, StageStatus.started, 0.0, "提取音频中...")
 
 
 def _asr_progress_end(orch: Orchestrator) -> None:
-    orch._progress(STAGE_ASR, 1.0, f"ASR 完成 ({len(orch.state.words)} 个词)")
+    orch.emit_progress(STAGE_ASR, StageStatus.finished, 1.0, f"ASR 完成 ({len(orch.state.words)} 个词)")
 
 
 def _resolve_asr_lang(config: SubtitleConfig) -> str:

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from .. import logger
 from ..pipeline import context_prep as context_prep_pipeline
+from ..reporting import StageStatus
 from ..state_hydrate import sync_glossary
 from .progress import STAGE_CONTEXT
 
@@ -14,11 +15,11 @@ if TYPE_CHECKING:
 
 
 def _context_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_CONTEXT, 0.0, "提取翻译上下文中...")
+    orch.emit_progress(STAGE_CONTEXT, StageStatus.started, 0.0, "提取翻译上下文中...")
 
 
 def _context_progress_end(orch: Orchestrator) -> None:
-    orch._progress(STAGE_CONTEXT, 1.0, "翻译上下文就绪")
+    orch.emit_progress(STAGE_CONTEXT, StageStatus.finished, 1.0, "翻译上下文就绪")
 
 
 def _run_context(orch: Orchestrator) -> None:

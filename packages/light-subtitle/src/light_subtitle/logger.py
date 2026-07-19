@@ -6,9 +6,11 @@ the standard ``typer.echo`` console output.
 
 from __future__ import annotations
 
+import contextlib
 import contextvars
 import logging
-from collections.abc import Callable
+import os
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import ParamSpec, TypeVar
@@ -22,6 +24,10 @@ _file_logger: contextvars.ContextVar[logging.Logger | None] = contextvars.Contex
     "light_subtitle_file_logger",
     default=None,
 )
+
+# Console echo switch (module-level; single bool assignment is atomic
+# under the GIL, so no lock is needed).  File logging is unaffected.
+_console_echo = True
 
 
 def init(output_dir: str | Path) -> None:
@@ -40,6 +46,46 @@ def init(output_dir: str | Path) -> None:
     handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s %(message)s"))
     logger.addHandler(handler)
     _file_logger.set(logger)
+
+
+def log_path() -> Path | None:
+    """Return the bound pipeline log file path, or None when uninitialized."""
+    flog = _file_logger.get()
+    if flog is None or not flog.handlers:
+        return None
+    handler = flog.handlers[0]
+    return Path(handler.baseFilename) if isinstance(handler, logging.FileHandler) else None
+
+
+def set_console_echo(enabled: bool) -> None:
+    """Enable/disable console echo for :func:`info`/:func:`warning`.
+
+    File logging is unaffected.  Default is True (backend/pack behavior).
+    """
+    global _console_echo
+    _console_echo = bool(enabled)
+
+
+@contextlib.contextmanager
+def capture_external_output() -> Iterator[None]:
+    """Redirect stdout/stderr into the current pipeline log file.
+
+    Third-party libraries (whisperx, pyannote) print/tqdm/log straight to
+    the terminal; wrapping their calls here sends that output to the run's
+    log file instead.  Without a bound file logger the output is discarded
+    (devnull) — it is noise we intentionally drop.  RichReporter holds a
+    reference to the real stdout and is unaffected.
+    """
+    flog = _file_logger.get()
+    owns_target = flog is None or not flog.handlers
+    target = open(os.devnull, "w", encoding="utf-8") if owns_target else flog.handlers[0].stream
+    with contextlib.redirect_stdout(target), contextlib.redirect_stderr(target):
+        try:
+            yield
+        finally:
+            target.flush()
+            if owns_target:
+                target.close()
 
 
 def bind_file_logger(logger: logging.Logger | None) -> contextvars.Token[logging.Logger | None]:
@@ -71,16 +117,18 @@ def run_with_file_logger[P, R](fn: Callable[P, R], /, *args: P.args, **kwargs: P
 
 
 def info(msg: str) -> None:
-    """Echo to console AND append to the run log file."""
-    typer.echo(msg)
+    """Echo to console (when enabled) AND append to the run log file."""
+    if _console_echo:
+        typer.echo(msg)
     logger = _file_logger.get()
     if logger is not None:
         logger.info(msg)
 
 
 def warning(msg: str) -> None:
-    """Echo to console AND append to the run log file at WARNING level."""
-    typer.echo(msg)
+    """Echo to console (when enabled) AND append to the run log file at WARNING level."""
+    if _console_echo:
+        typer.echo(msg)
     logger = _file_logger.get()
     if logger is not None:
         logger.warning(msg)

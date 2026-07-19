@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..pipeline.transcript_correct import correct_transcript
+from ..reporting import StageStatus
 from .progress import STAGE_CORRECT
 
 if TYPE_CHECKING:
@@ -12,11 +13,11 @@ if TYPE_CHECKING:
 
 
 def _correct_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_CORRECT, 0.0, "转录矫正中...")
+    orch.emit_progress(STAGE_CORRECT, StageStatus.started, 0.0, "转录矫正中...")
 
 
 def _correct_progress_end(orch: Orchestrator) -> None:
-    orch._progress(STAGE_CORRECT, 1.0, "转录矫正完成")
+    orch.emit_progress(STAGE_CORRECT, StageStatus.finished, 1.0, "转录矫正完成")
 
 
 def _run_correct(orch: Orchestrator) -> None:

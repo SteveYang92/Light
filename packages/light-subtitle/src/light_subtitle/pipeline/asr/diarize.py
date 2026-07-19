@@ -12,12 +12,11 @@ Usage::
 
 from __future__ import annotations
 
-import logging
 import os
 
 from light_models import Word
 
-logger = logging.getLogger(__name__)
+from ... import logger
 
 
 def _detect_device() -> str:
@@ -56,7 +55,7 @@ def run(
     """
     if device is None:
         device = _detect_device()
-    logger.info("Using device: %s", device)
+    logger.info(f"Using device: {device}")
     token = hf_token or os.environ.get("HF_TOKEN", "")
     if not token:
         raise RuntimeError(
@@ -68,10 +67,12 @@ def run(
     import whisperx.diarize
 
     logger.info("Loading diarization pipeline...")
-    diarize_model = whisperx.diarize.DiarizationPipeline(model_name=model_name, token=token, device=device)
+    with logger.capture_external_output():
+        diarize_model = whisperx.diarize.DiarizationPipeline(model_name=model_name, token=token, device=device)
 
     logger.info("Running diarization on audio...")
-    diarize_result = diarize_model(audio_path, min_speakers=0, max_speakers=10)
+    with logger.capture_external_output():
+        diarize_result = diarize_model(audio_path, min_speakers=0, max_speakers=10)
 
     # Newer whisperx returns a pandas DataFrame with columns: start, end, speaker
     import pandas as pd
@@ -88,7 +89,7 @@ def run(
     speaker_segments: list[tuple[float, float, str]] = [
         (row["start"], row["end"], row["speaker"]) for _, row in df.iterrows()
     ]
-    logger.info("Diarization found %d speaker turns.", len(speaker_segments))
+    logger.info(f"Diarization found {len(speaker_segments)} speaker turns.")
 
     for w in words:
         midpoint = (w.start + w.end) / 2.0
@@ -114,5 +115,5 @@ def run(
             w.speaker = best_label
 
     assigned = sum(1 for w in words if w.speaker)
-    logger.info("Assigned speaker labels to %d/%d words.", assigned, len(words))
+    logger.info(f"Assigned speaker labels to {assigned}/{len(words)} words.")
     return words

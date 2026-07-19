@@ -8,6 +8,7 @@ from .. import artifacts, logger
 from ..language import detect_source_lang
 from ..pipeline import export as export_module
 from ..pipeline import segment
+from ..reporting import StageStatus
 from .progress import STAGE_SEGMENT
 
 if TYPE_CHECKING:
@@ -15,11 +16,11 @@ if TYPE_CHECKING:
 
 
 def _segment_progress_start(orch: Orchestrator) -> None:
-    orch._progress(STAGE_SEGMENT, 0.0, "语义断句中...")
+    orch.emit_progress(STAGE_SEGMENT, StageStatus.started, 0.0, "语义断句中...")
 
 
 def _segment_progress_end(orch: Orchestrator) -> None:
-    orch._progress(STAGE_SEGMENT, 1.0, f"断句完成 ({len(orch.state.segments)} 段)")
+    orch.emit_progress(STAGE_SEGMENT, StageStatus.finished, 1.0, f"断句完成 ({len(orch.state.segments)} 段)")
 
 
 def _run_segment(orch: Orchestrator) -> None:

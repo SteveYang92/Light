@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 from light_models import Segment, SubtitleCue, covered_source_text
@@ -31,6 +32,7 @@ def generate_annotations(
     *,
     glossary: dict | None = None,
     content_summary: dict | None = None,
+    progress: Callable[[float, str], None] | None = None,
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Annotate translated cues with LLM-generated explanatory notes.
 
@@ -54,9 +56,11 @@ def generate_annotations(
 
     annotated_terms: list[str] = []  # Cross-batch dedup context
     total_usage: dict[str, int] = {}
+    total_batches = max(1, (len(translated_cues) + BATCH_SIZE - 1) // BATCH_SIZE)
 
     for batch_start in range(0, len(translated_cues), BATCH_SIZE):
         batch = translated_cues[batch_start : batch_start + BATCH_SIZE]
+        batch_no = batch_start // BATCH_SIZE + 1
 
         batch_data = []
         for cue in batch:
@@ -108,6 +112,9 @@ def generate_annotations(
             term = _extract_term(annotation)
             if term and term not in annotated_terms:
                 annotated_terms.append(term)
+
+        if progress is not None:
+            progress(batch_no / total_batches, f"生成注解中... {batch_no}/{total_batches}")
 
     # Post-hoc dedup — catches any terms the LLM missed.
     _dedup_annotations(translated_cues)

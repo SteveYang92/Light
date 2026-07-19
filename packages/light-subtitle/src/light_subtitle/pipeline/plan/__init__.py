@@ -47,12 +47,19 @@ _MAX_WORKERS = 4
 # ── Public API ────────────────────────────────────────────
 
 
-def run(segments: list[Segment], config: SubtitleConfig, plan_dir: str | Path) -> tuple[list[Segment], dict | None]:
+def run(
+    segments: list[Segment],
+    config: SubtitleConfig,
+    plan_dir: str | Path,
+    *,
+    progress: Callable[[float, str], None] | None = None,
+) -> tuple[list[Segment], dict | None]:
     """Plan cue units from pause-based segments; persist ``plan/plan.json``.
 
     Returns ``(units, usage)``.  Unit ids are ``pNNNN``; a unit that had
     to be split at the word level becomes ``pNNNN_0``, ``pNNNN_1``, …
     (the split-group protocol consumed by the translate payload builder).
+    *progress*, when given, receives ``(fraction, message)`` per split span.
     """
     plan_dir = Path(plan_dir)
     plan_dir.mkdir(parents=True, exist_ok=True)
@@ -71,7 +78,7 @@ def run(segments: list[Segment], config: SubtitleConfig, plan_dir: str | Path) -
         groups = fallback.merge_fragments(segments)
     logger.info(f"  Plan: {len(segments)} segments → {len(groups)} cue groups")
 
-    units, meta = _materialize(segments, words, groups, config, total_usage)
+    units, meta = _materialize(segments, words, groups, config, total_usage, progress=progress)
     _save_plan(plan_dir, meta)
     return units, total_usage or None
 
@@ -108,6 +115,8 @@ def _materialize(
     groups: list[list[int]],
     config: SubtitleConfig,
     total_usage: dict,
+    *,
+    progress: Callable[[float, str], None] | None = None,
 ) -> tuple[list[Segment], list[dict]]:
     """Turn segment-index groups into timed Segments (splitting overlong ones).
 
@@ -161,7 +170,16 @@ def _materialize(
 
             split_tasks.append((_make_split_task, info.n))
 
-        raw_results = run_parallel_with_warmup(split_tasks, max_workers=_MAX_WORKERS)
+        n_spans = len(overlong_infos)
+        done_spans = 0
+
+        def _on_span_done() -> None:
+            nonlocal done_spans
+            done_spans += 1
+            if progress is not None:
+                progress(done_spans / n_spans, f"规划字幕边界中... {done_spans}/{n_spans}")
+
+        raw_results = run_parallel_with_warmup(split_tasks, max_workers=_MAX_WORKERS, on_complete=_on_span_done)
         for idx, (ranges, usage) in raw_results.items():
             if usage:
                 merge_token_usage(total_usage, usage)
