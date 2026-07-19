@@ -55,12 +55,16 @@ uv sync
 packages/
 ├── light-models/        共享数据契约（Word, Segment, SubtitleCue, is_cjk…）
 ├── light-subtitle/      ASR → 翻译 → 字幕流水线
-├── light-tts/           字幕配音（IndexTTS2 官方 / Metal 加速 / Qwen3-TTS）
-│   ├── pipeline/        ASR → correct → punct → segment → translate → subtitle → export
-│   ├── style/           字幕样式（字体解析、圆角盒主题配置、盒几何/ASS 生成）
-│   ├── step_registry.py 声明式步骤注册表（StepId + run/hydrate/progress）
+│   ├── steps/           17 个 step 的 run 实现 + 进度回调（按阶段分模块）
+│   ├── pipeline/        各阶段实现（asr/ plan/ translate/ subtitle/ export/）
+│   ├── merge/           分段输出合并（merge_outputs.py 为薄 re-export 壳）
+│   ├── artifacts.py     artifact 路径常量与序列化
+│   ├── llm/             LLM 横切层（client/retry/json_extract/parallel/prompts）
+│   ├── step_registry.py 声明式步骤注册表（StepId + StepDefinition 装配）
 │   ├── step_plan.py     运行时 plan 构建与 resume 解析
-│   └── language/        语言处理（英语/CJK 断句、标点、显示约定）
+│   ├── language/        语言处理（英语/CJK 断句、标点、显示约定）
+│   └── style/           字幕样式（字体解析、圆角盒主题配置、盒几何/ASS 生成）
+├── light-tts/           字幕配音（IndexTTS2 官方 / Metal 加速 / Qwen3-TTS）
 ├── light-qc/            独立 QC 引擎（规则 + LLM）
 ├── light-regression/    回归测试工具
 ├── light-backend/       FastAPI Web 后端（routers/ + services/）
