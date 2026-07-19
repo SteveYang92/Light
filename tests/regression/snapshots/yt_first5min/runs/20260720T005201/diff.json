@@ -1,0 +1,116 @@
+{
+  "baseline_run_id": "20260718T154108",
+  "current_run_id": "20260720T005201",
+  "errors_delta": -2,
+  "warnings_delta": -4,
+  "suggestions_delta": -2,
+  "rule_changes": [
+    {
+      "rule": "EntryPointConfidence",
+      "before": 3,
+      "after": 1,
+      "delta": -2
+    },
+    {
+      "rule": "WordGapAnomaly",
+      "before": 32,
+      "after": 31,
+      "delta": -1
+    },
+    {
+      "rule": "MaxDuration",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "ReadingSpeed",
+      "before": 3,
+      "after": 2,
+      "delta": -1
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 4,
+      "after": 1,
+      "delta": -3
+    }
+  ],
+  "new_issues": [],
+  "fixed_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 26,
+      "time": "00:01:21,920",
+      "detail": "阅读速度 26.9 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 84,
+      "time": "00:04:34,114",
+      "detail": "入点偏离首个词语 0.311s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:04:34,425"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 85,
+      "time": "00:04:36,319",
+      "detail": "入点偏离首个词语 0.887s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:04:37,206"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 67,
+      "time": "00:03:39,883",
+      "detail": "入点偏离首个词语 0.286s，超过 0.15s 建议阈值",
+      "fix": "将入点对齐至 00:03:40,169"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 29,
+      "time": "00:01:28,909",
+      "detail": "入点首个词 ' they're' 置信度 0.33，后续词峰值 0.87（差 0.54）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 32,
+      "time": "00:01:36,416",
+      "detail": "入点首个词 ' They're' 置信度 0.31，后续词峰值 0.99（差 0.68）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 88,
+      "time": "00:04:46,434",
+      "detail": "字幕时长 6.86s，超过最大 6.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 1,
+      "time": "00:00:01,650",
+      "detail": "词 ' a' 与 ' controversial' 之间间隔 0.400s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    }
+  ],
+  "degraded": false,
+  "reasons": []
+}
