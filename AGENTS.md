@@ -11,7 +11,9 @@ packages/
 │   ├── orchestrator.py  编排器（PipelineState 统一状态袋）
 │   ├── step_registry.py / step_plan.py / run_state.py / state_hydrate.py  # 声明式步骤注册与 resume
 │   ├── steps/           17 个 step 的 run 实现 + 进度回调（按阶段分模块；stage 常量在 progress.py）
+│   ├── reporting/       通用进度事件层（events/model/reporter + Plain/Rich 渲染器；零依赖）
 │   ├── artifacts.py     artifact 路径常量 + 序列化 + JSON 读写
+│   ├── logger.py        自制日志（echo + 文件；set_console_echo / capture_external_output / log_path）
 │   ├── llm/             LLM 横切层（client+client_from_config / retry / json_extract / parallel / prompts）
 │   ├── pipeline/        各阶段实现（asr/ plan/ translate/ subtitle/ export/ + 矫正/标点/断句等单文件模块）
 │   ├── merge/           分段输出合并（原 merge_outputs.py 拆分；同名文件为薄 re-export 壳）
@@ -228,6 +230,7 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 - `output/` 已 gitignore，用于本地验证和测试输出
 - `data/` 已 gitignore，用于 Web 后端运行时数据（SQLite + 视频文件）
 - 回归测试快照 `tests/regression/snapshots/` **进 git 共享**，是固定黄金基线，**禁止删除**；质量改进后用 `rebaseline` 推进，不要手动删快照
+- stage 字符串是 SSE/前端外部契约（`reporting/events.py` 运行级 + `steps/progress.py` 步骤级），**禁止改名**；新增 stage 需同步 `reporting/labels.py` 的中文标签
 - 新 QC 规则必须零误报才提交
 - light-qc 独立端到端检查仅改 light-qc 时需要；改 light-subtitle 由回归内置覆盖
 - resume 见上文「断点续跑」；改 step 注册/hydrate 后跑 `tests/test_run_state.py`
