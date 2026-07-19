@@ -34,6 +34,7 @@ from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
 from ...llm.prompts import render_prompt
 from ...usage.tracker import merge_token_usage
+from ..plan.boundary import dangling_tail
 
 _BATCH_CORE = 60  # cues judged per LLM call
 _BATCH_CTX = 8  # context cues on each side (not judged)
@@ -392,11 +393,19 @@ def _validate_shift(op: dict, cues: list[SubtitleCue], config: SubtitleConfig) -
     donor, n_move = (nxt, k) if k > 0 else (prev, -k)
     if n_move >= len(_cue_words(donor)):
         return f"shift boundary {i}: moving {n_move} words leaves donor empty"
+    # Check if the new boundary created by the shift strands a function word.
+    donor_words = _cue_words(donor)
+    tail_idx = k - 1 if k > 0 else len(donor_words) + k - 1
+    if 0 <= tail_idx < len(donor_words):
+        bad = dangling_tail(donor_words[tail_idx])
+        if bad is not None:
+            return (
+                f"shift boundary {i}: moving {n_move} words creates a dangling tail after "
+                f"'{donor_words[tail_idx].text.strip()}' — move fewer or more words"
+            )
     speakers = {c.speaker for c in (prev, nxt) if c.speaker}
     if len(speakers) > 1:
         return f"shift boundary {i}: mixes speakers {sorted(speakers)}"
-    # New durations come from the moved EN words' timestamps.  (Chars/CPS
-    # are checked after the pair is re-translated.)
     words_prev, words_next = _shifted_words(prev, nxt, k)
     max_dur = config.max_duration * _MAX_DUR_RATIO
     dur_prev = words_prev[-1].end - words_prev[0].start
@@ -467,6 +476,12 @@ def _apply_shift(
         )
         prev.unit_id, prev.merged_from = prev_chain[0], prev_chain[1:]
         nxt.unit_id, nxt.merged_from = next_chain[0], next_chain[1:]
+        for u in units:
+            if u.words and dangling_tail(u.words[-1]):
+                cues[i], cues[i + 1] = backup_prev, backup_next
+                units[:] = backup_units
+                logger.info(f"  Join: shift boundary {i} reverted (dangling tail from word split)")
+                return cues, units
 
     texts = _retranslate_pair(prev, nxt, units, config)
     problems = []
