@@ -1,0 +1,92 @@
+{
+  "baseline_run_id": "20260718T153742",
+  "current_run_id": "20260719T135659",
+  "errors_delta": 0,
+  "warnings_delta": -1,
+  "suggestions_delta": 2,
+  "rule_changes": [
+    {
+      "rule": "OverlappingContent",
+      "before": 4,
+      "after": 3,
+      "delta": -1
+    },
+    {
+      "rule": "ExitPointPrecision",
+      "before": 4,
+      "after": 5,
+      "delta": 1
+    },
+    {
+      "rule": "MaxDuration",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    {
+      "rule": "EntryPointConfidence",
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 25,
+      "time": "00:01:23,480",
+      "detail": "入点首个词 ' are' 置信度 0.19，后续词峰值 0.99（差 0.80）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 51,
+      "time": "00:03:12,146",
+      "detail": "字幕时长 6.68s，超过最大 6.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 11,
+      "time": "00:00:34,311",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.018s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 8,
+      "time": "00:00:23,281",
+      "detail": "入点偏离首个词语 0.856s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:00:24,137"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 39,
+      "time": "00:02:20,018",
+      "detail": "与上一条字幕信息重叠 (相似度 56%)",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    }
+  ],
+  "degraded": false,
+  "reasons": [
+    "3 new issues introduced"
+  ]
+}
