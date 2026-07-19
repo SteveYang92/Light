@@ -9,7 +9,7 @@ from light_models import SubtitleCue
 from light_models.punctuation import CJK_ALL_PUNCT, CJK_CLAUSE_PUNCT, CJK_PARTICLES, CJK_SENTENCE_PARTICLES
 
 from ...config import SubtitleConfig
-from ...language.cjk import _rebalance_chinese_pair, split_chinese
+from ...language.cjk import rebalance_chinese_pair, split_chinese
 from ...language.english import split_english
 
 # ═══════════════════════════════════════════════════════════════════
@@ -98,7 +98,7 @@ def _try_merge(
 
     # Rebalance 2-line Chinese cues before further processing.
     if prev.lang == "zh" and len(prev_lines) == 2:
-        prev_lines = _rebalance_chinese_pair(prev_lines)
+        prev_lines = rebalance_chinese_pair(prev_lines)
 
     merged = SubtitleCue(
         cue_id=prev.cue_id,
@@ -127,7 +127,7 @@ def _try_merge(
             if len(re_split) == 1:
                 merged_lines = re_split[0].text.split("\n")
                 if len(merged_lines) == 2:
-                    merged_lines = _rebalance_chinese_pair(merged_lines)
+                    merged_lines = rebalance_chinese_pair(merged_lines)
                     re_split[0].text = "\n".join(merged_lines)
             return re_split
     # Safe fallback: keep original cues separate.

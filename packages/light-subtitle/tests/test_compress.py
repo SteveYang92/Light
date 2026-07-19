@@ -57,7 +57,7 @@ def test_count_chars_excludes_newlines() -> None:
 def test_compress_applies_verified_texts() -> None:
     cues = [_cue("这是一段需要被压缩的超长中文字幕文本", 0.0, 2.0)]  # 18 chars / 2s = 9+ cps
     client = _FakeClient(['{"results": [{"id": 0, "text": "压缩后的字幕"}]}'])
-    with patch("light_subtitle.pipeline.subtitle.compress.OpenAIClient", return_value=client):
+    with patch("light_subtitle.pipeline.subtitle.compress.client_from_config", return_value=client):
         usage = compress_over_cps(cues, [0], _config())
     assert cues[0].text == "压缩后的字幕"
     assert usage is not None
@@ -73,7 +73,7 @@ def test_compress_retries_with_feedback_and_keeps_original_on_failure() -> None:
             '{"results": [{"id": 0, "text": "这个压缩结果实在是太长了超标了"}]}',
         ]
     )
-    with patch("light_subtitle.pipeline.subtitle.compress.OpenAIClient", return_value=client):
+    with patch("light_subtitle.pipeline.subtitle.compress.client_from_config", return_value=client):
         compress_over_cps(cues, [0], _config())
     assert cues[0].text == "原始字幕文本保持不动"  # untouched
     assert "previous_error" in client.calls[1][1]["content"]
@@ -94,17 +94,16 @@ def test_pace_compresses_over_cps_translation() -> None:
         _cue("一段太长太长太长太长太长太长太长太长的字幕", 0.0, 2.0),
         _cue("短", 2.105, 3.0),
     ]
-    usage_out: dict = {}
 
     def fake_compress(result, indices, config):
         result[0].text = "压缩后的短字幕"
         return {"total_tokens": 5}
 
     with patch("light_subtitle.pipeline.subtitle.pace.compress.compress_over_cps", side_effect=fake_compress) as m:
-        out = pace.correct(cues, _config(), usage_out)
+        out, usage = pace.correct(cues, _config())
     assert m.called
     assert out[0].text == "压缩后的短字幕"
-    assert usage_out.get("total_tokens") == 5
+    assert usage.get("total_tokens") == 5
 
 
 def test_pace_skips_compression_for_source_lang_cues() -> None:

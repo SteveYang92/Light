@@ -7,14 +7,14 @@ from pathlib import Path
 
 from .config import SubtitleConfig
 from .run_state import RunState, RunStatus
-from .step_registry import StepDefinition, build_enabled_definitions
+from .step_registry import StepDefinition, StepId, build_enabled_definitions
 
 
 @dataclass(frozen=True)
 class PlanStep:
     """One enabled step in an execution plan."""
 
-    id: str
+    id: StepId
     definition: StepDefinition
     required_artifacts: tuple[Path, ...] = ()
 
@@ -23,7 +23,7 @@ def build_step_plan(config: SubtitleConfig) -> list[PlanStep]:
     """Build ordered step list from the declarative registry."""
     return [
         PlanStep(
-            id=definition.id.value,
+            id=definition.id,
             definition=definition,
             required_artifacts=definition.artifacts(config),
         )

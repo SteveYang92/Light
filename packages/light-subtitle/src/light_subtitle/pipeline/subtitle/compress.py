@@ -10,13 +10,13 @@ are left for QC to flag.
 from __future__ import annotations
 
 import json
-import re
 
 from light_models import SubtitleCue
 
 from ... import logger
 from ...config import SubtitleConfig
-from ...llm.client import OpenAIClient
+from ...llm.client import client_from_config
+from ...llm.json_extract import extract_json_object
 from ...llm.prompts import render_prompt
 from ...usage.tracker import merge_token_usage
 
@@ -32,7 +32,7 @@ def compress_over_cps(cues: list[SubtitleCue], indices: list[int], config: Subti
     if not indices or not config.llm_api_key:
         return None
 
-    client = OpenAIClient(base_url=config.llm_base_url, api_key=config.llm_api_key, model=config.llm_model)
+    client = client_from_config(config)
     items = []
     for n, i in enumerate(indices):
         cue = cues[i]
@@ -86,9 +86,9 @@ def _count_chars(text: str) -> int:
 
 
 def _parse_results(response: str) -> dict[int, str] | None:
-    match = re.search(r"\{[\s\S]*\}", response)
+    match = extract_json_object(response)
     try:
-        data = json.loads(match.group(0) if match else response)
+        data = json.loads(match if match is not None else response)
     except json.JSONDecodeError:
         return None
     raw = data.get("results") if isinstance(data, dict) else None

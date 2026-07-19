@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from light_models import Word
-from light_subtitle.pipeline._word_segments import (
+from light_subtitle.pipeline.word_segments import (
     WordSegment,
     group_words_by_gap,
     join_word_text,

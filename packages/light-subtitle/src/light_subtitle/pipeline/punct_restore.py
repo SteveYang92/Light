@@ -19,20 +19,20 @@ from __future__ import annotations
 
 import difflib
 import json
-import re
-import time
 from pathlib import Path
 
 from light_models import Word
 from light_models.punctuation import SENTENCE_ENDS
 
-from .. import logger
+from .. import artifacts, logger
 from ..config import SubtitleConfig
-from ..llm.client import OpenAIClient
+from ..llm.client import OpenAIClient, client_from_config
+from ..llm.json_extract import parse_json_array_response
 from ..llm.parallel import run_parallel_with_warmup
 from ..llm.prompts import render_prompt
+from ..llm.retry import chat_with_retry
 from ..usage.tracker import format_token_usage, merge_token_usage, save_step_usage
-from ._word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
+from .word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
 
 # ── Constants ──────────────────────────────────────────────────────
 
@@ -78,11 +78,7 @@ def restore_punctuation(
         _save_segments_restored(segments, str(punct_dir / "punct_restore.json"))
         return words, None
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
+    client = client_from_config(config)
     system_prompt = render_prompt("restore_punct.j2")
 
     chunks: list[list[WordSegment]] = []
@@ -167,33 +163,28 @@ def _restore_batch(
     ]
 
     max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            response, usage = client.chat(messages, temperature=0.0)
-            return response, usage
-        except Exception:
-            if attempt < max_retries - 1:
-                delay = 2**attempt
-                logger.warning(f"    Punct restore retry {attempt + 1}/{max_retries}, waiting {delay}s")
-                time.sleep(delay)
 
-    logger.warning(f"    Punct restore failed after {max_retries} retries, using original text")
-    fallback = json.dumps([{"index": s.index, "text": s.text} for s in chunk])
-    return fallback, {}
+    def _on_retry(attempt: int, _exc: BaseException) -> float:
+        delay = 2**attempt
+        logger.warning(f"    Punct restore retry {attempt + 1}/{max_retries}, waiting {delay}s")
+        return delay
 
-
-def _parse_llm_response(response: str) -> list[dict]:
-    """Extract list of {index, text} from LLM JSON response."""
-    json_match = re.search(r"\[[\s\S]*\]", response)
-    if json_match:
-        try:
-            return json.loads(json_match.group(0))
-        except json.JSONDecodeError:
-            pass
     try:
-        return json.loads(response)
-    except (json.JSONDecodeError, ValueError):
-        return []
+        return chat_with_retry(
+            lambda: client.chat(messages, temperature=0.0),
+            max_retries=max_retries,
+            on_retry=_on_retry,
+        )
+    except Exception as e:
+        logger.warning(
+            f"    Punct restore failed after {max_retries} retries ({type(e).__name__}: {e}), using original text"
+        )
+        fallback = json.dumps([{"index": s.index, "text": s.text} for s in chunk])
+        return fallback, {}
+
+
+# Shared implementation (kept as an alias; tests import this name).
+_parse_llm_response = parse_json_array_response
 
 
 # ── Word-level punctuation diff ────────────────────────────────────
@@ -264,16 +255,7 @@ def _save_segments(segments: list[WordSegment], output_path: str) -> None:
             "end": s.words[-1].end if s.words else 0.0,
             "word_count": len(s.words),
             "text": s.text,
-            "words": [
-                {
-                    "text": w.text,
-                    "start": w.start,
-                    "end": w.end,
-                    "confidence": w.confidence,
-                    "speaker": w.speaker,
-                }
-                for w in s.words
-            ],
+            "words": [artifacts.word_to_dict(w) for w in s.words],
         }
         for s in segments
     ]
@@ -289,16 +271,7 @@ def _save_segments_restored(segments: list[WordSegment], output_path: str) -> No
             "end": s.words[-1].end if s.words else 0.0,
             "word_count": len(s.words),
             "text": join_word_text(s.words),
-            "words": [
-                {
-                    "text": w.text,
-                    "start": w.start,
-                    "end": w.end,
-                    "confidence": w.confidence,
-                    "speaker": w.speaker,
-                }
-                for w in s.words
-            ],
+            "words": [artifacts.word_to_dict(w) for w in s.words],
         }
         for s in segments
     ]

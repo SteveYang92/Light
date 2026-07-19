@@ -19,14 +19,15 @@ from ...usage.tracker import merge_token_usage
 from . import compress
 
 
-def correct(cues, config, usage_out: dict | None = None):
+def correct(cues, config, *, transcript_words=None):
     """Adjust cue timing for readability.
 
     Runs duration fix, gap resolution, CPS enforcement (borrow time, then
     compress over-limit translations), min-gap guard, reading padding.
-    *usage_out* collects token usage when LLM compression runs.
+    *transcript_words* feeds entry-point optimization.  Returns
+    ``(cues, usage)`` — usage collects token usage when LLM compression runs.
     """
-    return _apply_time_corrections(cues, config, usage_out)
+    return _apply_time_corrections(cues, config, transcript_words=transcript_words)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -34,13 +35,15 @@ def correct(cues, config, usage_out: dict | None = None):
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _apply_time_corrections(cues, config, usage_out: dict | None = None):
+def _apply_time_corrections(cues, config, *, transcript_words=None):
     """Full time-correction pipeline.
 
     Order matters: each step assumes the previous step's output shape.
     """
     if not cues:
-        return cues
+        return cues, {}
+
+    usage: dict = {}
 
     # Step 1: duration fix — stretch or cap each cue
     result = []
@@ -78,8 +81,8 @@ def _apply_time_corrections(cues, config, usage_out: dict | None = None):
         over = _over_cps_indices(result, config)
         if over:
             compress_usage = compress.compress_over_cps(result, over, config)
-            if compress_usage and usage_out is not None:
-                merge_token_usage(usage_out, compress_usage)
+            if compress_usage:
+                merge_token_usage(usage, compress_usage)
 
     # Step 5: ensure all gaps >= MIN_GAP
     for i in range(1, len(result)):
@@ -166,9 +169,8 @@ def _apply_time_corrections(cues, config, usage_out: dict | None = None):
     # entry shifts are not undone by the drift-correction logic.
     # Shift entry to first reliable word when wav2vec2 alignment
     # confidence is low at cue boundaries.
-    if getattr(config, "optimize_entry_points", True) and result:
-        words = getattr(config, "transcript_words", None)
-        result = _optimize_entry_points(result, words)
+    if config.optimize_entry_points and result:
+        result = _optimize_entry_points(result, transcript_words)
 
     # After all boundary corrections, re-min-duration any cue that fell
     # below the minimum.
@@ -185,7 +187,7 @@ def _apply_time_corrections(cues, config, usage_out: dict | None = None):
         cue.end += forward
         cue.start -= backward
 
-    return result
+    return result, usage
 
 
 # ═══════════════════════════════════════════════════════════════════

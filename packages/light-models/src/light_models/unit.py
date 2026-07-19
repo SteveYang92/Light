@@ -3,8 +3,8 @@
 This is NOT a semantic unit.  It is produced by ``segment.run()`` which
 splits word sequences at silence gaps > 0.5 s and sentence-ending
 punctuation.  For translation purposes these segments are often too
-fine-grained; use ``compose_units()`` to merge them into complete
-translation units.
+fine-grained; the planner step groups them into complete translation
+units (``plan/plan.json``).
 """
 
 from __future__ import annotations

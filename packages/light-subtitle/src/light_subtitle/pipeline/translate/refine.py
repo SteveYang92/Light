@@ -20,19 +20,20 @@ Usage::
 from __future__ import annotations
 
 import json
-import re
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from light_models import Segment, SubtitleCue
 
-from light_models.punctuation import CJK_CLAUSE_PUNCT, SENTENCE_ENDS
-
-from ... import logger
+from ... import artifacts, logger
 from ...config import SubtitleConfig
-from ...llm.client import OpenAIClient, merge_token_usage
+from ...llm.client import client_from_config, merge_token_usage
+from ...llm.json_extract import extract_json_array
 from ...llm.prompts import render_prompt
-from .evaluate import QualityScore
+from .. import export
+from .evaluate import QualityScore, evaluate_translations, get_low_score_cues, scores_to_dict
+from .translate import normalize_punctuation
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
@@ -52,6 +53,9 @@ def refine_translations(
     all_segments: list[Segment],
     quality_scores: list[QualityScore],
     config: SubtitleConfig,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Re-translate low-quality translations with diagnostic feedback.
 
@@ -87,15 +91,11 @@ def refine_translations(
         f" in {len(groups)} group(s) (threshold < {config.quality_threshold})..."
     )
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
+    client = client_from_config(config)
 
     refined_cues: list[SubtitleCue] = []
     total_usage: dict = {}
-    system_prompt = _render_refine_system_prompt(config)
+    system_prompt = _render_refine_system_prompt(config, glossary=glossary, content_summary=content_summary)
 
     # Process in small batches to amortize LLM overhead.
     for batch_idx in range(0, len(groups), REFINE_BATCH_SIZE):
@@ -162,13 +162,18 @@ def _refine_batch(
 # ── Prompt construction ──────────────────────────────────────────────────────
 
 
-def _render_refine_system_prompt(config: SubtitleConfig) -> str:
+def _render_refine_system_prompt(
+    config: SubtitleConfig,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
+) -> str:
     """Build cache-friendly system prompt for refinement."""
     return render_prompt(
         "refine_system.j2",
         target_lang=config.target_lang,
-        glossary=config.glossary,
-        content_summary=config.content_summary,
+        glossary=config.glossary if glossary is None else glossary,
+        content_summary=config.content_summary if content_summary is None else content_summary,
     )
 
 
@@ -276,9 +281,9 @@ def _parse_refine_response(
     """Parse LLM refinement response into corrected SubtitleCue objects."""
     response = response.strip()
 
-    json_match = re.search(r"\[([\s\S]*)\]", response)
-    if json_match:
-        data = json.loads(json_match.group(0))
+    json_fragment = extract_json_array(response)
+    if json_fragment is not None:
+        data = json.loads(json_fragment)
     else:
         try:
             data = json.loads(response)
@@ -310,7 +315,7 @@ def _parse_refine_response(
             continue
 
         # Apply basic normalization.
-        text = _normalize_refined_punctuation(text, config.target_lang)
+        text = normalize_punctuation(text, config.target_lang, punctuate_blank=True)
 
         refined.append(
             type(original_cue)(
@@ -328,15 +333,95 @@ def _parse_refine_response(
     return refined
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+# ── Evaluate + refine driver ──────────────────────────────────────────────────
 
 
-def _normalize_refined_punctuation(text: str, lang: str) -> str:
-    """Basic punctuation normalization for refined translations."""
-    if lang == "zh" and text:
-        last_char = text.rstrip()[-1] if text.rstrip() else ""
-        if last_char in CJK_CLAUSE_PUNCT:
-            text = text.rstrip()[:-1] + "。"
-        elif last_char not in SENTENCE_ENDS:
-            text = text.rstrip() + "。"
-    return text
+def evaluate_and_refine(
+    translated_cues: list[SubtitleCue],
+    translation_segments: list[Segment],
+    config: SubtitleConfig,
+    tx_dir: Path,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
+) -> tuple[list[SubtitleCue], dict[str, dict] | None]:
+    """Evaluate translation quality and refine low-scoring cues.
+
+    Returns the (possibly refined) list of translated cues and per-step usage.
+    """
+    if not config.evaluate_enabled or not translated_cues:
+        return translated_cues, None
+
+    logger.info("  Evaluating translation quality...")
+    quality_scores, eval_usage = evaluate_translations(
+        translated_cues, translation_segments, config, glossary=glossary, content_summary=content_summary
+    )
+    breakdown: dict[str, dict] = {}
+    if eval_usage:
+        breakdown["translate.evaluate"] = eval_usage
+
+    if not quality_scores:
+        return translated_cues, breakdown or None
+
+    avg_score = sum(s.overall for s in quality_scores) / len(quality_scores)
+    low_count = len([s for s in quality_scores if s.overall < config.quality_threshold])
+    logger.info(
+        f"    Quality: avg {avg_score:.2f}, "
+        f"{low_count}/{len(quality_scores)} below threshold ({config.quality_threshold})"
+    )
+
+    # Snapshot original translations before refinement (for quality.json).
+    original_trans = {c.unit_id: c.text for c in translated_cues}
+
+    # ── Refine low-quality translations ──
+    low_ids = get_low_score_cues(quality_scores, config.quality_threshold)
+    if low_ids:
+        for round_num in range(config.max_refine_rounds):
+            logger.info(f"    Refine round {round_num + 1}/{config.max_refine_rounds}...")
+
+            refined, refine_usage = refine_translations(
+                low_ids,
+                translated_cues,
+                translation_segments,
+                quality_scores,
+                config,
+                glossary=glossary,
+                content_summary=content_summary,
+            )
+            if refine_usage:
+                merge_token_usage(breakdown.setdefault("translate.refine", {}), refine_usage)
+
+            if not refined:
+                break
+
+            # Merge refined cues back.
+            refined_map = {c.unit_id: c for c in refined}
+            translated_cues = [refined_map.get(c.unit_id, c) for c in translated_cues]
+
+            # Re-evaluate refined cues for next round.
+            if round_num < config.max_refine_rounds - 1:
+                quality_scores, round_eval_usage = evaluate_translations(
+                    translated_cues, translation_segments, config, glossary=glossary, content_summary=content_summary
+                )
+                if round_eval_usage:
+                    merge_token_usage(breakdown.setdefault("translate.evaluate", {}), round_eval_usage)
+                low_ids = get_low_score_cues(quality_scores, config.quality_threshold)
+                if not low_ids:
+                    logger.info("    All translations now above threshold.")
+                    break
+        else:
+            logger.info(f"    Reached max refine rounds ({config.max_refine_rounds}).")
+
+    # Save quality report (only low-scoring units).
+    low_scores = [s for s in quality_scores if s.overall < config.quality_threshold]
+    source_map = {s.unit_id: s.source_text for s in translation_segments}
+    score_data = scores_to_dict(low_scores)
+    for d in score_data:
+        d["source"] = source_map.get(d["unit_id"], "")
+        d["translation"] = original_trans.get(d["unit_id"], "")
+    export.export_json_file(
+        {"scores": score_data},
+        str(tx_dir / artifacts.QUALITY_JSON),
+    )
+
+    return translated_cues, breakdown or None

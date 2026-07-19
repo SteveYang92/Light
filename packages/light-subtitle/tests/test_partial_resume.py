@@ -7,11 +7,13 @@ from unittest.mock import patch
 
 from light_models import Segment, SubtitleCue, Word
 from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate.translate import (
+from light_subtitle.pipeline.translate.checkpoint import (
     _save_partial,
-    _segment_graph_fingerprint,
-    covered_unit_ids,
     load_partial,
+    segment_graph_fingerprint,
+)
+from light_subtitle.pipeline.translate.translate import (
+    covered_unit_ids,
     run,
 )
 
@@ -123,7 +125,7 @@ class TestPartialStaleDiscard:
             mock_batch.assert_called_once()
 
         raw = json.loads((tmp_path / "partial.json").read_text(encoding="utf-8"))
-        assert raw["segments_fingerprint"] == _segment_graph_fingerprint(new_segments)
+        assert raw["segments_fingerprint"] == segment_graph_fingerprint(new_segments)
 
     def test_translate_keeps_partial_when_segment_graph_matches(self, tmp_path):
         segments = [_seg("u0"), _seg("u1", start=1.0, end=2.0)]

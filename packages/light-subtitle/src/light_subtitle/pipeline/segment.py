@@ -24,12 +24,12 @@ from light_models import Segment, Word, is_cjk
 from light_models.punctuation import CLAUSE_PUNCT, EN_TRAILING_PUNCT, SENTENCE_ENDS
 
 from ..language import is_sentence_end
-from ..language.english import (
+from ..language.english import is_forbidden_split
+from ..language.english_words import (
     ARTICLES,
     CONJUNCTIONS,
     DISCOURSE_MARKERS,
     PREPOSITIONS,
-    _is_forbidden_split,
 )
 
 SPLIT_THRESHOLD = 40
@@ -80,7 +80,7 @@ def _score_split(
     next_clean = next_text.lower().rstrip(EN_TRAILING_PUNCT)
 
     # ── Netflix §4: never split forbidden pairs ──
-    if _is_forbidden_split(last_text, next_text):
+    if is_forbidden_split(last_text, next_text):
         return (0, True)
 
     score = 0

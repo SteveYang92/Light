@@ -12,7 +12,7 @@ time directly from source segments.  No post-hoc alignment needed.
 from . import layout, pace
 
 
-def run(cues, config, usage_out: dict | None = None) -> list:
+def run(cues, config, *, transcript_words=None) -> tuple[list, dict]:
     """Format cues into display-ready subtitles.
 
     Two-phase pipeline (顺序有因果关系，不可调换):
@@ -24,9 +24,12 @@ def run(cues, config, usage_out: dict | None = None) -> list:
 
     2. correct (对时) — duration fix, gap resolution, CPS enforcement
        (borrow time, then compress over-limit translations via LLM),
-       min-gap guard, reading padding.  *usage_out* collects compression
-       token usage when provided.
+       min-gap guard, reading padding.
+
+    *transcript_words* feeds pace's entry-point optimization.  Returns
+    ``(cues, usage)`` — usage collects compression token usage (empty
+    dict when LLM compression did not run).
     """
     cues = layout.prepare(cues, config)  # 断句
-    cues = pace.correct(cues, config, usage_out)  # 对时
-    return cues
+    cues, usage = pace.correct(cues, config, transcript_words=transcript_words)  # 对时
+    return cues, usage

@@ -6,19 +6,17 @@ import signal
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from light_models import Segment, SubtitleCue, Word
 
 from . import logger
 from .config import SubtitleConfig
-from .pipeline.asr import AsrContext
-from .pipeline.translate.context import TranslateContext
 from .run_state import RunStateManager
 from .state_hydrate import hydrate_state
 from .step_plan import build_step_plan, resolve_start_index, validate_artifacts
 from .step_registry import ASR_STEP_IDS
 from .usage.tracker import UsageTracker
+from .video_split import segment_tag
 
 # ── Progress callback type ─────────────────────────────
 
@@ -29,23 +27,38 @@ ProgressCallback = Callable[[str, float, str], None] | None
 
 @dataclass
 class PipelineState:
-    """Mutable state accumulated during pipeline execution."""
+    """Mutable state accumulated during pipeline execution.
 
+    Single state bag for the whole run: ASR intermediates, translation
+    outputs, and the SUBTITLE→EXPORT formatted-cue channel all live here
+    (the former ``AsrContext``/``TranslateContext`` bags are merged in).
+    """
+
+    # ── ASR ──
+    audio_path: str = ""
     words: list[Word] = field(default_factory=list)
+    # ── Segmentation ──
     segments: list[Segment] = field(default_factory=list)
     # Composed translation units — shared between English source formatting
     # and the translate pipeline.  Built by the compose step from
     # ``segments`` (raw pause-based units) so both tracks share the same
-    # ``unit_id`` graph (``m…`` / ``mu…_N``) for bilingual alignment.
+    # ``unit_id`` graph (``pNNNN`` plus ``_K`` suffixes for word-level splits).
     composed_segments: list[Segment] = field(default_factory=list)
     source_lang: str = "en"
     raw_source_cues: list[SubtitleCue] = field(default_factory=list)
+    # ── Translation ──
     translated_cues: list[SubtitleCue] = field(default_factory=list)
     translation_usage: dict | None = None
+    translation_usage_breakdown: dict[str, dict] = field(default_factory=dict)
     annotations: dict[str, str] = field(default_factory=dict)
+    # ── Translation context (glossary / summary / speakers) ──
     auto_glossary: dict[str, str] = field(default_factory=dict)
     merged_glossary: dict[str, str] = field(default_factory=dict)
     content_summary: dict | None = None
+    speaker_names: dict[str, str] = field(default_factory=dict)
+    # ── SUBTITLE → EXPORT channel (None = not formatted this run) ──
+    formatted_source_cues: list[SubtitleCue] | None = None
+    formatted_target_cues: list[SubtitleCue] | None = None
 
 
 # ── Orchestrator ────────────────────────────────────────
@@ -63,11 +76,7 @@ class Orchestrator:
     ):
         self.config = config
         self.state = PipelineState()
-        self.asr_ctx = AsrContext()
-        self.tx_ctx = TranslateContext()
         self._progress = progress_callback or (lambda _s, _p, _m: None)
-        self._formatted_source: list[SubtitleCue] | None = None
-        self._formatted_target: list[SubtitleCue] | None = None
         self._state_mgr: RunStateManager | None = None
         self._on_asr_complete = on_asr_complete or (lambda: None)
         self._shutdown = shutdown_event or threading.Event()  # never-set sentinel
@@ -75,12 +84,7 @@ class Orchestrator:
     @property
     def _seg_tag(self) -> str:
         """Segment label extracted from output_dir (e.g. 'seg1', 'chunk_2')."""
-        name = Path(self.config.output_dir).name
-        if name.startswith(".seg"):
-            return name[1:]
-        if name.startswith("chunk_"):
-            return name
-        return ""
+        return segment_tag(self.config.output_dir)
 
     def run(self) -> None:
         logger.init(self.config.output_dir)
@@ -114,14 +118,13 @@ class Orchestrator:
 
         self._install_interrupt_handler()
 
-        asr_values = {e.value for e in ASR_STEP_IDS}
         remaining = plan[start_idx:]
 
         # Pre-fire: if ASR is already done (resume from post-ASR, or all
         # steps complete), signal immediately so the next segment can start
         # its ASR without waiting for an ASR→post-ASR boundary transition
         # that will never happen.
-        if not remaining or remaining[0].id not in asr_values:
+        if not remaining or remaining[0].id not in ASR_STEP_IDS:
             self._on_asr_complete()
             if not remaining:
                 logger.info(f"{tag}Done (already complete).")
@@ -152,9 +155,9 @@ class Orchestrator:
             logger.info(f"{tag}  ✓ {step.id} done")
 
             # Fire callback at the ASR → post-ASR boundary
-            if step.id in asr_values:
+            if step.id in ASR_STEP_IDS:
                 next_step = remaining[i + 1] if i + 1 < len(remaining) else None
-                if next_step is None or next_step.id not in asr_values:
+                if next_step is None or next_step.id not in ASR_STEP_IDS:
                     self._on_asr_complete()
 
         self._state_mgr.mark_run_completed()
@@ -163,9 +166,9 @@ class Orchestrator:
 
     def _finalize_usage_report(self, tag: str) -> None:
         """Write usage_report.json and log a summary."""
-        if not self.usage_tracker._steps:
+        if not self.usage_tracker.has_records:
             self.usage_tracker.load_from_dir(self.config.output_dir)
-        if not self.usage_tracker._steps:
+        if not self.usage_tracker.has_records:
             return
         self.usage_tracker.save_report(self.config.output_dir)
         for line in self.usage_tracker.format_summary().splitlines():

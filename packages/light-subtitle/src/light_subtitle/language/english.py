@@ -3,7 +3,7 @@
 This is the primary language module. All English constants, helpers, and
 classes live here.  Import from ``language.english``::
 
-    from light_subtitle.language.english import EnglishBreakFinder, _greedy_fill_with_grammar
+    from light_subtitle.language.english import EnglishBreakFinder
 """
 
 from __future__ import annotations
@@ -22,257 +22,23 @@ from .base import (
     BreakFinder,
     is_sentence_end,
 )
+from .word_index import UnitWordIndex, chunk_times
 
 if TYPE_CHECKING:
     from light_subtitle.config import SubtitleConfig
 
-# ═══════════════════════════════════════════════════════════════════
-# Netflix §4 word class sets (canonical versions)
-# ═══════════════════════════════════════════════════════════════════
-
-ARTICLES = {"a", "an", "the"}
-
-SUBJECT_PRONOUNS = {"i", "you", "he", "she", "it", "we", "they", "who", "what"}
-
-OBJECT_PRONOUNS = {"me", "him", "her", "us", "them", "it"}
-
-NEGATION = {
-    "not",
-    "never",
-    "no",
-    "don't",
-    "doesn't",
-    "didn't",
-    "won't",
-    "can't",
-    "couldn't",
-    "shouldn't",
-    "wouldn't",
-    "isn't",
-    "aren't",
-    "wasn't",
-    "weren't",
-    "hasn't",
-    "haven't",
-    "hadn't",
-}
-
-AUXILIARIES = {
-    "be",
-    "am",
-    "is",
-    "are",
-    "was",
-    "were",
-    "been",
-    "being",
-    "have",
-    "has",
-    "had",
-    "having",
-    "do",
-    "does",
-    "did",
-    "doing",
-    "will",
-    "would",
-    "shall",
-    "should",
-    "can",
-    "could",
-    "may",
-    "might",
-    "must",
-}
-
-PHRASAL_ROOTS = {
-    "give",
-    "look",
-    "take",
-    "put",
-    "get",
-    "come",
-    "go",
-    "bring",
-    "turn",
-    "set",
-    "run",
-    "work",
-    "find",
-    "break",
-    "pick",
-    "carry",
-    "hold",
-    "keep",
-    "let",
-    "make",
-    "show",
-    "call",
-    "check",
-    "cut",
-    "drop",
-    "fall",
-    "fill",
-    "grow",
-    "hang",
-    "pull",
-    "push",
-    "shut",
-    "sit",
-    "stand",
-    "think",
-    "throw",
-    "wake",
-    "walk",
-    "write",
-    "build",
-    "start",
-    "move",
-    "pass",
-    "hand",
-    "point",
-    "send",
-    "pay",
-    "lay",
-    "step",
-    "back",
-}
-
-PHRASAL_PARTICLES = {
-    "up",
-    "down",
-    "in",
-    "out",
-    "on",
-    "off",
-    "away",
-    "at",
-    "for",
-    "over",
-    "through",
-    "into",
-    "around",
-    "about",
-    "back",
-    "forward",
-    "aside",
-    "along",
-    "ahead",
-    "apart",
-    "together",
-}
-
-CONJUNCTIONS = {
-    "and",
-    "but",
-    "or",
-    "nor",
-    "yet",
-    "so",
-    "because",
-    "while",
-    "that",
-    "which",
-    "who",
-    "whom",
-    "whose",
-    "when",
-    "where",
-    "whether",
-    "if",
-    "although",
-    "though",
-    "unless",
-    "until",
-    "since",
-    "as",
-    "than",
-    "whereas",
-    "except",
-    "however",
-    "then",
-    "also",
-    "still",
-}
-
-PREPOSITIONS = {
-    "of",
-    "in",
-    "to",
-    "for",
-    "with",
-    "on",
-    "at",
-    "from",
-    "by",
-    "about",
-    "into",
-    "through",
-    "over",
-    "under",
-    "after",
-    "before",
-    "between",
-    "during",
-    "without",
-    "within",
-    "upon",
-    "across",
-    "along",
-    "around",
-    "behind",
-    "beyond",
-    "down",
-    "off",
-    "out",
-    "up",
-    "toward",
-    "towards",
-    "against",
-    "among",
-    "amongst",
-    "beside",
-    "besides",
-    "above",
-    "below",
-    "near",
-    "inside",
-    "outside",
-    "beneath",
-    "underneath",
-    "notwithstanding",
-}
-
-DISCOURSE_MARKERS = {
-    "so",
-    "now",
-    "well",
-    "anyway",
-    "ok",
-    "okay",
-    "anyways",
-    "anyhow",
-    "look",
-    "listen",
-    "right",
-    "alright",
-}
-
-ADJECTIVE_SUFFIXES = {
-    "y",
-    "ful",
-    "less",
-    "ive",
-    "ous",
-    "al",
-    "able",
-    "ible",
-    "ent",
-    "ant",
-    "ic",
-    "ish",
-    "ary",
-}
+from .english_words import (
+    ADJECTIVE_SUFFIXES,
+    ARTICLES,
+    AUXILIARIES,
+    CONJUNCTIONS,
+    NEGATION,
+    OBJECT_PRONOUNS,
+    PHRASAL_PARTICLES,
+    PHRASAL_ROOTS,
+    PREPOSITIONS,
+    SUBJECT_PRONOUNS,
+)
 
 # ═══════════════════════════════════════════════════════════════════
 # Netflix §4 helpers
@@ -329,7 +95,7 @@ def _strip_punct(word: str) -> str:
     return word.lower().rstrip(EN_TRAILING_PUNCT)
 
 
-def _is_forbidden_split(last_word: str, next_word: str) -> bool:
+def is_forbidden_split(last_word: str, next_word: str) -> bool:
     """Check if splitting between *last_word* and *next_word* would create an unreadable fragment.
 
     Conservative version for segment boundaries — only blocks splits that
@@ -548,27 +314,11 @@ def _build_english_cues(
     lines: list[str],
     max_lines: int,
     max_chars: int = 42,
-    import_UnitWordIndex: type | None = None,
-    import_chunk_times: type | None = None,
 ) -> list[SubtitleCue]:
     """Build one or more cues from English lines, splitting on max_lines.
 
-    Multi-cue path uses lazy imports for _UnitWordIndex and _chunk_times
-    to avoid circular dependencies.
+    Multi-cue path times each chunk via :class:`.word_index.UnitWordIndex`.
     """
-    if import_UnitWordIndex is None:
-        from light_subtitle.pipeline.subtitle._word_index import (  # noqa: PLC0415
-            _UnitWordIndex,
-        )
-
-        import_UnitWordIndex = _UnitWordIndex
-    if import_chunk_times is None:
-        from light_subtitle.pipeline.subtitle._word_index import (  # noqa: PLC0415
-            _chunk_times,
-        )
-
-        import_chunk_times = _chunk_times
-
     if not lines:
         return [original]
 
@@ -597,13 +347,13 @@ def _build_english_cues(
         else:
             break
 
-    word_idx = import_UnitWordIndex.from_words(original.words or [])
+    word_idx = UnitWordIndex.from_words(original.words or [])
     en_cps = 25
 
     chunk_times_list: list[tuple[float, float]] = []
     for i in range(0, len(balanced), max_lines):
         chunk = balanced[i : i + max_lines]
-        cs, ce = import_chunk_times(chunk, original, word_idx, en_cps)
+        cs, ce = chunk_times(chunk, original, word_idx, en_cps)
         chunk_times_list.append((cs, ce))
 
     for ci in range(len(chunk_times_list) - 1):

@@ -20,6 +20,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import logger
 from .utils.ffmpeg import probe_duration
 
 # ── Scoring weights (silence quality vs proximity) ──────
@@ -37,6 +38,19 @@ class SilenceInterval:
 
 
 # ── Public API ──────────────────────────────────────────
+
+
+def segment_tag(output_dir: str | Path) -> str:
+    """Segment label extracted from an output dir name (e.g. ``seg1``, ``chunk_2``).
+
+    Returns ``""`` for non-segment directories.
+    """
+    name = Path(output_dir).name
+    if name.startswith(".seg"):
+        return name[1:]
+    if name.startswith("chunk_"):
+        return name
+    return ""
 
 
 def should_split(video_path: Path, threshold: float = 2700) -> bool:
@@ -80,7 +94,10 @@ def find_existing_split_points(work_dir: Path) -> list[float] | None:
 
         data = _json.loads(path.read_text())
         return data.get("split_points")
-    except Exception:
+    except Exception as e:
+        # File exists but is unreadable/corrupt (e.g. truncated by a crashed
+        # run) — recompute split points rather than failing the resume.
+        logger.warning(f"  ⚠ split_points.json unreadable ({type(e).__name__}: {e}), recomputing split points")
         return None
 
 

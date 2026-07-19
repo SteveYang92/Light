@@ -23,16 +23,17 @@ joined unit graph is written to ``plan/plan.joined.json``
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from light_models import Segment, SubtitleCue, Word
 
-from ... import logger
+from ... import artifacts, logger
 from ...config import SubtitleConfig
-from ...llm.client import OpenAIClient
+from ...llm.client import OpenAIClient, client_from_config
+from ...llm.json_extract import extract_json_object
 from ...llm.prompts import render_prompt
+from ...llm.retry import FeedbackAttempt, generate_with_feedback
 from ...usage.tracker import merge_token_usage
 from ..plan.boundary import dangling_tail
 
@@ -111,7 +112,7 @@ def join_cues(cues: list[SubtitleCue], plan_units: list[Segment], config: Subtit
     if not config.llm_api_key or len(cues) < 2:
         return result
 
-    client = OpenAIClient(base_url=config.llm_base_url, api_key=config.llm_api_key, model=config.llm_model)
+    client = client_from_config(config)
     system = render_prompt(
         "join_cues_system.j2",
         max_chars=_max_chars(config),
@@ -149,7 +150,6 @@ def save_joined_units(units: list[Segment], plan_dir: str | Path) -> None:
     plan_dir = Path(plan_dir)
     plan_dir.mkdir(parents=True, exist_ok=True)
     meta = []
-    words_map: dict[str, list[dict]] = {}
     offset = 0
     for u in units:
         meta.append(
@@ -164,44 +164,27 @@ def save_joined_units(units: list[Segment], plan_dir: str | Path) -> None:
             }
         )
         offset += len(u.words)
-        if u.words:
-            words_map[u.unit_id] = [
-                {"text": w.text, "start": w.start, "end": w.end, "confidence": w.confidence, "speaker": w.speaker}
-                for w in u.words
-            ]
-    (plan_dir / "plan.joined.json").write_text(
-        json.dumps({"version": 1, "units": meta}, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    (plan_dir / "segment_words.joined.json").write_text(
-        json.dumps(words_map, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    artifacts.write_plan_meta(plan_dir / artifacts.PLAN_JOINED_JSON, meta, version=1)
+    artifacts.write_segment_words(artifacts.segment_words_joined_path(plan_dir), units)
 
 
 def load_joined_units(plan_dir: str | Path) -> list[Segment] | None:
     """Rebuild units from ``plan/plan.joined.json``; None when absent."""
-    path = Path(plan_dir) / "plan.joined.json"
+    path = Path(plan_dir) / artifacts.PLAN_JOINED_JSON
     if not path.exists():
         return None
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    return [
-        Segment(
-            unit_id=item["unit_id"],
-            start=item.get("start", 0.0),
-            end=item.get("end", 0.0),
-            speaker=item.get("speaker", ""),
-            source_text=item.get("text", ""),
-            words=[],
-        )
-        for item in data.get("units", [])
-    ]
+    return artifacts.read_plan_units(path)
 
 
 # ── Caps ──────────────────────────────────────────────────
 
 
 def _max_chars(config: SubtitleConfig) -> int:
-    return 48  # two display lines of the boxed bilingual layout
+    # Join-level cap for a merged cue's total ZH chars: two display lines of
+    # the boxed bilingual layout (≈24 chars each), so 48.  Deliberately wider
+    # than config.max_chars_per_line_zh (40, the PER-LINE display cap pace
+    # enforces) — a joined cue may use both lines up to this total.
+    return 48
 
 
 def _zh_chars(text: str) -> int:
@@ -247,9 +230,8 @@ def _plan_ops(
         "context_after": [_payload_item(all_cues.index(c), c) for c in ctx_after],
         "candidates": [c for c in _find_candidates(all_cues) if c["boundary"] in core_ids],
     }
-    total_usage: dict = {}
-    feedback = ""
-    for attempt in range(_MAX_ATTEMPTS):
+
+    def _attempt(feedback: str, attempt: int) -> FeedbackAttempt[list[dict]]:
         user = dict(payload)
         if feedback:
             user["previous_error"] = feedback
@@ -258,22 +240,26 @@ def _plan_ops(
             {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
         ]
         response, usage = client.chat(messages, temperature=config.llm_temperature)
-        merge_token_usage(total_usage, usage)
         ops = _parse_ops(response)
         if ops is None:
-            feedback = 'Output was not valid JSON of the form {"ops": [...]}.'
-            continue
+            return FeedbackAttempt(
+                usage=usage,
+                feedback='Output was not valid JSON of the form {"ops": [...]}.',
+            )
         valid, problems = _validate_ops(ops, all_cues, config, core_ids)
         if not problems:
-            return valid, total_usage or None
-        feedback = "Invalid ops: " + "; ".join(problems)
-        logger.warning(f"  Join attempt {attempt + 1} invalid: {feedback}")
+            return FeedbackAttempt(usage=usage, value=valid)
+        new_feedback = "Invalid ops: " + "; ".join(problems)
+        logger.warning(f"  Join attempt {attempt + 1} invalid: {new_feedback}")
         if attempt == _MAX_ATTEMPTS - 1:
             # Last attempt: keep the valid subset, drop the offenders.
             if valid:
                 logger.info(f"  Join: keeping {len(valid)} valid ops, dropping {len(problems)} invalid")
-            return valid, total_usage or None
-    return [], total_usage or None
+            return FeedbackAttempt(usage=usage, feedback=new_feedback, final=valid)
+        return FeedbackAttempt(usage=usage, feedback=new_feedback)
+
+    result, total_usage = generate_with_feedback(_attempt, max_attempts=_MAX_ATTEMPTS)
+    return result if result is not None else [], total_usage
 
 
 def _find_candidates(cues: list[SubtitleCue]) -> list[dict]:
@@ -302,9 +288,9 @@ def _payload_item(i: int, cue: SubtitleCue) -> dict:
 
 
 def _parse_ops(response: str) -> list[dict] | None:
-    match = re.search(r"\{[\s\S]*\}", response)
+    match = extract_json_object(response)
     try:
-        data = json.loads(match.group(0) if match else response)
+        data = json.loads(match if match is not None else response)
     except json.JSONDecodeError:
         return None
     raw = data.get("ops") if isinstance(data, dict) else None

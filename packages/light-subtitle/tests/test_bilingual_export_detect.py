@@ -6,7 +6,7 @@ from pathlib import Path
 
 from light_subtitle.config import SubtitleConfig
 from light_subtitle.orchestrator import Orchestrator
-from light_subtitle.step_registry import _wants_bilingual_exports
+from light_subtitle.steps.subtitle import _wants_bilingual_exports
 
 
 def _orch(tmp_path: Path, *, bilingual: bool = False, slug: str = "demo") -> Orchestrator:

@@ -14,7 +14,6 @@ Usage::
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -23,7 +22,8 @@ from light_models import Segment, SubtitleCue, covered_source_text
 if TYPE_CHECKING:
     from ...config import SubtitleConfig
 from ... import logger
-from ...llm.client import OpenAIClient
+from ...llm.client import client_from_config
+from ...llm.json_extract import extract_json_array
 from ...llm.prompts import render_prompt
 from ...usage.tracker import merge_token_usage
 
@@ -65,6 +65,9 @@ def evaluate_translations(
     translated_cues: list[SubtitleCue],
     source_segments: list[Segment],
     config: SubtitleConfig,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
 ) -> tuple[list[QualityScore], dict | None]:
     """Evaluate translation quality for all translated cues.
 
@@ -91,7 +94,7 @@ def evaluate_translations(
 
     all_scores: list[QualityScore] = []
     total_usage: dict = {}
-    system_prompt = _render_eval_system_prompt(config)
+    system_prompt = _render_eval_system_prompt(config, glossary=glossary, content_summary=content_summary)
 
     # Evaluate in batches.
     for batch_idx in range(0, len(pairs), EVAL_BATCH_SIZE):
@@ -113,11 +116,7 @@ def _evaluate_batch(
     system_prompt: str,
 ) -> tuple[list[QualityScore], dict]:
     """Send a batch of source+translation pairs for LLM quality scoring."""
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
+    client = client_from_config(config)
 
     user_prompt = _build_eval_user_prompt(pairs)
     messages = [
@@ -137,13 +136,18 @@ def _evaluate_batch(
 # ── Prompt construction ─────────────────────────────────────────────────────
 
 
-def _render_eval_system_prompt(config: SubtitleConfig) -> str:
+def _render_eval_system_prompt(
+    config: SubtitleConfig,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
+) -> str:
     """Build cache-friendly system prompt for evaluation."""
     return render_prompt(
         "evaluate_system.j2",
         target_lang=config.target_lang,
-        glossary=config.glossary,
-        content_summary=config.content_summary,
+        glossary=config.glossary if glossary is None else glossary,
+        content_summary=config.content_summary if content_summary is None else content_summary,
     )
 
 
@@ -181,10 +185,10 @@ def _parse_eval_response(
     response = response.strip()
 
     # Extract JSON array from response.
-    json_match = re.search(r"\[([\s\S]*)\]", response)
-    if json_match:
+    json_fragment = extract_json_array(response)
+    if json_fragment is not None:
         try:
-            data = json.loads(json_match.group(0))
+            data = json.loads(json_fragment)
         except (json.JSONDecodeError, ValueError):
             logger.warning("    ⚠ Evaluation: could not parse LLM JSON response, skipping")
             return []

@@ -20,20 +20,19 @@ from __future__ import annotations
 
 import difflib
 import json
-import logging
-import re
-import time
 from pathlib import Path
 
 from light_models import Word
 
-from .. import logger
+from .. import artifacts, logger
 from ..config import SubtitleConfig
-from ..llm.client import OpenAIClient
+from ..llm.client import OpenAIClient, client_from_config
+from ..llm.json_extract import extract_json_object, parse_json_array_response
 from ..llm.parallel import run_parallel_with_warmup
 from ..llm.prompts import render_prompt
+from ..llm.retry import chat_with_retry
 from ..usage.tracker import format_token_usage, merge_token_usage, save_step_usage
-from ._word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
+from .word_segments import WordSegment, group_words_by_gap, join_word_text, merge_short_segments
 
 _CHUNK_SIZE = 50
 _CONTEXT_WINDOW = 5
@@ -41,8 +40,6 @@ _MAX_WORKERS = 4
 _MAX_DELTA = 2
 _DEFAULT_CONFIDENCE = 0.85
 _GRAMMAR_MIN_WORDS = 4
-
-_CONTEXT_LOG = logging.getLogger(__name__)
 
 
 def correct_transcript(
@@ -58,11 +55,7 @@ def correct_transcript(
     correct_dir = output_dir / "transcript_correct"
     correct_dir.mkdir(parents=True, exist_ok=True)
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
+    client = client_from_config(config)
 
     # Step 0: extract domain context from the full transcript
     domain_context, domain_usage = _extract_domain_context(client, words, correct_dir)
@@ -106,7 +99,7 @@ def correct_transcript(
         response_str = all_results.get(chunk_idx, "")
         if not response_str:
             continue
-        corrected_segments = _parse_llm_response(response_str)
+        corrected_segments = parse_json_array_response(response_str)
         for item in corrected_segments:
             seg = segments[item["index"]]
             pre_texts = [w.text for w in seg.words]
@@ -309,11 +302,11 @@ def _extract_domain_context(
 
 def _parse_domain_context(response: str) -> dict:
     """Parse LLM response into domain context dict."""
-    json_match = re.search(r"\{[\s\S]*\}", response)
+    json_fragment = extract_json_object(response)
     raw: dict = {}
-    if json_match:
+    if json_fragment is not None:
         try:
-            raw = json.loads(json_match.group(0))
+            raw = json.loads(json_fragment)
         except json.JSONDecodeError:
             pass
     if not raw and response.strip():
@@ -397,33 +390,24 @@ def _correct_batch(
     ]
 
     max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            response, usage = client.chat(messages, temperature=0.0)
-            return response, usage
-        except Exception:
-            if attempt < max_retries - 1:
-                delay = 2**attempt
-                logger.warning(f"    Transcript correct retry {attempt + 1}/{max_retries}, waiting {delay}s")
-                time.sleep(delay)
 
-    logger.warning(f"    Transcript correct failed after {max_retries} retries, using original text")
-    fallback = json.dumps([{"index": s.index, "words": [w.text for w in s.words]} for s in chunk])
-    return fallback, {}
+    def _on_retry(attempt: int, _exc: BaseException) -> float:
+        delay = 2**attempt
+        logger.warning(f"    Transcript correct retry {attempt + 1}/{max_retries}, waiting {delay}s")
+        return delay
 
-
-def _parse_llm_response(response: str) -> list[dict]:
-    """Extract list of {index, words} from LLM JSON response."""
-    json_match = re.search(r"\[[\s\S]*\]", response)
-    if json_match:
-        try:
-            return json.loads(json_match.group(0))
-        except json.JSONDecodeError:
-            pass
     try:
-        return json.loads(response)
-    except (json.JSONDecodeError, ValueError):
-        return []
+        return chat_with_retry(
+            lambda: client.chat(messages, temperature=0.0),
+            max_retries=max_retries,
+            on_retry=_on_retry,
+        )
+    except Exception as e:
+        logger.warning(
+            f"    Transcript correct failed after {max_retries} retries ({type(e).__name__}: {e}), using original text"
+        )
+        fallback = json.dumps([{"index": s.index, "words": [w.text for w in s.words]} for s in chunk])
+        return fallback, {}
 
 
 def _save_segments(segments: list[WordSegment], output_path: str, *, include_changed: bool) -> None:
@@ -441,13 +425,7 @@ def _save_segments(segments: list[WordSegment], output_path: str, *, include_cha
         word_entries = []
         pre = pre_texts.get(s.index, [])
         for wi, w in enumerate(s.words):
-            entry: dict = {
-                "text": w.text,
-                "start": w.start,
-                "end": w.end,
-                "confidence": w.confidence,
-                "speaker": w.speaker,
-            }
+            entry: dict = artifacts.word_to_dict(w)
             if include_changed:
                 entry["changed"] = wi < len(pre) and w.text != pre[wi]
             word_entries.append(entry)

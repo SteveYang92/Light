@@ -1,15 +1,20 @@
 """Thin wrapper around the ``openai`` library for chat-completion calls.
 
-All pipeline steps instantiate ``OpenAIClient`` with the same constructor
-signature and call ``chat()`` with the same return type, so switching from
-raw httpx to the official SDK required no caller changes.
+Pipeline steps build clients via :func:`client_from_config` and call
+``chat()`` with the same return type, so switching from raw httpx to the
+official SDK required no caller changes.
 """
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from openai import OpenAI, Timeout
 
 from ..usage.tracker import format_token_usage, merge_token_usage, parse_api_usage
+
+if TYPE_CHECKING:
+    from ..config import SubtitleConfig
 
 # ── Client defaults ─────────────────────────────────────
 
@@ -45,5 +50,14 @@ class OpenAIClient:
         return content, parse_api_usage(response.usage)
 
 
+def client_from_config(config: SubtitleConfig) -> OpenAIClient:
+    """Build an ``OpenAIClient`` from the pipeline config's LLM fields."""
+    return OpenAIClient(
+        base_url=config.llm_base_url,
+        api_key=config.llm_api_key,
+        model=config.llm_model,
+    )
+
+
 # Re-export helpers for backward compatibility.
-__all__ = ["OpenAIClient", "format_token_usage", "merge_token_usage"]
+__all__ = ["OpenAIClient", "client_from_config", "format_token_usage", "merge_token_usage"]

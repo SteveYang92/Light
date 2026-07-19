@@ -6,8 +6,8 @@ import from ``language.cjk``.
 Usage::
 
     from light_subtitle.language import is_sentence_end, detect_source_lang
-    from light_subtitle.language.english import EnglishBreakFinder, _greedy_fill_with_grammar
-    from light_subtitle.language.cjk import ChineseBreakFinder, _normalize_chinese_text
+    from light_subtitle.language.english import EnglishBreakFinder
+    from light_subtitle.language.cjk import ChineseBreakFinder
 """
 
 from .base import SENTENCE_END as SENTENCE_END

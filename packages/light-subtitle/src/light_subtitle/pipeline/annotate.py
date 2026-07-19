@@ -14,7 +14,7 @@ from light_models import Segment, SubtitleCue, covered_source_text
 
 from .. import logger
 from ..config import SubtitleConfig
-from ..llm.client import OpenAIClient
+from ..llm.client import client_from_config
 from ..llm.prompts import render_prompt
 from ..usage.tracker import merge_token_usage, save_step_usage
 
@@ -28,6 +28,9 @@ def generate_annotations(
     source_segments: list[Segment],
     config: SubtitleConfig,
     output_dir: str | Path | None = None,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Annotate translated cues with LLM-generated explanatory notes.
 
@@ -43,13 +46,11 @@ def generate_annotations(
 
     source_map: dict[str, str] = {s.unit_id: s.source_text for s in source_segments}
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
+    client = client_from_config(config)
 
-    system_prompt = _render_annotate_system_prompt(config, output_dir)
+    system_prompt = _render_annotate_system_prompt(
+        config, output_dir, glossary=glossary, content_summary=content_summary
+    )
 
     annotated_terms: list[str] = []  # Cross-batch dedup context
     total_usage: dict[str, int] = {}
@@ -81,8 +82,8 @@ def generate_annotations(
                 ],
                 temperature=0.1,
             )
-        except Exception:
-            logger.warning(f"    ⚠ Annotation batch failed, skipping {len(batch)} cues")
+        except Exception as e:
+            logger.warning(f"    ⚠ Annotation batch failed ({type(e).__name__}: {e}), skipping {len(batch)} cues")
             continue
 
         merge_token_usage(total_usage, usage)
@@ -188,15 +189,18 @@ def _filter_annotate_context(
 def _render_annotate_system_prompt(
     config: SubtitleConfig,
     output_dir: str | Path | None,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
 ) -> str:
     """Render system prompt once per video run (cache-friendly)."""
     domain_context: dict | None = None
     if output_dir is not None:
         domain_context = _load_domain_context(Path(output_dir))
 
-    raw_glossary = config.glossary or None
+    raw_glossary = (config.glossary if glossary is None else glossary) or None
     summary, terms, filtered_glossary = _filter_annotate_context(
-        config.content_summary,
+        config.content_summary if content_summary is None else content_summary,
         domain_context,
         raw_glossary,
     )

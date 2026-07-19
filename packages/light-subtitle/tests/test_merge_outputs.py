@@ -5,13 +5,13 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+from light_models import seconds_to_srt
 from light_subtitle.merge_outputs import (
     _copy_single_segment,
     _dedup_annotation_terms,
     _extract_annotation_term,
     _parse_srt,
     _parse_vtt,
-    _seconds_to_srt,
     _srt_to_seconds,
     _strip_annotation_marker,
     _write_srt,
@@ -22,16 +22,16 @@ from light_subtitle.merge_outputs import (
 class TestTimeConversion:
     def test_srt_roundtrip(self) -> None:
         ts = "01:23:45,678"
-        assert _seconds_to_srt(_srt_to_seconds(ts)) == ts
+        assert seconds_to_srt(_srt_to_seconds(ts)) == ts
 
     def test_srt_zero(self) -> None:
-        assert _seconds_to_srt(0.0) == "00:00:00,000"
+        assert seconds_to_srt(0.0) == "00:00:00,000"
 
     def test_srt_one_hour(self) -> None:
-        assert _seconds_to_srt(3600.0) == "01:00:00,000"
+        assert seconds_to_srt(3600.0) == "01:00:00,000"
 
     def test_srt_milliseconds(self) -> None:
-        assert _seconds_to_srt(1.5) == "00:00:01,500"
+        assert seconds_to_srt(1.5) == "00:00:01,500"
 
 
 class TestParseSrt:

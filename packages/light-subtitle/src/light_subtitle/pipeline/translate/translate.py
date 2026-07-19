@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
-import re
 from pathlib import Path
 
 from light_models import Segment, SubtitleCue
@@ -12,17 +10,19 @@ from light_models.punctuation import CJK_CLAUSE_PUNCT, SENTENCE_ENDS
 
 from ... import logger
 from ...config import SubtitleConfig
-from ...llm.client import OpenAIClient
+from ...llm.client import OpenAIClient, client_from_config
+from ...llm.json_extract import extract_json_array
 from ...llm.parallel import run_parallel_with_warmup
 from ...llm.prompts import render_prompt
+from ...llm.retry import chat_with_retry
 from ...usage.tracker import merge_token_usage, pick_usage_fields
 from .align_check import check_batch_alignment, format_align_failures, render_align_check_system_prompt
+from .checkpoint import _save_partial, load_partial
+from .chunking import _chunk_pending_segments
+from .protocol import _is_last_split_part, _parse_split_part, _source_ends_sentence, _split_group_part_counts
 
 CHUNK_SIZE = 100
 MAX_WORKERS = 4
-_PARTIAL_VERSION = 2
-_SPLIT_PART_RE = re.compile(r"^(p\d+)_(\d+)$")
-_EN_SENTENCE_END = frozenset(".!?…")
 
 
 def covered_unit_ids(cues: list[SubtitleCue]) -> set[str]:
@@ -33,13 +33,22 @@ def covered_unit_ids(cues: list[SubtitleCue]) -> set[str]:
     return ids
 
 
-def _render_translate_prompt(config: SubtitleConfig) -> str:
-    """Build system prompt with glossary and content summary."""
+def _render_translate_prompt(
+    config: SubtitleConfig,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
+) -> str:
+    """Build system prompt with glossary and content summary.
+
+    *glossary* / *content_summary* override the config fields when given
+    (the pipeline passes the merged values from PipelineState).
+    """
     return render_prompt(
         "translate.j2",
         target_lang=config.target_lang,
-        glossary=config.glossary,
-        content_summary=config.content_summary,
+        glossary=config.glossary if glossary is None else glossary,
+        content_summary=config.content_summary if content_summary is None else content_summary,
     )
 
 
@@ -52,6 +61,9 @@ def run(
     segments: list[Segment],
     config: SubtitleConfig,
     tx_dir: Path | None = None,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
 ) -> tuple[list[SubtitleCue], dict | None]:
     """Return (translated_cues, usage_dict).
 
@@ -60,13 +72,9 @@ def run(
     if not config.llm_api_key:
         return [], None
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
+    client = client_from_config(config)
 
-    system_prompt = _render_translate_prompt(config)
+    system_prompt = _render_translate_prompt(config, glossary=glossary, content_summary=content_summary)
     align_system_prompt = render_align_check_system_prompt(config)
     existing_cues: list[SubtitleCue] = []
     if tx_dir is not None:
@@ -154,115 +162,27 @@ def _finalize_translated_cues(cues_1_1: list[SubtitleCue], config: SubtitleConfi
     return cues_1_1
 
 
-def _cue_dict_from_partial(cue: SubtitleCue) -> dict:
-    return {
-        "cue_id": cue.cue_id,
-        "unit_id": cue.unit_id,
-        "start": cue.start,
-        "end": cue.end,
-        "text": cue.text,
-        "lang": cue.lang,
-    }
+class _AlignRejected(Exception):
+    """Alignment check failed on an otherwise successful batch translation.
 
-
-def _segment_graph_fingerprint(segments: list[Segment]) -> str:
-    """Stable hash of the translation unit graph (ids + timing)."""
-    payload = [(s.unit_id, round(s.start, 3), round(s.end, 3)) for s in segments]
-    digest = hashlib.sha256(json.dumps(payload, ensure_ascii=False).encode()).hexdigest()
-    return digest[:16]
-
-
-def _partial_matches_segments(
-    cues: list[SubtitleCue],
-    segments: list[Segment],
-) -> bool:
-    """Heuristic for legacy partial files without a stored fingerprint."""
-    segment_ids = {s.unit_id for s in segments}
-    seg_by_id = {s.unit_id: s for s in segments}
-    for cue in cues:
-        if cue.unit_id not in segment_ids:
-            return False
-        seg = seg_by_id[cue.unit_id]
-        if abs(cue.start - seg.start) > 0.01 or abs(cue.end - seg.end) > 0.01:
-            return False
-    return True
-
-
-def _save_partial(
-    tx_dir: Path,
-    cues: list[SubtitleCue],
-    segments: list[Segment],
-) -> None:
-    """Persist 1:1 translation checkpoint."""
-    tx_dir.mkdir(parents=True, exist_ok=True)
-    data = {
-        "version": _PARTIAL_VERSION,
-        "segments_fingerprint": _segment_graph_fingerprint(segments),
-        "cues": [_cue_dict_from_partial(c) for c in cues],
-    }
-    (tx_dir / "partial.json").write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def _discard_partial_cache(tx_dir: Path, *, reason: str) -> None:
-    path = tx_dir / "partial.json"
-    if path.exists():
-        path.unlink()
-        logger.info(f"  Discarded stale partial.json ({reason})")
-
-
-def load_partial(
-    tx_dir: Path,
-    config: SubtitleConfig,
-    segments: list[Segment] | None = None,
-) -> list[SubtitleCue]:
-    """Load 1:1 partial cues.
-
-    When *segments* is provided (translate entry), discard the checkpoint if it
-    no longer matches the current translation unit graph.
+    Carries the round's outputs so the caller can fall back to the last
+    result after retries are exhausted.
     """
-    path = tx_dir / "partial.json"
-    if not path.exists():
-        return []
-    with open(path, encoding="utf-8") as f:
-        raw = json.load(f)
 
-    if isinstance(raw, list):
-        if any(c.get("merged_from") for c in raw if isinstance(c, dict)):
-            logger.warning("  Legacy partial.json contains merged cues; delete partial.json for a clean resume.")
-        cues = [_cue_from_partial_dict(c, config) for c in raw]
-    elif isinstance(raw, dict):
-        cues = [_cue_from_partial_dict(c, config) for c in raw.get("cues", [])]
-    else:
-        return []
-
-    if segments is not None and cues:
-        expected = _segment_graph_fingerprint(segments)
-        stored = raw.get("segments_fingerprint") if isinstance(raw, dict) else None
-        if stored is not None:
-            if stored != expected:
-                _discard_partial_cache(tx_dir, reason="segment graph changed")
-                return []
-        elif not _partial_matches_segments(cues, segments):
-            _discard_partial_cache(tx_dir, reason="unit graph mismatch")
-            return []
-
-    return cues
-
-
-def _cue_from_partial_dict(data: dict, config: SubtitleConfig) -> SubtitleCue:
-    return SubtitleCue(
-        cue_id=data["cue_id"],
-        unit_id=data["unit_id"],
-        start=data["start"],
-        end=data["end"],
-        text=data["text"],
-        lang=data.get("lang", config.target_lang),
-        merged_from=data.get("merged_from", []),
-    )
-
-
-def load_partial_cues(tx_dir: Path, config: SubtitleConfig) -> list[SubtitleCue]:
-    return load_partial(tx_dir, config)
+    def __init__(
+        self,
+        detail: str,
+        cues: list[SubtitleCue],
+        usage: dict,
+        translate_usage: dict,
+        align_usage: dict,
+    ):
+        super().__init__(detail)
+        self.detail = detail
+        self.cues = cues
+        self.usage = usage
+        self.translate_usage = translate_usage
+        self.align_usage = align_usage
 
 
 def _translate_batch(
@@ -282,91 +202,57 @@ def _translate_batch(
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
 
-    import time
-
     max_retries = 3
-    last_error = None
-    for attempt in range(max_retries):
-        try:
-            response, usage = client.chat(messages, temperature=config.llm_temperature)
-            translate_usage = pick_usage_fields(usage)
-            cues, parsed_texts = _parse_response(response, segments, config, all_segments)
 
-            aligned, failures, align_usage = check_batch_alignment(
-                client,
-                segments,
-                parsed_texts,
-                all_segments,
-                batch_idx,
-                config,
-                system_prompt=align_system_prompt,
+    def _attempt() -> tuple[list[SubtitleCue], dict, dict[str, dict]]:
+        response, usage = client.chat(messages, temperature=config.llm_temperature)
+        translate_usage = pick_usage_fields(usage)
+        cues, parsed_texts = _parse_response(response, segments, config, all_segments)
+
+        aligned, failures, align_usage = check_batch_alignment(
+            client,
+            segments,
+            parsed_texts,
+            all_segments,
+            batch_idx,
+            config,
+            system_prompt=align_system_prompt,
+        )
+        merge_token_usage(usage, align_usage)
+        if not aligned:
+            raise _AlignRejected(format_align_failures(failures), cues, usage, translate_usage, align_usage)
+
+        breakdown = {
+            "translate.translate": translate_usage,
+            "translate.align_check": pick_usage_fields(align_usage),
+        }
+        return cues, usage, breakdown
+
+    def _on_retry(attempt: int, exc: BaseException) -> float | None:
+        if isinstance(exc, _AlignRejected):
+            logger.warning(
+                f"    Align check failed batch@{batch_idx} (attempt {attempt + 1}/{max_retries}): {exc.detail}"
             )
-            merge_token_usage(usage, align_usage)
-            if not aligned:
-                detail = format_align_failures(failures)
-                logger.warning(
-                    f"    Align check failed batch@{batch_idx} (attempt {attempt + 1}/{max_retries}): {detail}"
-                )
-                if attempt < max_retries - 1:
-                    continue
-                logger.warning(
-                    f"    Align check failed batch@{batch_idx} after {max_retries} attempts; using last result"
-                )
+            return None
+        if isinstance(exc, (json.JSONDecodeError, ValueError)):
+            logger.warning(f"    Retry {attempt + 1}/{max_retries}: {type(exc).__name__} in batch {batch_idx}: {exc}")
+            return None
+        delay = 2**attempt
+        logger.warning(
+            f"    Retry {attempt + 1}/{max_retries}: {type(exc).__name__} in batch {batch_idx}, waiting {delay}s"
+        )
+        return delay
 
-            breakdown = {
-                "translate.translate": translate_usage,
-                "translate.align_check": pick_usage_fields(align_usage),
-            }
-            return cues, usage, breakdown
-        except (json.JSONDecodeError, ValueError) as e:
-            last_error = e
-            if attempt < max_retries - 1:
-                logger.warning(f"    Retry {attempt + 1}/{max_retries}: {type(e).__name__} in batch {batch_idx}: {e}")
-        except Exception as e:
-            last_error = e
-            if attempt < max_retries - 1:
-                delay = 2**attempt
-                logger.warning(
-                    f"    Retry {attempt + 1}/{max_retries}: {type(e).__name__} in batch {batch_idx}, waiting {delay}s"
-                )
-                time.sleep(delay)
-    raise last_error  # type: ignore[misc]
-
-
-def _parse_split_part(unit_id: str) -> tuple[str, int] | None:
-    """Return ``(split_group_id, part_index)`` for units like ``p0007_0`` or ``p0007_1``."""
-    match = _SPLIT_PART_RE.match(unit_id)
-    if not match:
-        return None
-    return match.group(1), int(match.group(2))
-
-
-def _split_group_part_counts(segments: list[Segment]) -> dict[str, int]:
-    """Map split group id to number of parts (max index + 1)."""
-    max_index: dict[str, int] = {}
-    for segment in segments:
-        parsed = _parse_split_part(segment.unit_id)
-        if parsed is None:
-            continue
-        group_id, part_index = parsed
-        max_index[group_id] = max(max_index.get(group_id, 0), part_index + 1)
-    return max_index
-
-
-def _is_last_split_part(unit_id: str, part_counts: dict[str, int]) -> bool | None:
-    """Return whether *unit_id* is the last part of its split group, or None if not split."""
-    parsed = _parse_split_part(unit_id)
-    if parsed is None:
-        return None
-    group_id, part_index = parsed
-    count = part_counts.get(group_id, part_index + 1)
-    return part_index >= count - 1
-
-
-def _source_ends_sentence(source_text: str) -> bool:
-    """True when English source ends with sentence-final punctuation."""
-    stripped = source_text.rstrip()
-    return bool(stripped) and stripped[-1] in _EN_SENTENCE_END
+    try:
+        return chat_with_retry(_attempt, max_retries=max_retries, on_retry=_on_retry)
+    except _AlignRejected as e:
+        logger.warning(f"    Align check failed batch@{batch_idx} (attempt {max_retries}/{max_retries}): {e.detail}")
+        logger.warning(f"    Align check failed batch@{batch_idx} after {max_retries} attempts; using last result")
+        breakdown = {
+            "translate.translate": e.translate_usage,
+            "translate.align_check": pick_usage_fields(e.align_usage),
+        }
+        return e.cues, e.usage, breakdown
 
 
 def _split_payload_fields(unit_id: str, part_counts: dict[str, int]) -> dict:
@@ -406,81 +292,6 @@ def _unit_payload_entry(
         entry["translate"] = False
     entry.update(_split_payload_fields(segment.unit_id, part_counts))
     return entry
-
-
-def _split_group_extent(pending: list[Segment], index: int) -> tuple[int, int]:
-    """Return ``[start, end)`` indices of the split_group containing ``pending[index]``."""
-    parsed = _parse_split_part(pending[index].unit_id)
-    if parsed is None:
-        return index, index + 1
-    group_id = parsed[0]
-    start = index
-    while start > 0:
-        prev = _parse_split_part(pending[start - 1].unit_id)
-        if prev and prev[0] == group_id:
-            start -= 1
-        else:
-            break
-    end = index + 1
-    while end < len(pending):
-        nxt = _parse_split_part(pending[end].unit_id)
-        if nxt and nxt[0] == group_id:
-            end += 1
-        else:
-            break
-    return start, end
-
-
-def _chunk_pending_segments(pending: list[Segment], chunk_size: int) -> list[list[Segment]]:
-    """Chunk pending segments; never split a ``split_group`` across batches.
-
-    A split_group may occupy a batch larger than *chunk_size* when the whole
-    group does not fit in the remaining space of the current batch.
-    """
-    if not pending:
-        return []
-
-    chunks: list[list[Segment]] = []
-    i = 0
-    while i < len(pending):
-        chunk: list[Segment] = []
-        while i < len(pending):
-            g_start, g_end = _split_group_extent(pending, i)
-            g_len = g_end - g_start
-            if g_len > 1:
-                group_slice = pending[g_start:g_end]
-                if chunk and len(chunk) + g_len > chunk_size:
-                    break
-                if not chunk and g_len > chunk_size:
-                    chunks.append(group_slice)
-                    i = g_end
-                    chunk = []
-                    break
-                chunk.extend(group_slice)
-                i = g_end
-                continue
-            if len(chunk) >= chunk_size:
-                break
-            chunk.append(pending[i])
-            i += 1
-        if chunk:
-            chunks.append(chunk)
-    return chunks
-
-
-def _adjust_chunk_end(pending: list[Segment], start: int, end: int, chunk_size: int) -> int:
-    """Extend *end* so a split_group at the boundary stays in one batch (may exceed *chunk_size*)."""
-    if end >= len(pending):
-        return end
-
-    g_start, g_end = _split_group_extent(pending, end - 1)
-    if g_end <= end:
-        g_start, g_end = _split_group_extent(pending, end)
-    if g_end - g_start <= 1:
-        return end
-    if g_start < start:
-        return end
-    return g_end
 
 
 def _build_payload(
@@ -542,9 +353,9 @@ def _parse_response(
 
     Raises ``ValueError`` when batch indices are incomplete or duplicated.
     """
-    json_match = re.search(r"\[([\s\S]*)\]", response)
-    if json_match:
-        data = json.loads(json_match.group(0))
+    json_fragment = extract_json_array(response)
+    if json_fragment is not None:
+        data = json.loads(json_fragment)
     else:
         data = json.loads(response)
 
@@ -584,7 +395,7 @@ def _parse_response(
             if chunks:
                 text = "".join(chunks)
         text = text.replace("\\n", "\n")
-        text = _normalize_punctuation(
+        text = normalize_punctuation(
             text,
             config.target_lang,
             is_last_split_part=_is_last_split_part(uid, part_counts),
@@ -621,6 +432,9 @@ def translate_missing(
     segments: list[Segment],
     missing_ids: set[str],
     config: SubtitleConfig,
+    *,
+    glossary: dict | None = None,
+    content_summary: dict | None = None,
 ) -> tuple[list[SubtitleCue], dict]:
     """Retranslate specific missing segments with context.
 
@@ -633,12 +447,8 @@ def translate_missing(
 
     logger.info(f"    Retranslating {len(missing_ids)} missing: {', '.join(sorted(missing_ids)[:8])}")
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
-    system_prompt = _render_translate_prompt(config)
+    client = client_from_config(config)
+    system_prompt = _render_translate_prompt(config, glossary=glossary, content_summary=content_summary)
 
     all_cues: list[SubtitleCue] = []
     total_usage: dict[str, int] = {}
@@ -690,24 +500,29 @@ def translate_missing(
     return all_cues, total_usage
 
 
-def _normalize_punctuation(
+def normalize_punctuation(
     text: str,
     lang: str,
     *,
     is_last_split_part: bool | None = None,
     source_ends_sentence: bool = False,
+    punctuate_blank: bool = False,
 ) -> str:
     """Ensure Chinese text ends with proper punctuation.
 
     For non-final split parts whose English source continues mid-sentence,
     do not force a full stop — that breaks cross-segment readability.
+
+    ``punctuate_blank`` reproduces the legacy refine behavior of turning
+    whitespace-only input into a lone ``。``; the default (translate path)
+    returns such input unchanged.
     """
     if lang != "zh" or not text:
         return text
 
     stripped = text.rstrip()
     if not stripped:
-        return text
+        return stripped + "。" if punctuate_blank else text
 
     last = stripped[-1]
     mid_split = is_last_split_part is False and not source_ends_sentence

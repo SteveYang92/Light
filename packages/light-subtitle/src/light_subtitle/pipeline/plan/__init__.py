@@ -27,16 +27,15 @@ Usage::
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 from light_models import Segment, Word
 
-from ... import logger
+from ... import artifacts, logger
 from ...config import SubtitleConfig
-from ...llm.client import OpenAIClient
+from ...llm.client import client_from_config
 from ...llm.parallel import run_parallel_with_warmup
 from ...usage.tracker import merge_token_usage
 from . import fallback, planner
@@ -79,22 +78,10 @@ def run(segments: list[Segment], config: SubtitleConfig, plan_dir: str | Path) -
 
 def load_plan_units(plan_dir: str | Path) -> list[Segment] | None:
     """Rebuild planned units from ``plan/plan.json``; None when absent."""
-    path = Path(plan_dir) / "plan.json"
+    path = Path(plan_dir) / artifacts.PLAN_JSON
     if not path.exists():
         return None
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    return [
-        Segment(
-            unit_id=item["unit_id"],
-            start=item.get("start", 0.0),
-            end=item.get("end", 0.0),
-            speaker=item.get("speaker", ""),
-            source_text=item.get("text", ""),
-            words=[],
-        )
-        for item in data.get("units", [])
-    ]
+    return artifacts.read_plan_units(path)
 
 
 # ── Unit materialization ──────────────────────────────────
@@ -163,7 +150,7 @@ def _materialize(
     split_results: dict[int, list[tuple[int, int]]] = {}
     overlong_infos = [info for info in infos if info.overlong]
     if overlong_infos and config.llm_api_key:
-        shared_client = OpenAIClient(base_url=config.llm_base_url, api_key=config.llm_api_key, model=config.llm_model)
+        shared_client = client_from_config(config)
         split_tasks: list[tuple[Callable[[], tuple[list[tuple[int, int]] | None, dict | None]], int]] = []
         for info in overlong_infos:
             # Capture by-value via default args to avoid closure late-binding
@@ -236,5 +223,4 @@ def _text_from_words(words: list[Word]) -> str:
 
 
 def _save_plan(plan_dir: Path, meta: list[dict]) -> None:
-    payload = {"version": _PLAN_VERSION, "units": meta}
-    (plan_dir / "plan.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    artifacts.write_plan_meta(plan_dir / artifacts.PLAN_JSON, meta, version=_PLAN_VERSION)

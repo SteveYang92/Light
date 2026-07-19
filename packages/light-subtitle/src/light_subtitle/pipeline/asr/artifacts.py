@@ -8,6 +8,7 @@ from pathlib import Path
 
 from light_models import Word
 
+from ...artifacts import word_from_dict, word_to_dict
 from ...config import AsrEngine, SubtitleConfig
 
 # whisper.cpp raw segment JSON (alignment anchors) — separate from words checkpoint.
@@ -41,16 +42,7 @@ def save_asr_words(config: SubtitleConfig, words: list[Word]) -> Path:
     data = {
         "format": "light-asr-words.v1",
         "provider": provider_name(config),
-        "words": [
-            {
-                "text": w.text,
-                "start": w.start,
-                "end": w.end,
-                "confidence": w.confidence,
-                "speaker": w.speaker,
-            }
-            for w in words
-        ],
+        "words": [word_to_dict(w) for w in words],
     }
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     return path
@@ -60,7 +52,7 @@ def load_asr_words(config: SubtitleConfig) -> list[Word]:
     path = asr_words_path(config)
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    return [Word(**w) for w in data.get("words", [])]
+    return [word_from_dict(w) for w in data.get("words", [])]
 
 
 def save_whisper_cpp_raw(config: SubtitleConfig, whisper_json: Path) -> Path:

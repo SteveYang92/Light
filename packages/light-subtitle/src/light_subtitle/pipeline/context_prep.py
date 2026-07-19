@@ -8,7 +8,6 @@ summary extraction.
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -16,7 +15,8 @@ from light_models import Segment
 
 from .. import logger
 from ..config import SubtitleConfig
-from ..llm.client import OpenAIClient
+from ..llm.client import client_from_config
+from ..llm.json_extract import extract_json_object
 from ..llm.prompts import render_prompt
 from ..usage.tracker import format_token_usage, save_step_usage
 
@@ -67,11 +67,7 @@ def prepare_context(
     transcript_text = build_transcript_text(segments)
     (context_dir / "transcript.txt").write_text(transcript_text, encoding="utf-8")
 
-    client = OpenAIClient(
-        base_url=config.llm_base_url,
-        api_key=config.llm_api_key,
-        model=config.llm_model,
-    )
+    client = client_from_config(config)
     prompt = render_prompt(
         "context_prep.j2",
         target_lang=config.target_lang or "zh",
@@ -109,10 +105,10 @@ def merge_glossary(auto_glossary: dict[str, str], user_glossary: dict[str, str])
 def _parse_context_response(response: str) -> ContextPrepResult:
     """Parse LLM JSON into ContextPrepResult."""
     response = response.strip()
-    json_match = re.search(r"\{[\s\S]*\}", response)
-    if json_match:
+    json_fragment = extract_json_object(response)
+    if json_fragment is not None:
         try:
-            data = json.loads(json_match.group(0))
+            data = json.loads(json_fragment)
         except json.JSONDecodeError:
             return ContextPrepResult()
     else:

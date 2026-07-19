@@ -271,7 +271,7 @@ def test_join_cues_applies_llm_ops() -> None:
     response = json.dumps({"ops": [{"type": "shift", "boundary": 0, "en_words": 1}]})
     client = _FakeClient([response])
     with (
-        patch("light_subtitle.pipeline.translate.join.OpenAIClient", return_value=client),
+        patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client),
         _patch_retranslate(),
     ):
         result = join_cues(cues, units, _config())
@@ -285,7 +285,7 @@ def test_join_cues_drops_invalid_ops_and_retries() -> None:
     bad = json.dumps({"ops": [{"type": "shift", "boundary": 0, "en_words": 99}]})  # donor emptied → invalid
     good = json.dumps({"ops": [{"type": "merge", "from": 0, "to": 1}]})
     client = _FakeClient([bad, good])
-    with patch("light_subtitle.pipeline.translate.join.OpenAIClient", return_value=client):
+    with patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client):
         result = join_cues(cues, units, _config())
     assert "previous_error" in client.calls[1][1]["content"]
     assert result.cues[0].text == "所以你自然会想 文本压缩有没有一个"
@@ -316,7 +316,7 @@ def test_find_candidates_flags_dangling_and_flash() -> None:
 def test_candidates_included_in_payload_for_core_range() -> None:
     cues, units = _p0002_pair()  # cue 0 ends with "会" → candidate
     client = _FakeClient(['{"ops": []}'])
-    with patch("light_subtitle.pipeline.translate.join.OpenAIClient", return_value=client):
+    with patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client):
         join_cues(cues, units, _config())
     payload = json.loads(client.calls[0][1]["content"])
     assert payload["candidates"] and payload["candidates"][0]["boundary"] == 0
@@ -330,7 +330,7 @@ def test_join_cues_merges_applied_descending_keeps_indices_stable() -> None:
     units = [_unit(f"p{i}", words[i]) for i in range(6)]
     response = json.dumps({"ops": [{"type": "merge", "from": 0, "to": 1}, {"type": "merge", "from": 3, "to": 4}]})
     client = _FakeClient([response])
-    with patch("light_subtitle.pipeline.translate.join.OpenAIClient", return_value=client):
+    with patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client):
         result = join_cues(cues, units, _config())
     texts = [c.text for c in result.cues]
     assert texts == ["第0条第1条", "第2条", "第3条第4条", "第5条"]

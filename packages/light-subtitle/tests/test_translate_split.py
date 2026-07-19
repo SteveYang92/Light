@@ -7,15 +7,14 @@ import json
 import pytest
 from light_models import Segment, Word
 from light_subtitle.config import SubtitleConfig
+from light_subtitle.pipeline.translate.chunking import _adjust_chunk_end, _chunk_pending_segments
+from light_subtitle.pipeline.translate.protocol import _is_last_split_part, _parse_split_part, _split_group_part_counts
 from light_subtitle.pipeline.translate.translate import (
-    _adjust_chunk_end,
     _build_payload,
-    _chunk_pending_segments,
-    _is_last_split_part,
-    _normalize_punctuation,
     _parse_response,
-    _parse_split_part,
-    _split_group_part_counts,
+)
+from light_subtitle.pipeline.translate.translate import (
+    normalize_punctuation as _normalize_punctuation,
 )
 
 # ── Helpers ─────────────────────────────────────────────────────

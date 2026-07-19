@@ -176,6 +176,6 @@ def test_load_cached_translation_chains_words_for_merged_from(tmp_path: Path) ->
     assert cues[0].words[-1].end == 4.0
 
     config = SubtitleConfig(input_path="dummy.mp4", output_dir=str(tmp_path), max_duration=6.0)
-    out = sub_mod.run(cues, config)
+    out, _usage = sub_mod.run(cues, config)
     # Head-only words would end ~2s; full chain must reach last word (~4.0) + reading padding.
     assert out[0].end >= 3.95

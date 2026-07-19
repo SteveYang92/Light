@@ -4,7 +4,7 @@ Pre-computes whisper-token offsets → display-text word mapping,
 so chunk-level word lookups avoid repeated text reconstruction
 and substring matching.
 
-Built once per semantic unit via ``_UnitWordIndex.from_words()``.
+Built once per semantic unit via ``UnitWordIndex.from_words()``.
 """
 
 from dataclasses import dataclass
@@ -13,7 +13,7 @@ from light_models import SubtitleCue, Word, is_cjk
 
 
 @dataclass
-class _UnitWordIndex:
+class UnitWordIndex:
     """Pre-computed lookup: whisper-token offsets → display-text word mapping."""
 
     words: list[Word]
@@ -31,7 +31,7 @@ class _UnitWordIndex:
         return "".join(result)
 
     @classmethod
-    def from_words(cls, words: list[Word]) -> "_UnitWordIndex | None":
+    def from_words(cls, words: list[Word]) -> "UnitWordIndex | None":
         if not words:
             return None
         offsets: list[int] = []
@@ -87,8 +87,8 @@ class _UnitWordIndex:
         return result
 
 
-def _chunk_times(
-    chunk: list[str], original: SubtitleCue, word_idx: _UnitWordIndex | None, cps_limit: int
+def chunk_times(
+    chunk: list[str], original: SubtitleCue, word_idx: UnitWordIndex | None, cps_limit: int
 ) -> tuple[float, float]:
     """Compute display-chunk start/end from word-level timestamps.
 

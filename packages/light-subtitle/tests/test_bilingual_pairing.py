@@ -636,7 +636,7 @@ def test_single_style_and_font(tmp_path: Path) -> None:
     en = [SubtitleCue(cue_id="en_0", unit_id="u0", start=1.0, end=2.0, text="hi", lang="en")]
     zh = [SubtitleCue(cue_id="zh_0", unit_id="u0", start=1.0, end=2.0, text="嗨", lang="zh")]
     out = tmp_path / "bilingual.ass"
-    with patch("light_subtitle.pipeline.export.resolve_font", return_value="CustomFont"):
+    with patch("light_subtitle.pipeline.export.formats.resolve_font", return_value="CustomFont"):
         # box_enabled=False: this asserts the legacy plain style layout.
         export_bilingual_ass(en, zh, str(out), font="CustomFont", style=SubtitleStyleConfig(box_enabled=False))
     text = out.read_text(encoding="utf-8")

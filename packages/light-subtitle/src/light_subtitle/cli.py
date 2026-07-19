@@ -11,17 +11,18 @@ directly (backward-compatible with the legacy ``--input``-only path).
 
 from __future__ import annotations
 
+import dataclasses
 import os
-import signal
-import threading
 from pathlib import Path
 
 import typer
 
+from . import logger
 from .config import AsrEngine, SubtitleConfig
 from .download import derive_slug_from_path, download_video, find_cached_download
 from .runner import process_video
 from .utils.whisper_utils import find_model, find_whisper
+from .video_split import segment_tag
 
 # ── Validation ──────────────────────────────────────────
 
@@ -38,11 +39,26 @@ def _validate_asr(value: str) -> str:
 app = typer.Typer()
 
 
-def _default_resume_from_help() -> str:
-    from .step_plan import list_step_ids
+def _non_default_cli_params(local_ns: dict) -> list[str]:
+    """Pipeline params explicitly set on the CLI (i.e. differing from their
+    typer defaults) — used to warn when ``--config`` makes them no-ops."""
+    import inspect
 
-    steps = list_step_ids(SubtitleConfig(input_path="", output_dir="./output"))
-    return f"Start from a specific step (e.g. {', '.join(steps[:4])}, …). Depends on --target-lang, --asr, etc."
+    skip = {"ctx", "input_path", "url", "config_file", "style_config"}
+    names = []
+    for name, param in inspect.signature(run).parameters.items():
+        if name in skip:
+            continue
+        default = getattr(param.default, "default", param.default)
+        if local_ns.get(name) != default:
+            names.append(name)
+    return names
+
+
+# NOTE: the --resume-from help text mirrors the first steps of the default
+# plan (asr.extract, asr.transcribe, correct, punct); it is intentionally
+# static so importing the CLI has no side effects (previously this was
+# computed from a live step plan at import time).
 
 
 @app.callback(invoke_without_command=True)
@@ -172,7 +188,10 @@ def run(
     resume_from: str = typer.Option(
         "",
         "--resume-from",
-        help=_default_resume_from_help(),
+        help=(
+            "Start from a specific step (e.g. asr.extract, asr.transcribe, correct, punct, …)."
+            " Depends on --target-lang, --asr, etc."
+        ),
     ),
 ):
     if ctx.invoked_subcommand is not None:
@@ -198,7 +217,7 @@ def run(
         cached = find_cached_download(url, output_base)
         if cached is not None:
             video_path, slug = cached
-            print(f"  Using cached download: {video_path}")
+            logger.info(f"  Using cached download: {video_path}")
         else:
             video_path, slug = download_video(url, output_base)
     else:
@@ -221,6 +240,9 @@ def run(
 
     if config_file:
         config = SubtitleConfig.from_yaml(config_file)
+        ignored = _non_default_cli_params(locals())
+        if ignored:
+            logger.warning(f"  ⚠ --config 生效，以下 CLI 参数被忽略: {', '.join(ignored)}")
     else:
         glossary_dict: dict[str, str] = {}
         if glossary:
@@ -229,63 +251,37 @@ def run(
             with open(glossary) as f:
                 glossary_dict = yaml.safe_load(f) or {}
 
-        config = SubtitleConfig(
-            input_path=str(video_path),
-            output_dir=output_dir,
-            url=url if has_url else None,
-            slug=slug,
-            bilingual=bilingual,
-            whisper_model=resolved_whisper_model,
-            whisper_path=resolved_whisper_path,
-            language=language,
-            target_lang=target_lang if target_lang else None,
-            cps_limit=cps_limit,
-            cps_limit_en=cps_limit_en,
-            max_lines=max_lines,
-            max_lines_zh=max_lines_zh,
-            max_chars_per_line_zh=max_chars_per_line_zh,
-            max_chars_per_line_en=max_chars_per_line_en,
-            min_duration=min_duration,
-            max_duration=max_duration,
-            reading_padding=reading_padding,
-            llm_base_url=llm_base_url,
-            llm_model=llm_model,
-            llm_api_key=llm_api_key or os.environ.get("DEEPSEEK_API_KEY", ""),
-            llm_temperature=llm_temperature,
-            glossary=glossary_dict,
-            asr=AsrEngine(asr),
-            resume=resume,
-            resume_from=resume_from if resume_from else None,
-            diarize=diarize,
-            diarize_model=diarize_model,
-            hf_token=hf_token or os.environ.get("HF_TOKEN", ""),
-            evaluate_enabled=evaluate,
-            quality_threshold=quality_threshold,
-            correct_enabled=not no_correct,
-            context_prep_enabled=not no_context,
-            annotate=annotate,
-            annotation_width=annotation_width,
-            font=font,
-            split_threshold=split_threshold,
-        )
+        # CLI params → SubtitleConfig: fields with a same-named parameter are
+        # copied verbatim; *special* holds the exceptions (derived values,
+        # renames, env fallbacks, enum conversion).
+        params = locals()
+        special = {
+            "input_path": str(video_path),
+            "url": url if has_url else None,
+            "slug": slug,
+            "whisper_model": resolved_whisper_model,
+            "whisper_path": resolved_whisper_path,
+            "target_lang": target_lang if target_lang else None,
+            "glossary": glossary_dict,
+            "asr": AsrEngine(asr),
+            "resume_from": resume_from if resume_from else None,
+            "llm_api_key": llm_api_key or os.environ.get("DEEPSEEK_API_KEY", ""),
+            "hf_token": hf_token or os.environ.get("HF_TOKEN", ""),
+            "evaluate_enabled": evaluate,
+            "correct_enabled": not no_correct,
+            "context_prep_enabled": not no_context,
+        }
+        config_kwargs = {
+            f.name: params[f.name]
+            for f in dataclasses.fields(SubtitleConfig)
+            if f.name in params and f.name not in special
+        }
+        config = SubtitleConfig(**config_kwargs, **special)
 
     if style_config:
         from .style.config import SubtitleStyleConfig
 
         config.style = SubtitleStyleConfig.load_yaml(style_config)
-
-    # ═══════════════════════════════════════════════════════
-    #  4. Process: split if long, otherwise run directly
-    # ═══════════════════════════════════════════════════════
-    # ── Install SIGINT/SIGTERM handler (CLI only) ─────
-    shutdown = threading.Event()
-
-    def _on_sigint(_signum: int, _frame: object) -> None:
-        print("\n  Shutting down...", flush=True)
-        shutdown.set()
-
-    signal.signal(signal.SIGINT, _on_sigint)
-    signal.signal(signal.SIGTERM, _on_sigint)
 
     # ═══════════════════════════════════════════════════════
     #  4. Run pipeline via shared runner
@@ -295,7 +291,7 @@ def run(
 
     # Rename generic outputs to slug-prefixed names for short videos.
     # Long videos are already named by the merge step.
-    is_segment = work_dir.name.startswith((".seg", "chunk_"))
+    is_segment = bool(segment_tag(work_dir))
     if not is_segment and _has_generic_outputs(work_dir):
         # Always rename when bare names exist — e.g. after ``--resume-from
         # subtitle`` export writes ``zh.srt`` / ``bilingual.ass`` even if an
@@ -347,9 +343,7 @@ def _rename_outputs(work_dir: Path, slug: str) -> None:
     transcript_src = work_dir / "transcript.json"
     transcript_dst = work_dir / f"{slug}.transcript.json"
     if transcript_src.exists() and not transcript_dst.exists():
-        import shutil as _shutil
-
-        _shutil.copy2(str(transcript_src), str(transcript_dst))
+        shutil.copy2(str(transcript_src), str(transcript_dst))
     for src_name, dst_name in mapping.items():
         src = work_dir / src_name
         dst = work_dir / dst_name

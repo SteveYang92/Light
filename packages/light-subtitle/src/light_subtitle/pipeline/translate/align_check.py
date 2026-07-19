@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass
 
 from light_models import Segment
@@ -11,7 +10,9 @@ from light_models import Segment
 from ... import logger
 from ...config import SubtitleConfig
 from ...llm.client import OpenAIClient
+from ...llm.json_extract import extract_json_array
 from ...llm.prompts import render_prompt
+from ...llm.retry import chat_with_retry
 
 _ALIGN_CHECK_RETRIES = 3
 _CONFIDENCE_THRESHOLD = 0.90
@@ -158,9 +159,9 @@ def _parse_align_response(
 ) -> tuple[bool, list[AlignFailure]]:
     """Parse alignment LLM response; conservative pass on parse/length errors."""
     response = response.strip()
-    json_match = re.search(r"\[([\s\S]*)\]", response)
-    if json_match:
-        data = json.loads(json_match.group(0))
+    json_fragment = extract_json_array(response)
+    if json_fragment is not None:
+        data = json.loads(json_fragment)
     else:
         data = json.loads(response)
 
@@ -231,22 +232,27 @@ def check_batch_alignment(
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
 
-    last_error: Exception | None = None
-    for attempt in range(_ALIGN_CHECK_RETRIES):
-        try:
-            response, usage = client.chat(messages, temperature=0.0)
-            aligned, failures = _parse_align_response(
-                response,
-                len(sample_indices),
-                sample_indices,
-                segments,
-                parsed_texts,
-            )
-            return aligned, failures, usage
-        except (json.JSONDecodeError, ValueError) as e:
-            last_error = e
-            if attempt < _ALIGN_CHECK_RETRIES - 1:
-                logger.warning(f"    Align check retry {attempt + 1}/{_ALIGN_CHECK_RETRIES}: {e}")
+    def _attempt() -> tuple[bool, list[AlignFailure], dict]:
+        response, usage = client.chat(messages, temperature=0.0)
+        aligned, failures = _parse_align_response(
+            response,
+            len(sample_indices),
+            sample_indices,
+            segments,
+            parsed_texts,
+        )
+        return aligned, failures, usage
 
-    logger.warning(f"    Align check failed to parse, treating as aligned: {last_error}")
-    return True, [], {}
+    def _on_retry(attempt: int, exc: BaseException) -> None:
+        logger.warning(f"    Align check retry {attempt + 1}/{_ALIGN_CHECK_RETRIES}: {exc}")
+
+    try:
+        return chat_with_retry(
+            _attempt,
+            max_retries=_ALIGN_CHECK_RETRIES,
+            retry_exceptions=(json.JSONDecodeError, ValueError),
+            on_retry=_on_retry,
+        )
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning(f"    Align check failed to parse, treating as aligned: {e}")
+        return True, [], {}

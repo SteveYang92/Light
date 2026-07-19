@@ -100,27 +100,20 @@ def test_validate_artifacts_present(tmp_path: Path):
 
 
 def test_hydrate_words_from_transcript(tmp_path: Path):
-    from light_subtitle.state_hydrate import hydrate_pipeline_state
+    from light_subtitle.orchestrator import Orchestrator
+    from light_subtitle.state_hydrate import hydrate_state
 
     words_data = {"words": [{"text": " hi", "start": 0.0, "end": 0.5, "confidence": 0.9, "speaker": None}]}
     (tmp_path / "transcript.json").write_text(json.dumps(words_data))
 
-    class _State:
-        words: list = []
-        segments: list = []
-        raw_source_cues: list = []
-        source_lang: str = "en"
-        auto_glossary: dict = {}
-        merged_glossary: dict = {}
-        content_summary = None
-        translated_cues: list = []
-        translation_usage = None
+    config = _config(output_dir=str(tmp_path), resume_from="correct")
+    plan = build_step_plan(config)
+    start_idx = resolve_start_index(plan, config, None)
 
-    state = _State()
-    config = _config(output_dir=str(tmp_path))
-    hydrate_pipeline_state(state, config, "correct")
-    assert len(state.words) == 1
-    assert state.words[0].text == " hi"
+    orch = Orchestrator(config)
+    hydrate_state(orch, plan, start_idx)
+    assert len(orch.state.words) == 1
+    assert orch.state.words[0].text == " hi"
 
 
 def test_step_registry_unique_ids():
@@ -155,8 +148,6 @@ def test_hydrate_state_replays_plan_prefix(tmp_path: Path):
 
     class _Orch:
         state = PipelineState()
-        asr_ctx = type("ctx", (), {"audio_path": "", "words": []})()
-        tx_ctx = type("ctx", (), {"translated_cues": [], "usage": None})()
 
     orch = _Orch()
     orch.config = config

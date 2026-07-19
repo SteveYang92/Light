@@ -152,6 +152,11 @@ class UsageTracker:
             if usage:
                 self.record(step_id, usage, calls=int(usage.get("calls", 1)))
 
+    @property
+    def has_records(self) -> bool:
+        """True when any per-step usage has been recorded or loaded."""
+        return bool(self._steps)
+
     def load_from_dir(self, output_dir: str | Path) -> None:
         """Hydrate tracker from per-step usage artifacts (resume support)."""
         output_dir = Path(output_dir)

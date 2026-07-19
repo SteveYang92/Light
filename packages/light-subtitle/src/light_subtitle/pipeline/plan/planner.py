@@ -10,15 +10,15 @@ caller can fall back to the deterministic insurance plan.
 from __future__ import annotations
 
 import json
-import re
 
 from light_models import Segment, Word
 
 from ... import logger
 from ...config import SubtitleConfig
-from ...llm.client import OpenAIClient
+from ...llm.client import OpenAIClient, client_from_config
+from ...llm.json_extract import extract_json_object
 from ...llm.prompts import render_prompt
-from ...usage.tracker import merge_token_usage
+from ...llm.retry import FeedbackAttempt, generate_with_feedback
 from .boundary import dangling_tail as _dangling_tail
 
 _MAX_ATTEMPTS = 2  # initial try + one retry with validation feedback
@@ -42,7 +42,7 @@ def plan_groups(segments: list[Segment], config: SubtitleConfig) -> tuple[list[l
     """
     if not config.llm_api_key or not segments:
         return None, None
-    client = OpenAIClient(base_url=config.llm_base_url, api_key=config.llm_api_key, model=config.llm_model)
+    client = client_from_config(config)
     system = render_prompt("plan_system.j2", max_duration=config.max_duration, min_duration=config.min_duration)
     payload = {
         "segments": [
@@ -57,9 +57,8 @@ def plan_groups(segments: list[Segment], config: SubtitleConfig) -> tuple[list[l
             for i, s in enumerate(segments)
         ]
     }
-    total_usage: dict = {}
-    feedback = ""
-    for attempt in range(_MAX_ATTEMPTS):
+
+    def _attempt(feedback: str, attempt: int) -> FeedbackAttempt[list[list[int]]]:
         user = dict(payload)
         if feedback:
             user["previous_error"] = feedback
@@ -68,12 +67,13 @@ def plan_groups(segments: list[Segment], config: SubtitleConfig) -> tuple[list[l
             {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
         ]
         response, usage = client.chat(messages, temperature=config.llm_temperature)
-        merge_token_usage(total_usage, usage)
         groups = _parse_groups(response)
         if groups is None:
-            feedback = 'Output was not valid JSON of the form {"cues": [[0, 1], [2], ...]}.'
             logger.warning(f"  Plan attempt {attempt + 1}: unparseable output")
-            continue
+            return FeedbackAttempt(
+                usage=usage,
+                feedback='Output was not valid JSON of the form {"cues": [[0, 1], [2], ...]}.',
+            )
         problems = _group_problems(groups, segments, config.max_duration)
         hard = [p for p in problems if not p.startswith(_DURATION_PREFIX)]
         if not hard:
@@ -82,17 +82,19 @@ def plan_groups(segments: list[Segment], config: SubtitleConfig) -> tuple[list[l
                 logger.warning(
                     f"  Plan: {dur_count} overlong cue group(s) accepted (word-level splits will handle them)"
                 )
-            return groups, total_usage or None
-        feedback = "Invalid plan: " + "; ".join(problems)
-        logger.warning(f"  Plan attempt {attempt + 1} invalid: {feedback}")
-    return None, total_usage or None
+            return FeedbackAttempt(usage=usage, value=groups)
+        new_feedback = "Invalid plan: " + "; ".join(problems)
+        logger.warning(f"  Plan attempt {attempt + 1} invalid: {new_feedback}")
+        return FeedbackAttempt(usage=usage, feedback=new_feedback)
+
+    return generate_with_feedback(_attempt, max_attempts=_MAX_ATTEMPTS)
 
 
 def _parse_groups(response: str) -> list[list[int]] | None:
     """Extract ``{"cues": [[int, ...], ...]}`` from an LLM response."""
-    match = re.search(r"\{[\s\S]*\}", response)
+    match = extract_json_object(response)
     try:
-        data = json.loads(match.group(0) if match else response)
+        data = json.loads(match if match is not None else response)
     except json.JSONDecodeError:
         return None
     cues = data.get("cues") if isinstance(data, dict) else None
@@ -146,7 +148,7 @@ def split_span(
     if not config.llm_api_key or len(words) < 2:
         return None, None
     if client is None:
-        client = OpenAIClient(base_url=config.llm_base_url, api_key=config.llm_api_key, model=config.llm_model)
+        client = client_from_config(config)
     system = render_prompt(
         "plan_split_system.j2",
         max_duration=config.max_duration,
@@ -159,9 +161,8 @@ def split_span(
             for i, w in enumerate(words)
         ],
     }
-    total_usage: dict = {}
-    feedback = ""
-    for attempt in range(_MAX_ATTEMPTS):
+
+    def _attempt(feedback: str, attempt: int) -> FeedbackAttempt[list[tuple[int, int]]]:
         user = dict(payload)
         if feedback:
             user["previous_error"] = feedback
@@ -170,25 +171,28 @@ def split_span(
             {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
         ]
         response, usage = client.chat(messages, temperature=config.llm_temperature)
-        merge_token_usage(total_usage, usage)
         breaks = _parse_breaks(response)
         if breaks is None:
-            feedback = 'Output was not valid JSON of the form {"breaks": [{"after": 23}, ...]}.'
             logger.warning(f"  Split attempt {attempt + 1}: unparseable output")
-            continue
+            return FeedbackAttempt(
+                usage=usage,
+                feedback='Output was not valid JSON of the form {"breaks": [{"after": 23}, ...]}.',
+            )
         problems = _break_problems(breaks, words, config.max_duration)
         if not problems:
-            return _breaks_to_ranges(breaks, len(words)), total_usage or None
-        feedback = "Invalid split: " + "; ".join(problems)
-        logger.warning(f"  Split attempt {attempt + 1} invalid: {feedback}")
-    return None, total_usage or None
+            return FeedbackAttempt(usage=usage, value=_breaks_to_ranges(breaks, len(words)))
+        new_feedback = "Invalid split: " + "; ".join(problems)
+        logger.warning(f"  Split attempt {attempt + 1} invalid: {new_feedback}")
+        return FeedbackAttempt(usage=usage, feedback=new_feedback)
+
+    return generate_with_feedback(_attempt, max_attempts=_MAX_ATTEMPTS)
 
 
 def _parse_breaks(response: str) -> list[int] | None:
     """Extract break word indices from ``{"breaks": [{"after": int}, ...]}``."""
-    match = re.search(r"\{[\s\S]*\}", response)
+    match = extract_json_object(response)
     try:
-        data = json.loads(match.group(0) if match else response)
+        data = json.loads(match if match is not None else response)
     except json.JSONDecodeError:
         return None
     raw = data.get("breaks") if isinstance(data, dict) else None

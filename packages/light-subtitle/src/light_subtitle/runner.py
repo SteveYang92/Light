@@ -23,6 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import logger
 from .config import SubtitleConfig
 from .download import download_video, find_cached_download
 from .merge_outputs import merge_all
@@ -181,8 +182,9 @@ def _process_long(
     for f in futures:
         try:
             f.result()
-        except Exception:
+        except Exception as e:
             segment_failed = True
+            logger.warning(f"  Segment failed: {type(e).__name__}: {e}")
 
     if shutdown.is_set() or segment_failed:
         return False

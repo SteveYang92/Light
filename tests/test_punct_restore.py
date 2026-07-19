@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from light_models import Word
-from light_subtitle.pipeline._word_segments import group_words_by_gap
 from light_subtitle.pipeline.punct_restore import (
     _apply_punct_to_words,
     _has_sufficient_punctuation,
@@ -11,6 +10,7 @@ from light_subtitle.pipeline.punct_restore import (
     _parse_llm_response,
     _Segment,
 )
+from light_subtitle.pipeline.word_segments import group_words_by_gap
 
 # ── group_words_by_gap ─────────────────────────────────────────────
 

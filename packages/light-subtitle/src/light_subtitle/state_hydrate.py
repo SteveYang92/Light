@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from light_models import Segment, Word
 
+from . import artifacts
 from .config import SubtitleConfig
 from .cue_builder import build_source_cues
 from .language import detect_source_lang
@@ -22,7 +22,13 @@ if TYPE_CHECKING:
 
 
 def hydrate_state(orch: Orchestrator, plan: list[PlanStep], start_idx: int) -> None:
-    """Replay hydrate handlers through the resume target step inclusive."""
+    """Replay hydrate handlers through the resume target step inclusive.
+
+    The replay range is [0, start_idx] *inclusive*: each step's hydrate
+    loads the state its own INPUT artifacts produce, so the resume target
+    itself also needs its inputs hydrated (e.g. resuming at ``correct``
+    needs transcript.json loaded, which is ``correct``'s own hydrate).
+    """
     for step in plan[:start_idx]:
         handler = step.definition.hydrate
         if handler is not None:
@@ -36,15 +42,15 @@ def hydrate_state(orch: Orchestrator, plan: list[PlanStep], start_idx: int) -> N
 def hydrate_asr_audio(orch: Orchestrator) -> None:
     wav = audio_wav_path(orch.config.output_dir)
     if wav.exists():
-        orch.asr_ctx.audio_path = str(wav)
+        orch.state.audio_path = str(wav)
 
 
 def hydrate_asr_words(orch: Orchestrator) -> None:
-    orch.asr_ctx.words = load_asr_words(orch.config)
+    orch.state.words = load_asr_words(orch.config)
 
 
 def hydrate_transcript_words(orch: Orchestrator) -> None:
-    orch.state.words = load_words_from_transcript(_out(orch.config) / "transcript.json")
+    orch.state.words = artifacts.read_transcript_words(artifacts.transcript_path(_out(orch.config)))
 
 
 def hydrate_words_after_correct(orch: Orchestrator) -> None:
@@ -70,7 +76,7 @@ def hydrate_segments_from_disk(orch: Orchestrator) -> None:
     if not orch.state.words:
         hydrate_words_after_punct(orch)
     orch.state.source_lang = detect_source_lang(orch.state.words)
-    orch.state.segments = load_segments_from_json(out / "segment" / "segment.json", orch.state.words)
+    orch.state.segments = artifacts.read_segment_units(artifacts.segment_json_path(out), orch.state.words)
 
 
 def hydrate_context_from_cache(orch: Orchestrator) -> None:
@@ -81,12 +87,24 @@ def hydrate_context_from_cache(orch: Orchestrator) -> None:
         cached = context_prep_pipeline.load_cached_context(orch.config.output_dir)
         orch.state.auto_glossary = cached.glossary
         orch.state.content_summary = cached.summary
-    orch.state.merged_glossary = context_prep_pipeline.merge_glossary(
-        orch.state.auto_glossary,
-        orch.config.glossary,
-    )
-    orch.config.glossary = orch.state.merged_glossary
-    orch.config.content_summary = orch.state.content_summary
+    sync_glossary(orch, recompute=True)
+
+
+def sync_glossary(orch: Orchestrator, *, recompute: bool = False) -> None:
+    """Merge auto-extracted + user glossary into ``state.merged_glossary``.
+
+    Single implementation for the three sites that sync glossary state:
+    the context step (always recomputes after a fresh extraction), the
+    translate guard (fills only when empty), and resume hydration
+    (recomputes from cached/auto + user glossaries).  Reads the user's
+    initial glossary from ``config.glossary``; never writes config —
+    downstream prompt builders receive the merged values from state.
+    """
+    if recompute or not orch.state.merged_glossary:
+        orch.state.merged_glossary = context_prep_pipeline.merge_glossary(
+            orch.state.auto_glossary,
+            orch.config.glossary,
+        )
 
 
 def hydrate_plan_segments(orch: Orchestrator) -> None:
@@ -99,7 +117,7 @@ def hydrate_plan_segments(orch: Orchestrator) -> None:
     """
     hydrate_segments_from_disk(orch)
     hydrate_context_from_cache(orch)
-    plan_dir = _out(orch.config) / "plan"
+    plan_dir = artifacts.plan_dir(_out(orch.config))
     orch.state.composed_segments = load_joined_units(plan_dir) or translate_pipeline.load_plan_segments(
         plan_dir, orch.state.segments, orch.config
     )
@@ -112,34 +130,30 @@ def _attach_segment_words(segments: list[Segment], plan_dir: Path) -> None:
 
     ``load_plan_segments``/``load_joined_units`` rebuild ``Segment``
     objects with ``words=[]``; this refills words so pace can do
-    word-boundary alignment.  Mirrors the logic in
-    ``translate.load_cached_translation``.
+    word-boundary alignment.  Shares the map-loading logic with
+    ``translate.load_cached_translation`` via :mod:`.artifacts`.
     """
-    seg_words_path = plan_dir / "segment_words.joined.json"
-    if not seg_words_path.exists():
-        seg_words_path = plan_dir / "segment_words.json"
-    if not seg_words_path.exists():
+    seg_words_map = artifacts.load_segment_words_map(plan_dir)
+    if seg_words_map is None:
         return
-    with open(seg_words_path, encoding="utf-8") as f:
-        seg_words_map = json.load(f)
     for seg in segments:
         word_dicts = seg_words_map.get(seg.unit_id)
         if word_dicts:
-            seg.words = [Word(**w) for w in word_dicts]
+            seg.words = [artifacts.word_from_dict(w) for w in word_dicts]
 
 
 def hydrate_partial_cues(orch: Orchestrator) -> None:
     from .pipeline.translate import load_partial_cues
 
-    tx_dir = _out(orch.config) / "translations"
-    partial = tx_dir / "partial.json"
+    tx_dir = artifacts.translations_dir(_out(orch.config))
+    partial = artifacts.partial_cues_path(_out(orch.config))
     if partial.exists():
-        orch.tx_ctx.translated_cues = load_partial_cues(tx_dir, orch.config)
+        orch.state.translated_cues = load_partial_cues(tx_dir, orch.config)
 
 
 def hydrate_translated_cues(orch: Orchestrator) -> None:
     hydrate_plan_segments(orch)
-    tx_dir = _out(orch.config) / "translations"
+    tx_dir = artifacts.translations_dir(_out(orch.config))
     orch.state.translated_cues, orch.state.translation_usage = translate_pipeline.load_cached_translation(
         tx_dir, orch.config, current_segments=orch.state.composed_segments
     )
@@ -147,7 +161,7 @@ def hydrate_translated_cues(orch: Orchestrator) -> None:
 
 def hydrate_subtitle_export(orch: Orchestrator) -> None:
     hydrate_plan_segments(orch)
-    raw = _out(orch.config) / "translations" / "raw.json"
+    raw = artifacts.raw_cues_path(_out(orch.config))
     if raw.exists():
         hydrate_translated_cues(orch)
 
@@ -158,85 +172,9 @@ def _out(config_or_dir: SubtitleConfig | str | Path) -> Path:
     return Path(config_or_dir)
 
 
-def load_words_from_transcript(path: Path) -> list[Word]:
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    return [_word_from_dict(w) for w in data.get("words", [])]
-
-
 def load_words_from_debug_json(path: Path) -> list[Word]:
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
     words: list[Word] = []
-    for seg in data:
+    for seg in artifacts.read_json(path):
         for w in seg.get("words", []):
-            words.append(_word_from_dict(w))
+            words.append(artifacts.word_from_dict(w))
     return words
-
-
-def _word_from_dict(raw: dict) -> Word:
-    """Build Word from JSON, ignoring debug-only keys like ``changed``."""
-    return Word(
-        text=raw["text"],
-        start=raw["start"],
-        end=raw["end"],
-        confidence=raw.get("confidence", 1.0),
-        speaker=raw.get("speaker"),
-    )
-
-
-def load_segments_from_json(path: Path, words: list[Word]) -> list[Segment]:
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    segments: list[Segment] = []
-    for unit in data.get("units", []):
-        seg_words = _slice_words_for_unit(words, unit)
-        segments.append(
-            Segment(
-                unit_id=unit["unit_id"],
-                start=unit["start"],
-                end=unit["end"],
-                source_text=unit.get("source_text", ""),
-                speaker=unit.get("speaker"),
-                words=seg_words,
-            )
-        )
-    return segments
-
-
-def _slice_words_for_unit(words: list[Word], unit: dict) -> list[Word]:
-    start = unit.get("start", 0.0)
-    end = unit.get("end", 0.0)
-    matched = [w for w in words if w.start >= start - 0.05 and w.end <= end + 0.05]
-    if matched:
-        return matched
-    return list(words)
-
-
-# Legacy helper for unit tests.
-def hydrate_pipeline_state(state: Any, config: SubtitleConfig, start_step_id: str) -> None:
-    """Populate state fields for a resume point (test helper)."""
-
-    class _Orch:
-        pass
-
-    fake = _Orch()
-    fake.state = state
-    fake.config = config
-    fake.asr_ctx = type("ctx", (), {"audio_path": "", "words": []})()
-    fake.tx_ctx = type("ctx", (), {"translated_cues": [], "usage": None})()
-
-    from .step_registry import StepId, build_enabled_definitions
-
-    plan_defs = {d.id.value: d for d in build_enabled_definitions(config)}
-    handlers = {
-        StepId.CORRECT.value: hydrate_transcript_words,
-        StepId.PUNCT.value: hydrate_words_after_correct,
-        StepId.SEGMENT.value: hydrate_words_after_punct,
-    }
-    for step_id, handler in handlers.items():
-        if step_id == start_step_id:
-            handler(fake)
-            return
-        if step_id in plan_defs:
-            handler(fake)

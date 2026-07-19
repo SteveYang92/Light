@@ -182,7 +182,7 @@ class _FakeClient:
 def test_plan_groups_retries_with_feedback_then_succeeds() -> None:
     segs = _fragments()
     client = _FakeClient(['{"cues": [[0], [2]]}', '{"cues": [[0, 1], [2]]}'])
-    with patch("light_subtitle.pipeline.plan.planner.OpenAIClient", return_value=client):
+    with patch("light_subtitle.pipeline.plan.planner.client_from_config", return_value=client):
         groups, usage = planner.plan_groups(segs, _config(llm_api_key="k"))
     assert groups == [[0, 1], [2]]
     assert usage is not None
@@ -193,7 +193,7 @@ def test_plan_groups_retries_with_feedback_then_succeeds() -> None:
 def test_plan_groups_returns_none_after_two_invalid_attempts() -> None:
     segs = _fragments()
     client = _FakeClient(['{"cues": [[0]]}', '{"cues": [[0]]}'])
-    with patch("light_subtitle.pipeline.plan.planner.OpenAIClient", return_value=client):
+    with patch("light_subtitle.pipeline.plan.planner.client_from_config", return_value=client):
         groups, _ = planner.plan_groups(segs, _config(llm_api_key="k"))
     assert groups is None
 

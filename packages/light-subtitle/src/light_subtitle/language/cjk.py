@@ -2,7 +2,7 @@
 
 Import explicitly from ``language.cjk``::
 
-    from light_subtitle.language.cjk import ChineseBreakFinder, _normalize_chinese_text
+    from light_subtitle.language.cjk import ChineseBreakFinder
 """
 
 from __future__ import annotations
@@ -236,7 +236,7 @@ def _chinese_mend_lines(lines: list[str], max_chars: int) -> list[str]:
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _rebalance_chinese_pair(lines: list[str]) -> list[str]:
+def rebalance_chinese_pair(lines: list[str]) -> list[str]:
     if len(lines) != 2:
         return lines
     diff = abs(len(lines[0]) - len(lines[1]))
@@ -300,7 +300,7 @@ def _rebalance_chinese_pair(lines: list[str]) -> list[str]:
 
 def _make_chinese_cue(original: SubtitleCue, lines: list[str]) -> SubtitleCue:
     if len(lines) >= 2 and len(lines[0]) > len(lines[1]) + 4:
-        lines = _rebalance_chinese_pair(lines)
+        lines = rebalance_chinese_pair(lines)
     return SubtitleCue(
         cue_id=original.cue_id,
         unit_id=original.unit_id,

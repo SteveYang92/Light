@@ -64,15 +64,12 @@ class SubtitleConfig:
     font: str = "PingFang SC"  # ASS subtitle font (resolved via system fallback chain)
     style: SubtitleStyleConfig = field(default_factory=SubtitleStyleConfig)  # Bilingual subtitle box theme
     optimize_entry_points: bool = False  # Auto-fix low-confidence entry points in pace
-    transcript_words: list | None = None  # Runtime: word list for entry optimization
+    transcript_words: list | None = None  # Deprecated: constructor compat only — pace gets words from PipelineState
 
     # ── Transcript correction + translation context ──
     correct_enabled: bool = True  # LLM-based ASR error correction after align
     context_prep_enabled: bool = True  # Extract glossary + summary before translation
     content_summary: dict | None = None  # Injected into translation prompts
-
-    # ── Deprecated ──
-    merge_hints_apply: bool = True  # unused: display merges removed; cue boundaries come from the planner
 
     glossary: dict[str, str] = field(default_factory=dict)
     speaker_names: dict[str, str] = field(default_factory=dict)
@@ -112,8 +109,3 @@ class SubtitleConfig:
         # Auto-resume: if a previous run left pipeline_run.json, pick up where it left off.
         cloned.resume = (Path(output_dir) / "pipeline_run.json").exists()
         return cloned
-
-    @classmethod
-    def from_cli(cls, **kwargs) -> "SubtitleConfig":
-        filtered = {k: v for k, v in kwargs.items() if v is not None}
-        return cls(**filtered)

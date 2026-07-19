@@ -147,7 +147,7 @@ def run_pack(config: PackConfig) -> None:
     size_mb = output_path.stat().st_size / (1024 * 1024)
     mode_label = "双语 ASS" if sub_kind == "bilingual" else "中文字幕 SRT"
     logger.info(f"  打包完成: {output_path.name} ({size_mb:.0f} MB, {mode_label})")
-    print(f"\n  ✅ {output_path}")
+    logger.info(f"\n  ✅ {output_path}")
 
 
 # ── Helpers ────────────────────────────────────────────
