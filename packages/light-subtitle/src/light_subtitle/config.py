@@ -47,6 +47,10 @@ class SubtitleConfig:
     # ── Long-video splitting ──
     split_threshold: float = 2700.0  # Seconds; videos longer than this are split at silence boundaries (default 45 min)
 
+    # ── yt-dlp auth (URL downloads) ──
+    cookies_from_browser: str = ""  # e.g. chrome / firefox / safari; env LIGHT_COOKIES_BROWSER
+    cookies_file: str = ""  # Netscape cookies.txt path; env LIGHT_COOKIES_FILE
+
     asr: AsrEngine = AsrEngine.WHISPERX
     resume: bool = False
     resume_from: str | None = None

@@ -41,6 +41,8 @@ def download_video(
     output_dir: Path,
     *,
     progress: Callable[[float, str], None] | None = None,
+    cookies_from_browser: str | None = None,
+    cookies_file: str | None = None,
 ) -> tuple[Path, str]:
     """Download a video from *url* into *output_dir* and return (video_path, slug).
 
@@ -55,12 +57,20 @@ def download_video(
     *progress* is called with (fraction, message) on each download status
     update (``"downloading"`` / ``"finished"`` status from yt-dlp hooks).
     When the total byte size is unknown, fraction is clamped to 0.0.
+
+    *cookies_from_browser* / *cookies_file* are passed through to yt-dlp for
+    age-restricted or login-gated sites (same as ``--cookies-from-browser`` /
+    ``--cookies``).
     """
 
     # ── Probe title + slug (can take seconds; surface via progress) ──
     if progress is not None:
         progress(0.0, "获取视频信息…")
-    info_json = _dump_json(url)
+    info_json = _dump_json(
+        url,
+        cookies_from_browser=cookies_from_browser,
+        cookies_file=cookies_file,
+    )
     title = info_json.get("title", "video")
     slug = _slugify(title)
 
@@ -90,13 +100,14 @@ def download_video(
         elif status == "finished":
             progress(1.0, "下载完成")
 
-    ydl_opts = {
+    ydl_opts: dict[str, Any] = {
         "outtmpl": outtmpl,
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
         "progress_hooks": [_hook],
     }
+    ydl_opts.update(_cookie_ydl_opts(cookies_from_browser, cookies_file))
 
     try:
         from . import logger
@@ -168,9 +179,18 @@ def derive_slug_from_path(file_path: Path) -> str:
     return _slugify(file_path.stem)
 
 
-def probe_slug(url: str) -> str:
+def probe_slug(
+    url: str,
+    *,
+    cookies_from_browser: str | None = None,
+    cookies_file: str | None = None,
+) -> str:
     """Probe the video title from *url* and derive a slug (no download)."""
-    info_json = _dump_json(url)
+    info_json = _dump_json(
+        url,
+        cookies_from_browser=cookies_from_browser,
+        cookies_file=cookies_file,
+    )
     title = info_json.get("title", "video")
     return _slugify(title)
 
@@ -216,6 +236,36 @@ def _canonical_url(url: str) -> str:
     return parsed._replace(fragment="").geturl()
 
 
+def _cookie_ydl_opts(
+    cookies_from_browser: str | None,
+    cookies_file: str | None,
+) -> dict[str, Any]:
+    """Build yt-dlp API cookie options from CLI/env-style strings."""
+    opts: dict[str, Any] = {}
+    browser = (cookies_from_browser or "").strip()
+    if browser:
+        opts["cookiesfrombrowser"] = _parse_cookies_from_browser(browser)
+    path = (cookies_file or "").strip()
+    if path:
+        opts["cookiefile"] = path
+    return opts
+
+
+def _parse_cookies_from_browser(spec: str) -> tuple[Any, ...]:
+    """Parse ``BROWSER[+KEYRING][:PROFILE][::CONTAINER]`` into a yt-dlp tuple."""
+    try:
+        from yt_dlp import parse_options
+
+        parsed = parse_options(["--cookies-from-browser", spec]).ydl_opts.get("cookiesfrombrowser")
+        if parsed:
+            return tuple(parsed)
+    except Exception:
+        pass
+    # Fallback when parse_options is unavailable: browser name only.
+    name = re.split(r"[+:]", spec, maxsplit=1)[0].strip().lower()
+    return (name, None, None, None)
+
+
 def _load_url_slug_map(output_dir: Path) -> dict[str, str]:
     """Load the persistent URL → slug mapping from *output_dir*."""
     path = output_dir / _URL_SLUG_MAP
@@ -240,10 +290,23 @@ def _save_url_slug(url: str, slug: str, output_dir: Path) -> None:
         json.dump(mapping, f, indent=2)
 
 
-def _dump_json(url: str) -> dict:
+def _dump_json(
+    url: str,
+    *,
+    cookies_from_browser: str | None = None,
+    cookies_file: str | None = None,
+) -> dict:
     """Run ``yt-dlp --dump-json`` and return the parsed dict."""
+    cmd = ["yt-dlp", "--dump-json", "--no-playlist"]
+    browser = (cookies_from_browser or "").strip()
+    if browser:
+        cmd.extend(["--cookies-from-browser", browser])
+    path = (cookies_file or "").strip()
+    if path:
+        cmd.extend(["--cookies", path])
+    cmd.append(url)
     result = subprocess.run(
-        ["yt-dlp", "--dump-json", "--no-playlist", url],
+        cmd,
         capture_output=True,
         text=True,
         check=True,

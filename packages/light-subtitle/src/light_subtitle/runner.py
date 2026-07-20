@@ -141,6 +141,8 @@ def process_video(
                 config.url,
                 Path(config.output_dir),
                 progress=lambda f, m: _emit(reporter, STAGE_DOWNLOAD, StageStatus.progress, f, m),
+                cookies_from_browser=config.cookies_from_browser or None,
+                cookies_file=config.cookies_file or None,
             )
             _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "下载完成")
         is_long = should_split(video_path, threshold=config.split_threshold)

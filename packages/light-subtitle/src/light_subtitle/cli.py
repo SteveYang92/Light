@@ -79,6 +79,17 @@ def run(
         "--url",
         help="Video URL (YouTube, X, etc.) — downloads via yt-dlp. Mutually exclusive with --input.",
     ),
+    cookies_from_browser: str = typer.Option(
+        "",
+        "--cookies-from-browser",
+        help="Load yt-dlp cookies from a browser (chrome/firefox/safari/edge/brave…). "
+        "Format: BROWSER[+KEYRING][:PROFILE][::CONTAINER]. Env: LIGHT_COOKIES_BROWSER",
+    ),
+    cookies_file: str = typer.Option(
+        "",
+        "--cookies",
+        help="Path to Netscape cookies.txt for yt-dlp (env: LIGHT_COOKIES_FILE)",
+    ),
     # ── Output ──────────────────────────────────────────
     output_dir: str = typer.Option("./output", "-o", "--output", help="Output directory"),
     # ── ASR ─────────────────────────────────────────────
@@ -293,6 +304,8 @@ def run(
             "evaluate_enabled": evaluate,
             "correct_enabled": not no_correct,
             "context_prep_enabled": not no_context,
+            "cookies_from_browser": cookies_from_browser or os.environ.get("LIGHT_COOKIES_BROWSER", ""),
+            "cookies_file": cookies_file or os.environ.get("LIGHT_COOKIES_FILE", ""),
         }
         config_kwargs = {
             f.name: params[f.name]

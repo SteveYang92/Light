@@ -192,6 +192,8 @@ def _run_pipeline_body(
         context_prep_enabled=config.context_prep_enabled,
         annotation_width=config.annotation_width,
         glossary=config.glossary,
+        cookies_from_browser=cookies_from_browser,
+        cookies_file=cookies_file,
     )
 
     # ── 2. Mark processing ──

@@ -172,6 +172,49 @@ class TestDownloadProgress:
         # Probe emits 0.0; download with unknown total does not emit fractions.
         assert progress_calls == [(0.0, "获取视频信息…")]
 
+    def test_download_passes_cookies_to_ydl_and_probe(self) -> None:
+        from light_subtitle.download import download_video
+
+        mock_ydl = MagicMock()
+        mock_info = {"title": "Test Video"}
+        captured_opts: dict = {}
+        dump_kwargs: dict = {}
+
+        def fake_make_ydl(opts):
+            captured_opts.update(opts)
+            return mock_ydl
+
+        def fake_dump(url, **kwargs):
+            dump_kwargs.update(kwargs)
+            return mock_info
+
+        with (
+            patch("light_subtitle.download._dump_json", side_effect=fake_dump),
+            patch("light_subtitle.download._make_ydl", side_effect=fake_make_ydl),
+            patch("light_subtitle.download._save_url_slug"),
+        ):
+            tmp = Path("/tmp/fake_output_cookies")
+            if tmp.exists():
+                shutil.rmtree(tmp)
+            (tmp / "Test_Video").mkdir(parents=True, exist_ok=True)
+
+            def mock_download(urls):
+                (tmp / "Test_Video" / "video.mp4").touch()
+
+            mock_ydl.download.side_effect = mock_download
+
+            download_video(
+                "https://example.com/video",
+                tmp,
+                cookies_from_browser="chrome",
+                cookies_file="/tmp/cookies.txt",
+            )
+
+        assert dump_kwargs["cookies_from_browser"] == "chrome"
+        assert dump_kwargs["cookies_file"] == "/tmp/cookies.txt"
+        assert captured_opts["cookiesfrombrowser"][0] == "chrome"
+        assert captured_opts["cookiefile"] == "/tmp/cookies.txt"
+
     def test_download_error_wraps(self) -> None:
         from light_subtitle.download import _DownloadError, download_video
 
@@ -191,3 +234,17 @@ class TestDownloadProgress:
                 assert "yt-dlp download failed" in str(e)
             else:
                 raise AssertionError("Expected RuntimeError")
+
+
+class TestCookieOpts:
+    def test_parse_browser_chrome(self) -> None:
+        from light_subtitle.download import _parse_cookies_from_browser
+
+        tup = _parse_cookies_from_browser("chrome")
+        assert tup[0] == "chrome"
+
+    def test_cookie_ydl_opts_empty(self) -> None:
+        from light_subtitle.download import _cookie_ydl_opts
+
+        assert _cookie_ydl_opts(None, None) == {}
+        assert _cookie_ydl_opts("", "") == {}

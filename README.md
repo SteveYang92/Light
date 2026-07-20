@@ -105,11 +105,17 @@ uv run light-subtitle -i input.mp4 --target-lang zh --diarize --annotate
 # 通过 URL 下载并生成字幕
 uv run light-subtitle --url https://www.youtube.com/watch?v=VIDEO_ID --target-lang zh
 
+# 需要登录/年龄限制时，从浏览器读取 cookie（或 --cookies cookies.txt）
+uv run light-subtitle --url https://www.youtube.com/watch?v=VIDEO_ID \
+  --cookies-from-browser chrome --target-lang zh
+
 # URL 输入 + 评估循环
 uv run light-subtitle --url https://youtu.be/VIDEO_ID --target-lang zh --evaluate
 ```
 
 `--url` 支持所有 yt-dlp 兼容平台：YouTube、Bilibili、X/Twitter、YouTube Music 等。下载的视频按标题自动命名，输出到 `output/<slug>/`。长视频（时长超过 `--split-threshold`，默认 2700 秒 = 45 分钟）自动按静音点切片、逐段处理、合并输出。用 `--split-threshold` 调整切分阈值（调低可强制对较短视频切分，用于测试跨段行为）。
+
+登录墙 / 年龄限制可用 `--cookies-from-browser <chrome|firefox|safari|edge|brave…>`（格式同 yt-dlp：`BROWSER[+KEYRING][:PROFILE][::CONTAINER]`）或 `--cookies <cookies.txt>`；也可用环境变量 `LIGHT_COOKIES_BROWSER` / `LIGHT_COOKIES_FILE`。
 
 > **注意**：`--input` 和 `--url` 互斥，一次只能指定一个。
 
