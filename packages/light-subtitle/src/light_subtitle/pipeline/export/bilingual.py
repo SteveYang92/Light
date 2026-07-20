@@ -14,7 +14,7 @@ from ...style.box import (
     boxed_style_lines,
     build_bilingual_boxed_events,
 )
-from ...style.config import SubtitleStyleConfig
+from ...style.config import PLAY_RES_X, PLAY_RES_Y, SubtitleStyleConfig, play_res_for_frame
 from ...style.fonts import ASS_V4_PLUS_STYLE_FORMAT, bilingual_ass_en_font_tag, bilingual_style_line
 from .formats import _normalize_plain_subtitle_text, _resolved_font
 
@@ -138,6 +138,7 @@ def export_bilingual_ass(
     font: str | None = None,
     style: SubtitleStyleConfig | None = None,
     measurer: TextMeasurer | None = None,
+    frame_size: tuple[int, int] | None = None,
 ) -> None:
     """Export bilingual ASS with ZH as the anchor and EN derived from segment words.
 
@@ -162,11 +163,13 @@ def export_bilingual_ass(
     ``export_bilingual_ass(source_fmt, target_fmt, ...)``.
 
     When *style* has ``box_enabled`` (the default), the exported file is
-    self-contained: a fixed 1920x1080 PlayRes, per-language rounded background
-    boxes drawn as vector shapes sized by measuring the actual burn font
-    (Pillow), and one text Dialogue per visual line.  Falls back to the plain
-    outline style when the font file cannot be located (with a warning).
-    *measurer* injects a fake ``TextMeasurer`` for tests.
+    self-contained: PlayRes matched to *frame_size* aspect (default 1920×1080),
+    per-language rounded background boxes drawn as vector shapes sized by
+    measuring the actual burn font (Pillow), and one text Dialogue per visual
+    line.  Falls back to the plain outline style when the font file cannot be
+    located (with a warning).  *measurer* injects a fake ``TextMeasurer`` for
+    tests.  *frame_size* is ``(width, height)`` of the target video — required
+    for non-16:9 frames so box drawings stay aligned with text under libass.
     """
     from light_models import seconds_to_ass
 
@@ -177,20 +180,22 @@ def export_bilingual_ass(
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     groups = _build_bilingual_groups(en_cues, zh_cues, source_segments)
+    play_res = play_res_for_frame(*frame_size) if frame_size is not None else None
 
     if cfg.box_enabled:
         font_file = None if measurer is not None else resolve_font_file(font_name)
         if measurer is not None or font_file is not None:
             m = measurer if measurer is not None else PILFontMeasurer(font_file, family=font_name)
+            play_x, play_y = play_res if play_res is not None else (PLAY_RES_X, PLAY_RES_Y)
             with open(output, "w", encoding="utf-8") as f:
-                f.write(boxed_script_info())
+                f.write(boxed_script_info(play_x, play_y))
                 f.write("[V4+ Styles]\n")
                 f.write(ASS_V4_PLUS_STYLE_FORMAT)
                 for line in boxed_style_lines(font_name, cfg):
                     f.write(line + "\n")
                 f.write("\n[Events]\n")
                 f.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
-                for line in build_bilingual_boxed_events(groups, font_name, m, cfg):
+                for line in build_bilingual_boxed_events(groups, font_name, m, cfg, play_res=play_res):
                     f.write(line + "\n")
             return
         logger.warning(f"  未找到字体文件用于盒尺寸测量 ({font_name})，双语 ASS 回退为无盒样式")

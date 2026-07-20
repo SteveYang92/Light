@@ -153,6 +153,21 @@ def test_en_bottom_line_anchors_at_config_margin_v() -> None:
     assert max(ys) <= PLAY_RES_Y
 
 
+def test_play_res_follows_non_16x9_frame() -> None:
+    """Non-16:9 frames get a matching PlayResX so boxes are not anisotropically crushed."""
+    from light_subtitle.style.config import play_res_for_frame
+
+    assert play_res_for_frame(1920, 1080) == (1920, 1080)
+    assert play_res_for_frame(3840, 2160) == (1920, 1080)
+    # 3324×2160 (277:180) → PlayResX = round(1080 * 3324 / 2160) = 1662
+    assert play_res_for_frame(3324, 2160) == (1662, 1080)
+
+    play = play_res_for_frame(3324, 2160)
+    events = build_bilingual_boxed_events([(None, "hello world", 0.0, 1.0)], "F", MEASURER, CONFIG, play_res=play)
+    text = _text_events(events, EN_STYLE_NAME)[0]
+    assert f"\\pos({play[0] // 2}," in text
+
+
 def test_long_en_wraps_into_multiple_lines() -> None:
     long_en = "word " * 40
     events = build_bilingual_boxed_events([(None, long_en, 0.0, 1.0)], "F", MEASURER, CONFIG)

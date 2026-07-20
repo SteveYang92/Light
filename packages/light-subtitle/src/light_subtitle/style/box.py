@@ -1,13 +1,16 @@
 r"""Rounded background boxes for bilingual ASS subtitles.
 
-Geometry is computed in a fixed 1920x1080 PlayRes design space (see
-``style.config``); libass scales proportionally to the video at render time.
-Each language block (ZH / EN) gets ONE rounded-rect drawing event wrapping all
-its lines (block box, Netflix/Apple style), plus one text Dialogue per visual
-line so vertical placement never depends on libass line-pitch matching the
-measurer's.  Text events use absolute ``\pos`` rather than margins: renderer-
-level margins (mpv/IINA fullscreen letterbox) only shift margin-positioned
-text, which would detach it from the absolutely-placed box drawings.
+Geometry is computed in a PlayRes design space (Y = 1080, X matches the video
+aspect — see ``style.config.play_res_for_frame``).  Matching aspects keeps
+libass X/Y scales equal so vector boxes and fonts stay aligned; a fixed 16:9
+PlayRes on a non-16:9 frame (e.g. 3324×2160) compresses drawings horizontally
+relative to text.  Each language block (ZH / EN) gets ONE rounded-rect drawing
+event wrapping all its lines (block box, Netflix/Apple style), plus one text
+Dialogue per visual line so vertical placement never depends on libass
+line-pitch matching the measurer's.  Text events use absolute ``\pos`` rather
+than margins: renderer-level margins (mpv/IINA fullscreen letterbox) only shift
+margin-positioned text, which would detach it from the absolutely-placed box
+drawings.
 
 Text measurement uses Pillow against the actual font file, so box sizes wrap
 the rendered glyphs (wrap effect).  A measurer with the same duck type can be
@@ -147,8 +150,6 @@ def rounded_rect_path(x0: int, y0: int, x1: int, y1: int, r: int) -> str:
 
 # ── Layout ──────────────────────────────────────────────
 
-_CENTER_X = PLAY_RES_X // 2
-
 
 @dataclass
 class _LangBlock:
@@ -164,7 +165,7 @@ class _LangBlock:
     base_bottom_y: float = 0.0  # frame y of the bottom line's line-box bottom
     box: tuple[int, int, int, int] = (0, 0, 0, 0)  # x0, y0, x1, y1
 
-    def lay_out(self, text_bottom_y: float, measurer: TextMeasurer) -> None:
+    def lay_out(self, text_bottom_y: float, measurer: TextMeasurer, center_x: int) -> None:
         """Position the block so its bottom text line ends at *text_bottom_y* (frame coords)."""
         width = max(measurer.line_width(line, self.size) for line in self.lines)
         half = width / 2 + self.pad_h
@@ -176,9 +177,9 @@ class _LangBlock:
         height = (len(self.lines) - 1) * self.pitch + measurer.line_pitch(self.size) + 2 * self.pad_v
         y1 = text_bottom_y + self.pad_v
         self.box = (
-            round(_CENTER_X - half),
+            round(center_x - half),
             round(y1 - height),
-            round(_CENTER_X + half),
+            round(center_x + half),
             round(y1),
         )
         self.base_bottom_y = text_bottom_y
@@ -225,13 +226,13 @@ def boxed_style_lines(font_name: str, config: SubtitleStyleConfig) -> list[str]:
     ]
 
 
-def boxed_script_info() -> str:
-    """Script Info header pinning the design-space PlayRes (WrapStyle 2 = no re-wrap)."""
+def boxed_script_info(play_res_x: int = PLAY_RES_X, play_res_y: int = PLAY_RES_Y) -> str:
+    """Script Info header pinning PlayRes (WrapStyle 2 = no re-wrap)."""
     return (
         "[Script Info]\n"
         "ScriptType: v4.00+\n"
-        f"PlayResX: {PLAY_RES_X}\n"
-        f"PlayResY: {PLAY_RES_Y}\n"
+        f"PlayResX: {play_res_x}\n"
+        f"PlayResY: {play_res_y}\n"
         "WrapStyle: 2\n"
         "ScaledBorderAndShadow: yes\n\n"
     )
@@ -242,9 +243,17 @@ def build_bilingual_boxed_events(
     font_name: str,
     measurer: TextMeasurer,
     config: SubtitleStyleConfig,
+    play_res: tuple[int, int] | None = None,
 ) -> list[str]:
-    """Build Dialogue lines: one rounded box per language block + one text event per line."""
-    max_text_width = PLAY_RES_X - 2 * config.margin_lr
+    """Build Dialogue lines: one rounded box per language block + one text event per line.
+
+    *play_res* is ``(PlayResX, PlayResY)``; defaults to 1920×1080.  Pass the
+    value from ``play_res_for_frame(video_w, video_h)`` so boxes stay aligned
+    on non-16:9 frames.
+    """
+    play_res_x, play_res_y = play_res if play_res is not None else (PLAY_RES_X, PLAY_RES_Y)
+    center_x = play_res_x // 2
+    max_text_width = play_res_x - 2 * config.margin_lr
     events: list[str] = []
 
     for zc, en_text, start_s, end_s in groups:
@@ -258,7 +267,7 @@ def build_bilingual_boxed_events(
         if en_text and en_text.strip():
             en_lines = wrap_block(" ".join(en_text.split()), measurer, config.en_font_size, max_text_width)
             en_block = _make_block(en_lines, EN_STYLE_NAME, config.en_font_size, measurer, config)
-            en_block.lay_out(PLAY_RES_Y - config.margin_v, measurer)
+            en_block.lay_out(play_res_y - config.margin_v, measurer, center_x)
             blocks.append(en_block)
 
         if zc is not None and getattr(zc, "text", "").strip():
@@ -268,8 +277,8 @@ def build_bilingual_boxed_events(
                 en_box_top = en_block.box[1]
                 zh_text_bottom = en_box_top - config.block_gap - zh_block.pad_v
             else:
-                zh_text_bottom = PLAY_RES_Y - config.margin_v
-            zh_block.lay_out(zh_text_bottom, measurer)
+                zh_text_bottom = play_res_y - config.margin_v
+            zh_block.lay_out(zh_text_bottom, measurer, center_x)
             blocks.append(zh_block)
 
         for block in blocks:
@@ -287,7 +296,7 @@ def build_bilingual_boxed_events(
                 # First reading line goes on top (smallest y).
                 y = round(block.base_bottom_y - (len(block.lines) - 1 - k) * block.pitch)
                 events.append(
-                    f"Dialogue: 1,{start},{end},{block.style_name},,0,0,0,,{{\\an2\\pos({_CENTER_X},{y})}}{line}"
+                    f"Dialogue: 1,{start},{end},{block.style_name},,0,0,0,,{{\\an2\\pos({center_x},{y})}}{line}"
                 )
 
     return events

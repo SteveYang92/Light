@@ -101,9 +101,9 @@ def run_pack(config: PackConfig) -> None:
             filters.append(f"ass={patched_annot}")
 
         if sub_kind == "bilingual":
-            # bilingual.ass is self-contained since export: fixed PlayRes,
-            # measured rounded boxes, per-line events — burn as-is.  --font
-            # only affects the annotation pass and the SRT fallback.
+            # bilingual.ass is self-contained since export: PlayRes matched to
+            # the video aspect, measured rounded boxes, per-line events — burn
+            # as-is.  --font only affects the annotation pass and the SRT fallback.
             filters.append(f"ass={sub_path}")
         else:
             filters.append(

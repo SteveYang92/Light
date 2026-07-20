@@ -72,6 +72,8 @@ def _write_bilingual_exports(
         export_module.export_vtt(target_fmt, str(out / f"{tgt_ext}.vtt"))
         # Composed EN segments carry word-level timing; bilingual ASS uses them
         # to derive each ZH cue's EN text via the shared unit_id graph.
+        from ..utils.ffmpeg import probe_video_size
+
         export_module.export_bilingual_ass(
             source_fmt,
             target_fmt,
@@ -79,6 +81,7 @@ def _write_bilingual_exports(
             source_segments=orch.state.composed_segments,
             font=orch.config.font,
             style=orch.config.style,
+            frame_size=probe_video_size(orch.config.input_path),
         )
         export_module.export_bilingual_vtt(
             source_fmt,

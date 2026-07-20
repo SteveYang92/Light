@@ -149,16 +149,16 @@ uv run light-subtitle -i input.mp4 --target-lang zh --resume-from subtitle
 
 **进度显示**：默认只显示结构化进度——每个阶段的开始/完成/跳过/失败（`▶/✓/–/✗`），长阶段（规划、翻译、注解）附带节流分数进度条（如 `[======----] 60% 翻译`）；终端交互环境（TTY）使用 Rich 实时刷新视图，非 TTY/CI 输出纯文本行（可安全捕获）。完整过程日志始终写入产物目录的 `pipeline_*.log`；`--verbose` / `-v` 恢复旧式全量日志流（同时强制纯文本进度）。长视频分段处理时，阶段行带 `[segN/M]` 前缀标识各分段，合并阶段单独显示。中断（Ctrl+C）时提示 `--resume` 续跑方式与日志路径。
 
-**双语字幕样式**：`bilingual.ass` 导出即自含圆角背景盒（中英文各一个整块盒，盒随文字宽高自适应，多行一个盒），固定 1920×1080 PlayRes，任意 16:9 分辨率下等比缩放。样式参数可用 `--style-config <yaml>` 覆盖（字段见 `packages/light-subtitle/src/light_subtitle/style/config.py`，如 `box_enabled: false` 可关盒回退描边样式）：
+**双语字幕样式**：`bilingual.ass` 导出即自含圆角背景盒（中英文各一个整块盒，盒随文字宽高自适应，多行一个盒）。PlayRes 高度固定 1080，宽度按视频画幅纵横比设定（16:9 时为 1920；非 16:9 如 3324×2160 则为 1662），避免 libass 横向/纵向缩放不一致导致背景盒包不住字。样式参数可用 `--style-config <yaml>` 覆盖（字段见 `packages/light-subtitle/src/light_subtitle/style/config.py`，如 `box_enabled: false` 可关盒回退描边样式）：
 
 ```yaml
 # style.yaml 示例（均为默认值）
 box_enabled: true
 bg_opacity: 0.70          # 盒不透明度
 corner_radius_scale: 0.25 # 圆角 = 0.25 × 行高
-pad_h_scale: 0.45         # 横向内边距 = 0.45 × 字号
+pad_h_scale: 0.70         # 横向内边距 = 0.70 × 字号
 pad_v_scale: 0.12         # 纵向内边距 = 0.12 × 字号
-block_gap: 2              # 中英文盒间距（1080p 像素）
+block_gap: 2              # 中英文盒间距（PlayRes 像素）
 zh_font_size: 65
 en_font_size: 39
 margin_v: 75
