@@ -3,6 +3,9 @@
 Supports cached downloads: once a URL has been downloaded, subsequent runs
 skip yt-dlp entirely (both metadata probe and download) by looking up the
 persistent URL → slug mapping.
+
+Video files stay as ``video.*`` inside ``output/<slug>/``.  Lookup also accepts
+legacy ``{slug}.*`` renames so older runs resume without re-downloading.
 """
 
 from __future__ import annotations
@@ -13,8 +16,10 @@ import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 _URL_SLUG_MAP = "url_slug_cache.json"
+_VIDEO_SUFFIXES = {".mp4", ".webm", ".mkv", ".mov", ".m4v"}
 
 try:
     from yt_dlp import YoutubeDL
@@ -43,20 +48,30 @@ def download_video(
     The video is saved as ``video.%(ext)s`` inside ``output_dir/<slug>/``.
 
     On success the URL → slug mapping is persisted so future runs can skip
-    both the metadata probe and the download.
+    both the metadata probe and the download.  If a video file already exists
+    in the slug directory (``video.*`` or legacy ``{slug}.*``), returns it
+    without calling yt-dlp download.
 
     *progress* is called with (fraction, message) on each download status
     update (``"downloading"`` / ``"finished"`` status from yt-dlp hooks).
     When the total byte size is unknown, fraction is clamped to 0.0.
     """
 
-    # ── Probe title + slug ──
+    # ── Probe title + slug (can take seconds; surface via progress) ──
+    if progress is not None:
+        progress(0.0, "获取视频信息…")
     info_json = _dump_json(url)
     title = info_json.get("title", "video")
     slug = _slugify(title)
 
     work_dir = output_dir / slug
     work_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Check if video already exists (resume / legacy rename) ──
+    existing = find_video_in_dir(work_dir, slug)
+    if existing is not None:
+        _save_url_slug(url, slug, output_dir)
+        return existing, slug
 
     # ── Download (yt-dlp Python API) ──
     outtmpl = str(work_dir / "video.%(ext)s")
@@ -94,15 +109,11 @@ def download_video(
             raise RuntimeError(f"yt-dlp download failed: {e!s}") from e
         raise
 
-    # Find the downloaded file (extension may vary: .mp4, .webm, .mkv)
-    candidates = list(work_dir.glob("video.*"))
-    if not candidates:
+    video_path = find_video_in_dir(work_dir, slug)
+    if video_path is None:
         raise FileNotFoundError(f"No video file found in {work_dir} after download")
-    video_path = candidates[0]
 
-    # ── Cache the URL → slug mapping ──
     _save_url_slug(url, slug, output_dir)
-
     return video_path, slug
 
 
@@ -111,10 +122,19 @@ def find_cached_download(url: str, output_dir: Path) -> tuple[Path, str] | None:
 
     Checks the persistent URL → slug mapping stored in *output_dir*.
     Returns ``None`` if the URL hasn't been seen, the slug directory is
-    missing, or no ``video.*`` file exists inside it.
+    missing, or no video file exists inside it (accepts ``video.*`` or the
+    legacy ``{slug}.*`` form).
     """
     mapping = _load_url_slug_map(output_dir)
     slug = mapping.get(url)
+    if slug is None:
+        slug = mapping.get(_canonical_url(url))
+    if slug is None:
+        canon = _canonical_url(url)
+        for key, value in mapping.items():
+            if _canonical_url(key) == canon:
+                slug = value
+                break
     if slug is None:
         return None
 
@@ -122,11 +142,25 @@ def find_cached_download(url: str, output_dir: Path) -> tuple[Path, str] | None:
     if not work_dir.is_dir():
         return None
 
-    candidates = list(work_dir.glob("video.*"))
-    if not candidates:
+    video_path = find_video_in_dir(work_dir, slug)
+    if video_path is None:
         return None
 
-    return candidates[0], slug
+    return video_path, slug
+
+
+def find_video_in_dir(work_dir: Path, slug: str | None = None) -> Path | None:
+    """Return a video file in *work_dir*, preferring ``video.*`` over ``{slug}.*``."""
+    if not work_dir.is_dir():
+        return None
+    for path in sorted(work_dir.glob("video.*")):
+        if path.is_file() and path.suffix.lower() in _VIDEO_SUFFIXES:
+            return path
+    if slug:
+        for path in sorted(work_dir.glob(f"{slug}.*")):
+            if path.is_file() and path.suffix.lower() in _VIDEO_SUFFIXES:
+                return path
+    return None
 
 
 def derive_slug_from_path(file_path: Path) -> str:
@@ -146,11 +180,40 @@ def probe_slug(url: str) -> str:
 
 def _slugify(text: str) -> str:
     """Sanitise *text* into a filesystem-safe slug."""
-    # Remove non-word characters (keep CJK, alphanumeric, spaces)
     cleaned = re.sub(r"[^\w\s]", "", text, flags=re.UNICODE)
-    # Collapse whitespace
     cleaned = re.sub(r"\s+", "_", cleaned.strip())
     return cleaned[:80]
+
+
+def _canonical_url(url: str) -> str:
+    """Normalize common video URL variants for cache lookup.
+
+    YouTube ``youtu.be/ID`` and ``watch?v=ID&t=…`` collapse to
+    ``https://www.youtube.com/watch?v=ID``.  Other hosts keep query but drop
+    the fragment.
+    """
+    raw = url.strip()
+    try:
+        parsed = urlparse(raw)
+    except ValueError:
+        return raw
+    host = (parsed.netloc or "").lower().removeprefix("www.")
+    path = parsed.path or ""
+
+    video_id: str | None = None
+    if host == "youtu.be":
+        video_id = path.strip("/").split("/", 1)[0] or None
+    elif host in {"youtube.com", "m.youtube.com", "music.youtube.com"}:
+        if path.startswith("/watch"):
+            video_id = (parse_qs(parsed.query).get("v") or [None])[0]
+        elif path.startswith("/shorts/") or path.startswith("/embed/"):
+            parts = path.strip("/").split("/", 2)
+            video_id = parts[1] if len(parts) > 1 else None
+
+    if video_id:
+        return f"https://www.youtube.com/watch?v={video_id}"
+
+    return parsed._replace(fragment="").geturl()
 
 
 def _load_url_slug_map(output_dir: Path) -> dict[str, str]:
@@ -169,6 +232,9 @@ def _save_url_slug(url: str, slug: str, output_dir: Path) -> None:
     """Persist *url* → *slug* mapping so subsequent runs can skip yt-dlp."""
     mapping = _load_url_slug_map(output_dir)
     mapping[url] = slug
+    canon = _canonical_url(url)
+    if canon != url:
+        mapping[canon] = slug
     path = output_dir / _URL_SLUG_MAP
     with open(path, "w") as f:
         json.dump(mapping, f, indent=2)

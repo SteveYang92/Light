@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -52,6 +53,11 @@ class TestDeriveSlugFromPath:
 
 
 class TestDownloadProgress:
+    def setup_method(self) -> None:
+        for d in (Path("/tmp/fake_output"), Path("/tmp/fake_output_err")):
+            if d.exists():
+                shutil.rmtree(d)
+
     def test_progress_hook_monotonic_fractions(self) -> None:
         progress_calls: list[float] = []
 
@@ -73,7 +79,6 @@ class TestDownloadProgress:
             tmp = Path("/tmp/fake_output")
             tmp.mkdir(parents=True, exist_ok=True)
             (tmp / "Test_Video").mkdir(parents=True, exist_ok=True)
-            (tmp / "Test_Video" / "video.mp4").touch()
 
             def mock_download(urls):
                 progress_cb = captured_opts["progress_hooks"][0]
@@ -82,6 +87,7 @@ class TestDownloadProgress:
                 progress_cb({"status": "downloading", "downloaded_bytes": 75, "total_bytes": 100})
                 progress_cb({"status": "downloading", "downloaded_bytes": 100, "total_bytes": 100})
                 progress_cb({"status": "finished"})
+                (tmp / "Test_Video" / "video.mp4").touch()
 
             mock_ydl.download.side_effect = mock_download
 
@@ -91,7 +97,7 @@ class TestDownloadProgress:
                 progress=lambda f, m: progress_calls.append(f),
             )
 
-        assert progress_calls == [0.25, 0.5, 0.75, 1.0, 1.0]
+        assert progress_calls == [0.0, 0.25, 0.5, 0.75, 1.0, 1.0]
 
     def test_progress_hook_with_estimate(self) -> None:
         progress_calls: list[float] = []
@@ -113,11 +119,11 @@ class TestDownloadProgress:
         ):
             tmp = Path("/tmp/fake_output")
             (tmp / "Test_Video").mkdir(parents=True, exist_ok=True)
-            (tmp / "Test_Video" / "video.mp4").touch()
 
             def mock_download(urls):
                 progress_cb = captured_opts["progress_hooks"][0]
                 progress_cb({"status": "downloading", "downloaded_bytes": 50, "total_bytes_estimate": 200})
+                (tmp / "Test_Video" / "video.mp4").touch()
 
             mock_ydl.download.side_effect = mock_download
 
@@ -127,7 +133,7 @@ class TestDownloadProgress:
                 progress=lambda f, m: progress_calls.append(f),
             )
 
-        assert progress_calls == [0.25]
+        assert progress_calls == [0.0, 0.25]
 
     def test_progress_hook_no_total_skips(self) -> None:
         progress_calls: list[tuple[float, str]] = []
@@ -149,11 +155,11 @@ class TestDownloadProgress:
         ):
             tmp = Path("/tmp/fake_output")
             (tmp / "Test_Video").mkdir(parents=True, exist_ok=True)
-            (tmp / "Test_Video" / "video.mp4").touch()
 
             def mock_download(urls):
                 progress_cb = captured_opts["progress_hooks"][0]
                 progress_cb({"status": "downloading", "downloaded_bytes": 50})
+                (tmp / "Test_Video" / "video.mp4").touch()
 
             mock_ydl.download.side_effect = mock_download
 
@@ -163,7 +169,8 @@ class TestDownloadProgress:
                 progress=lambda f, m: progress_calls.append((f, m)),
             )
 
-        assert len(progress_calls) == 0
+        # Probe emits 0.0; download with unknown total does not emit fractions.
+        assert progress_calls == [(0.0, "获取视频信息…")]
 
     def test_download_error_wraps(self) -> None:
         from light_subtitle.download import _DownloadError, download_video
@@ -179,7 +186,7 @@ class TestDownloadProgress:
             mock_ydl.download.side_effect = _DownloadError("Connection reset")
 
             try:
-                download_video("https://example.com/video", Path("/tmp/fake_output"))
+                download_video("https://example.com/video", Path("/tmp/fake_output_err"))
             except RuntimeError as e:
                 assert "yt-dlp download failed" in str(e)
             else:

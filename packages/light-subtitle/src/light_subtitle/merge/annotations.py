@@ -70,7 +70,7 @@ def _merge_annotations_ass(
     all_events = _dedup_annotation_terms(all_events)
     event_lines = [",".join(fields) + "\n" for _, _, _, fields in all_events]
 
-    out = output_dir / f"{slug}.annotations.ass"
+    out = output_dir / "annotations.ass"
     out.write_text("".join(header_lines + event_lines), encoding="utf-8")
     logger.info(f"  Merged annotations.ass: {len(event_lines)} entries → {out.name}")
 
@@ -114,5 +114,5 @@ def _merge_annotations_vtt(
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_vtt_overlaps(all_cues)
     all_cues = _dedup_annotation_terms(all_cues)
-    out = output_dir / f"{slug}.annotations.vtt"
+    out = output_dir / "annotations.vtt"
     _write_vtt(all_cues, out)

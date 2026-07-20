@@ -55,7 +55,7 @@ def _merge_srt(
 
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_srt_overlaps(all_cues)
-    out = output_dir / f"{slug}.{lang}.srt"
+    out = output_dir / f"{lang}.srt"
     _write_srt(all_cues, out)
     logger.info(f"  Merged SRT: {len(all_cues)} cues → {out.name}")
 
@@ -103,7 +103,7 @@ def _merge_vtt(
 
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_vtt_overlaps(all_cues)
-    out = output_dir / f"{slug}.{lang}.vtt"
+    out = output_dir / f"{lang}.vtt"
     _write_vtt(all_cues, out)
     logger.info(f"  Merged VTT: {len(all_cues)} cues → {out.name}")
 
@@ -171,7 +171,7 @@ def _merge_cues_json(
                 media_info = data.get("media", {})
                 speakers = data.get("speakers", [])
 
-    out = output_dir / f"{slug}.cues.json"
+    out = output_dir / "cues.json"
     out.write_text(
         json.dumps({"media": media_info, "speakers": speakers, "cues": all_cues}, indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -249,6 +249,6 @@ def _merge_transcript(
         "words": all_words,
         "segments": all_segments,
     }
-    out = output_dir / f"{slug}.transcript.json"
+    out = output_dir / "transcript.json"
     out.write_text(json.dumps(out_data, indent=2, ensure_ascii=False), encoding="utf-8")
     logger.info(f"  Merged transcript: {len(all_words)} words → {out.name}")

@@ -5,7 +5,6 @@ module only keeps historical import paths working (runner, tests).
 """
 
 from .merge import (
-    _copy_original_video,
     _copy_single_segment,
     _discover_segments,
     _find_video_file,
@@ -43,7 +42,6 @@ __all__ = [
     "_BilingualGroup",
     "_EPS",
     "_ass_to_seconds",
-    "_copy_original_video",
     "_copy_single_segment",
     "_dedup_annotation_terms",
     "_dedup_bilingual_ass_overlaps",

@@ -20,12 +20,11 @@ import typer
 
 from . import logger
 from .config import AsrEngine, SubtitleConfig
-from .download import derive_slug_from_path, find_cached_download, probe_slug
+from .download import derive_slug_from_path, find_cached_download, find_video_in_dir
 from .reporting import Reporter, RunEvent, RunKind
 from .runner import process_video
 from .usage.report import load_usage_from_dir
 from .utils.whisper_utils import find_model, find_whisper
-from .video_split import segment_tag
 
 # ── Validation ──────────────────────────────────────────
 
@@ -229,10 +228,20 @@ def run(
         if cached is not None:
             video_path, slug = cached
             logger.info(f"  Using cached download: {video_path}")
+        elif resume_from or resume:
+            found = _find_existing_video(output_base)
+            if found is not None:
+                video_path, slug = found
+                logger.info(f"  Using existing video: {video_path}")
+            else:
+                # Defer yt-dlp title probe to process_video so the reporter
+                # can show download progress (probe is a blocking network call).
+                slug = ""
+                video_path = output_base / "_pending" / "video.mp4"
         else:
-            slug = probe_slug(url)
-            # placeholder — process_video will download and replace it
-            video_path = output_base / slug / "video.mp4"
+            # Defer title probe + download to process_video (same reason).
+            slug = ""
+            video_path = output_base / "_pending" / "video.mp4"
     else:
         video_path = Path(input_path).resolve()
         # Use parent directory name as slug only when the file is our generic
@@ -303,15 +312,8 @@ def run(
     try:
         result = process_video(config, progress_callback=reporter)
         work_dir = result.output_dir
+        slug = result.slug
 
-        # Rename generic outputs to slug-prefixed names for short videos.
-        # Long videos are already named by the merge step.
-        is_segment = bool(segment_tag(work_dir))
-        if not is_segment and _has_generic_outputs(work_dir):
-            # Always rename when bare names exist — e.g. after ``--resume-from
-            # subtitle`` export writes ``zh.srt`` / ``bilingual.ass`` even if an
-            # earlier run already created ``{slug}.zh.srt``.
-            _rename_outputs(work_dir, slug)
         _cleanup_temp(work_dir)
         reporter.emit(RunEvent(RunKind.finished, _finished_payload(work_dir, slug, result.video_path)))
     except KeyboardInterrupt:
@@ -360,10 +362,41 @@ def _log_payload() -> dict:
     return {"log": str(path)} if path else {}
 
 
+def _find_existing_video(output_dir: Path) -> tuple[Path, str] | None:
+    """Scan *output_dir* for a work subdirectory that already has a video file."""
+    if not output_dir.is_dir():
+        return None
+    for entry in sorted(output_dir.iterdir()):
+        if not entry.is_dir() or entry.name.startswith(".seg") or entry.name.startswith("."):
+            continue
+        found = find_video_in_dir(entry, entry.name)
+        if found is not None:
+            return found, entry.name
+    return None
+
+
 def _finished_payload(work_dir: Path, slug: str, video_path: Path) -> dict:
     """Payload for the terminal RunEvent(finished) — artifacts, usage, log, duration."""
-    artifacts = sorted(
-        p.name for p in work_dir.glob(f"{slug}.*") if p.suffix in {".srt", ".vtt", ".ass", ".json"} and p.is_file()
+    artifact_names = (
+        "zh.srt",
+        "zh.vtt",
+        "en.srt",
+        "en.vtt",
+        "bilingual.ass",
+        "bilingual.vtt",
+        "cues.json",
+        "transcript.json",
+        "annotations.ass",
+        "annotations.vtt",
+    )
+    artifacts = [name for name in artifact_names if (work_dir / name).is_file()]
+    # Legacy slug-prefixed files from older runs.
+    artifacts.extend(
+        sorted(
+            p.name
+            for p in work_dir.glob(f"{slug}.*")
+            if p.suffix in {".srt", ".vtt", ".ass", ".json"} and p.is_file() and p.name not in artifacts
+        )
     )
     payload: dict = {"slug": slug, "output": str(work_dir), "artifacts": artifacts, **_log_payload()}
     usage = _usage_line(work_dir)
@@ -396,60 +429,6 @@ def _usage_line(work_dir: Path) -> str:
 # ═══════════════════════════════════════════════════════════
 #  Output helpers
 # ═══════════════════════════════════════════════════════════
-
-
-_GENERIC_OUTPUT_NAMES = (
-    "zh.srt",
-    "zh.vtt",
-    "en.srt",
-    "en.vtt",
-    "bilingual.ass",
-    "bilingual.vtt",
-    "cues.json",
-    "annotations.ass",
-    "annotations.vtt",
-)
-
-
-def _has_generic_outputs(work_dir: Path) -> bool:
-    """True when the export step wrote bare filenames that need slug prefixing."""
-    return any((work_dir / name).exists() for name in _GENERIC_OUTPUT_NAMES)
-
-
-def _rename_outputs(work_dir: Path, slug: str) -> None:
-    """Rename pipeline outputs from generic names to ``{slug}.<ext>``."""
-    import shutil
-
-    mapping = {
-        "zh.srt": f"{slug}.zh.srt",
-        "zh.vtt": f"{slug}.zh.vtt",
-        "en.srt": f"{slug}.en.srt",
-        "en.vtt": f"{slug}.en.vtt",
-        "bilingual.ass": f"{slug}.bilingual.ass",
-        "bilingual.vtt": f"{slug}.bilingual.vtt",
-        "cues.json": f"{slug}.cues.json",
-        "annotations.ass": f"{slug}.annotations.ass",
-        "annotations.vtt": f"{slug}.annotations.vtt",
-    }
-
-    # Copy transcript.json (not move) — resume depends on it.
-    transcript_src = work_dir / "transcript.json"
-    transcript_dst = work_dir / f"{slug}.transcript.json"
-    if transcript_src.exists() and not transcript_dst.exists():
-        shutil.copy2(str(transcript_src), str(transcript_dst))
-    for src_name, dst_name in mapping.items():
-        src = work_dir / src_name
-        dst = work_dir / dst_name
-        if src.exists():
-            if dst.exists():
-                dst.unlink()
-            shutil.move(str(src), str(dst))
-
-    # Rename the downloaded video file as well.
-    for video_file in work_dir.glob("video.*"):
-        dst = work_dir / f"{slug}{video_file.suffix}"
-        if not dst.exists():
-            shutil.move(str(video_file), str(dst))
 
 
 def _cleanup_temp(work_dir: Path) -> None:

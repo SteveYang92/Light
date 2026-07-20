@@ -394,16 +394,20 @@ data/
 
 ## 输出文件
 
+产物落在 ``output/<slug>/``（目录名即 slug），文件用裸名、不再二次加 slug 前缀：
+
 ```
-output/
+output/<slug>/
+├── video.webm / video.mp4        下载或输入的视频（保持 video.*）
 ├── pipeline_run.json             管线运行状态（resume 用）
 ├── audio_asr.wav                 提取的音频
 ├── asr/
 │   └── asr_whisperx.json         ASR 词级结果（引擎名随 --asr 变化）
-├── {slug}.en.srt / {slug}.en.vtt   源语字幕（短视频/合并后带 slug 前缀）
-├── {slug}.zh.srt / {slug}.zh.vtt   译语字幕
-├── {slug}.bilingual.ass            双语 ASS（自含圆角盒：固定 1080p PlayRes + 矢量盒，样式见 style/config.py）
-├── {slug}.annotations.ass          副字幕注解（--annotate）
+├── en.srt / en.vtt               源语字幕
+├── zh.srt / zh.vtt               译语字幕
+├── bilingual.ass                 双语 ASS（自含圆角盒；PlayRes 按画幅纵横比）
+├── bilingual.vtt                 双语 VTT（Web 播放用）
+├── annotations.ass / .vtt        副字幕注解（--annotate）
 ├── cues.json                     字幕 cue 列表
 ├── transcript.json               标准化转录（含 word 时间戳，供 QC）
 ├── segment/
@@ -421,6 +425,7 @@ output/
 └── qc_report.html                QC 报告（light-qc 生成，本地文件）
 ```
 
+长视频分段在 ``.segN/`` 下同样用裸名；合并后写回根目录裸名（``video.*`` 保持原样）。
 ### Token 消耗统计（`usage_report.json`）
 
 管线结束后在 output 根目录生成 `usage_report.json`，按步骤汇总 LLM token 消耗（`correct` / `punct` / `context` / `translate.*` / `annotate`）。各步骤还会在对应 artifact 目录写入 `usage.json`（如 `punct_restore/usage.json`）。

@@ -212,13 +212,24 @@ def _discover_files(output_dir: Path, video_override: str | None) -> tuple[Path,
         if not video_path.is_file():
             raise FileNotFoundError(f"视频文件未找到: {video_path}")
     else:
-        mp4_files = sorted(p for p in output_dir.glob("*.mp4") if OUTPUT_SUFFIX not in p.stem)
-        if not mp4_files:
-            raise FileNotFoundError(f"在 {output_dir} 中未找到 .mp4 视频文件")
-        if len(mp4_files) > 1:
-            names = "\n".join(f"    {f.name}" for f in mp4_files)
-            raise RuntimeError(f"找到多个视频文件:\n{names}\n  请使用 --video 参数指定要打包的视频。")
-        video_path = mp4_files[0]
+        from .download import find_video_in_dir
+
+        video_path = find_video_in_dir(output_dir, output_dir.name)
+        if video_path is None:
+            # Legacy: any non-pack media file in the directory.
+            media = sorted(
+                p
+                for p in output_dir.iterdir()
+                if p.is_file()
+                and p.suffix.lower() in {".mp4", ".webm", ".mkv", ".mov", ".m4v"}
+                and OUTPUT_SUFFIX not in p.stem
+            )
+            if not media:
+                raise FileNotFoundError(f"在 {output_dir} 中未找到视频文件 (video.* / *.mp4 / *.webm)")
+            if len(media) > 1:
+                names = "\n".join(f"    {f.name}" for f in media)
+                raise RuntimeError(f"找到多个视频文件:\n{names}\n  请使用 --video 参数指定要打包的视频。")
+            video_path = media[0]
 
     # ── Annotation subtitle (.annotations.ass) ───────
     annot_path = _find_subtitle_in_dir(output_dir, video_path.stem, ".annotations.ass")

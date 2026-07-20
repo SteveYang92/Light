@@ -54,6 +54,8 @@ class RichReporter:
                 return
             if self._live is None:
                 self._start_live()
+            # Live.update requires a RenderableType — a callable is not renderable
+            # and raises NotRenderableError on refresh (blank/frozen TTY).
             self._live.update(self._renderable())
 
     def close(self) -> None:

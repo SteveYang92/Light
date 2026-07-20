@@ -229,12 +229,19 @@ def _post_process(
     # ── Find merged video ──
     merged_video: Path | None = None
     for ext in (".mp4", ".webm", ".mkv"):
-        candidate = work_dir / f"{slug}{ext}"
+        candidate = work_dir / f"video{ext}"
         if candidate.exists():
             merged_video = candidate
             break
     if merged_video is None:
-        # Fallback: look for any video file (short local input keeps generic name)
+        # Legacy slug-named video from older runs
+        for ext in (".mp4", ".webm", ".mkv"):
+            candidate = work_dir / f"{slug}{ext}"
+            if candidate.exists():
+                merged_video = candidate
+                break
+    if merged_video is None:
+        # Fallback: look for any video file
         for ext in (".mp4", ".webm", ".mkv"):
             for f in work_dir.glob(f"*{ext}"):
                 merged_video = f

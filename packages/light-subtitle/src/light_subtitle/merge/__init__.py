@@ -1,12 +1,14 @@
 """Merge segment outputs into unified video + subtitle + transcript files.
 
 Reads ``.seg1/``, ``.seg2/``, … directories under ``output_dir``, writes merged
-files named ``{slug}.mp4`` / ``.zh.srt`` / ``.zh.vtt`` / ``.cues.json`` /
-``.transcript.json`` (+ ``.annotations.ass`` / ``.annotations.vtt`` if present).
+files with bare names (``zh.srt`` / ``zh.vtt`` / ``cues.json`` /
+``transcript.json`` / ``bilingual.ass`` / …).  The work directory itself is
+named by the slug, so products do not need a second slug prefix.
 
-The original video is reused directly — segments are only processed for ASR.
-Subtitle offsets are computed from ``split_points.json`` (saved by the split
-step) so that segment-local timestamps map to the original video timeline.
+The original ``video.*`` at the work-directory root is reused directly —
+segments are only processed for ASR.  Subtitle offsets are computed from
+``split_points.json`` (saved by the split step) so that segment-local
+timestamps map to the original video timeline.
 
 Implementation split by concern: :mod:`.parse` (srt/vtt IO + time utils),
 :mod:`.dedup` (overlap/term dedup), :mod:`.tracks` (single-track mergers),
@@ -78,9 +80,11 @@ def _get_segment_durations(seg_dirs: list[Path]) -> list[float]:
 
 
 def merge_all(output_dir: Path, slug: str, overlap: float = 10) -> None:
-    """Merge all segment outputs in *output_dir* into ``{slug}.*`` files.
+    """Merge all segment outputs in *output_dir* into bare-named root files.
 
     Single-segment → copy files directly (no merge needed).
+    *slug* is retained for API compatibility with callers; outputs no longer
+    carry a slug prefix (the parent directory is already the slug).
     """
     seg_dirs = _discover_segments(output_dir)
     if not seg_dirs:
@@ -190,8 +194,7 @@ def _merge_multi(output_dir: Path, seg_dirs: list[Path], slug: str, overlap: flo
         deltas = [f"{offsets[k] - (split_points[k] - overlap):+.3f}s" for k in range(1, N)]
         logger.info(f"  Keyframe-corrected offsets: {[f'{o:.3f}' for o in offsets]} (deltas: {deltas})")
 
-    # ── Copy the original video ──
-    _copy_original_video(output_dir, slug)
+    # ── Original video stays as video.* at the work-dir root ──
 
     # ── Merge subtitle / data files ──
     # zh track (translation target) — always attempted.
@@ -208,36 +211,35 @@ def _merge_multi(output_dir: Path, seg_dirs: list[Path], slug: str, overlap: flo
     _merge_annotations_ass(output_dir, seg_dirs, offsets, durations, split_points, slug)
     _merge_annotations_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug)
 
-    logger.info(f"\nMerge complete → {output_dir / slug}.*")
+    logger.info(f"\nMerge complete → {output_dir}/ (bare names)")
 
 
 # ── Single-segment fast path ────────────────────────────
 
 
 def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
-    """Copy files from a single segment dir to root with semantic names."""
+    """Copy files from a single segment dir to root with bare names."""
     import shutil
 
-    mapping = {
-        "zh.srt": f"{slug}.zh.srt",
-        "zh.vtt": f"{slug}.zh.vtt",
-        "en.srt": f"{slug}.en.srt",
-        "en.vtt": f"{slug}.en.vtt",
-        "bilingual.ass": f"{slug}.bilingual.ass",
-        "bilingual.vtt": f"{slug}.bilingual.vtt",
-        "transcript.json": f"{slug}.transcript.json",
-        "cues.json": f"{slug}.cues.json",
-        "annotations.ass": f"{slug}.annotations.ass",
-        "annotations.vtt": f"{slug}.annotations.vtt",
-    }
-    for src_name, dst_name in mapping.items():
-        src = seg_dir / src_name
-        dst = output_dir / dst_name
+    names = (
+        "zh.srt",
+        "zh.vtt",
+        "en.srt",
+        "en.vtt",
+        "bilingual.ass",
+        "bilingual.vtt",
+        "transcript.json",
+        "cues.json",
+        "annotations.ass",
+        "annotations.vtt",
+    )
+    for name in names:
+        src = seg_dir / name
+        dst = output_dir / name
         if not src.exists():
             continue
         # Overwrite stale root files — e.g. after ``--resume-from subtitle`` in
-        # ``.seg1/`` refreshes bare ``zh.srt`` / ``bilingual.ass`` but root
-        # ``{slug}.*`` already exists from an earlier merge.
+        # ``.seg1/`` refreshes bare exports while root copies already exist.
         if dst.exists():
             dst.unlink()
         shutil.copy2(src, dst)
@@ -249,14 +251,9 @@ def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
             usage_dst.unlink()
         shutil.copy2(usage_src, usage_dst)
 
-    # Copy video
-    video_file = _find_video_file(seg_dir)
-    if video_file:
-        dst = output_dir / f"{slug}{video_file.suffix}"
-        if not dst.exists():
-            shutil.copy2(video_file, dst)
-
-    logger.info(f"  Single segment: copied from {seg_dir.name}/ → {slug}.*")
+    # Root already holds the original video.*; segment video is ASR-only.
+    _ = slug  # API compat with merge_all callers
+    logger.info(f"  Single segment: copied from {seg_dir.name}/ → bare root names")
 
 
 def _merge_usage_reports(output_dir: Path, seg_dirs: list[Path]) -> None:
@@ -271,31 +268,3 @@ def _merge_usage_reports(output_dir: Path, seg_dirs: list[Path]) -> None:
     merged = merge_reports(reports)
     write_usage_report(merged, output_dir / USAGE_REPORT_FILENAME)
     logger.info(f"  Merged usage report → {USAGE_REPORT_FILENAME}")
-
-
-# ── Video: reuse original ───────────────────────────────
-
-
-def _copy_original_video(output_dir: Path, slug: str) -> None:
-    """Copy the original video to ``{slug}.<ext>``.
-
-    The original video (``video.*`` at the work directory root) is reused
-    directly — segment videos are only processed for ASR and discarded.
-    """
-    import shutil
-
-    src: Path | None = None
-    for ext in _VIDEO_EXTENSIONS:
-        candidate = output_dir / f"video{ext}"
-        if candidate.exists():
-            src = candidate
-            break
-
-    if src is None:
-        logger.warning("  ⚠ No original video found to copy")
-        return
-
-    dst = output_dir / f"{slug}{src.suffix}"
-    if not dst.exists():
-        shutil.copy2(src, dst)
-        logger.info(f"  Copied video → {dst.name}")

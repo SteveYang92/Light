@@ -25,7 +25,7 @@ from pathlib import Path
 
 from . import logger
 from .config import SubtitleConfig
-from .download import download_video, find_cached_download
+from .download import download_video, find_cached_download, find_video_in_dir
 from .merge_outputs import merge_all
 from .orchestrator import Orchestrator
 from .reporting import (
@@ -85,11 +85,55 @@ def process_video(
     """
     reporter = as_reporter(progress_callback)
 
-    # ── 1. Download (or reuse cached) ──
+    mode = (
+        "bilingual"
+        if config.bilingual
+        else (f"translate→{config.target_lang}" if config.target_lang else "source-only")
+    )
+    # Emit before download so the TTY shows a header immediately (download /
+    # title probe can take a long time with no other output).
+    reporter.emit(
+        RunEvent(
+            RunKind.started,
+            {
+                "slug": config.slug or "",
+                "mode": mode,
+                "input": str(config.url or config.input_path),
+                "output": str(config.output_dir),
+            },
+        )
+    )
+
+    # ── 1. Download (or reuse cached / resume local file) ──
     if config.url:
         cached = find_cached_download(config.url, Path(config.output_dir))
         if cached is not None:
             video_path, slug = cached
+            _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "复用已下载视频")
+        elif (config.resume or config.resume_from) and Path(config.input_path).is_file():
+            # CLI already resolved an on-disk video for --resume / --resume-from.
+            video_path = Path(config.input_path).resolve()
+            slug = config.slug or video_path.parent.name
+            _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "复用已下载视频")
+        elif config.resume or config.resume_from:
+            # Cache miss but resume: look under output/<slug>/ without re-download.
+            slug = config.slug or _slugify(Path(config.input_path).parent.name)
+            found = find_video_in_dir(Path(config.output_dir) / slug, slug)
+            if found is None:
+                # Last resort: any work dir with a video (single-run output trees).
+                for entry in sorted(Path(config.output_dir).iterdir()) if Path(config.output_dir).is_dir() else []:
+                    if not entry.is_dir() or entry.name.startswith("."):
+                        continue
+                    found = find_video_in_dir(entry, entry.name)
+                    if found is not None:
+                        slug = entry.name
+                        break
+            if found is None:
+                raise FileNotFoundError(
+                    f"resume 需要已下载的视频，但在 {config.output_dir} 未找到。"
+                    " 请先完整跑一次下载，或改用 --input 指向本地文件。"
+                )
+            video_path = found
             _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "复用已下载视频")
         else:
             _emit(reporter, STAGE_DOWNLOAD, StageStatus.started, 0.0, "下载中…")
@@ -106,22 +150,6 @@ def process_video(
         is_long = should_split(video_path, threshold=config.split_threshold)
 
     work_dir = video_path.parent if config.url else Path(config.output_dir)
-
-    reporter.emit(
-        RunEvent(
-            RunKind.started,
-            {
-                "slug": slug,
-                "mode": (
-                    "bilingual"
-                    if config.bilingual
-                    else (f"translate→{config.target_lang}" if config.target_lang else "source-only")
-                ),
-                "input": str(config.url or config.input_path),
-                "output": str(work_dir),
-            },
-        )
-    )
 
     work_dir.mkdir(parents=True, exist_ok=True)
 
