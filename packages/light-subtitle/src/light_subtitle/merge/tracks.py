@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from .. import logger
+from .. import artifacts, logger
 from .dedup import _dedup_json_overlaps, _dedup_srt_overlaps, _dedup_vtt_overlaps
 from .parse import _EPS, _parse_srt, _parse_vtt, _write_srt, _write_vtt
 
@@ -24,7 +24,8 @@ def _merge_srt(
     skipped_invalid = 0
 
     for k, seg in enumerate(seg_dirs):
-        cues = _parse_srt(seg / f"{lang}.srt")
+        src = artifacts.find_sidecar(seg, f"{lang}.srt") or (seg / f"{lang}.srt")
+        cues = _parse_srt(src)
         offset = offsets[k]
         seg_dur = durations[k]
         for start, end, text in cues:
@@ -55,9 +56,10 @@ def _merge_srt(
 
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_srt_overlaps(all_cues)
-    out = output_dir / f"{lang}.srt"
+    out = artifacts.sidecar_path(output_dir, f"{lang}.srt")
     _write_srt(all_cues, out)
     logger.info(f"  Merged SRT: {len(all_cues)} cues → {out.name}")
+    _ = slug  # API compat
 
 
 def _merge_vtt(
@@ -74,7 +76,8 @@ def _merge_vtt(
     skipped_invalid = 0
 
     for k, seg in enumerate(seg_dirs):
-        cues = _parse_vtt(seg / f"{lang}.vtt")
+        src = artifacts.find_sidecar(seg, f"{lang}.vtt") or (seg / f"{lang}.vtt")
+        cues = _parse_vtt(src)
         offset = offsets[k]
         seg_dur = durations[k]
         for start, end, text, settings in cues:
@@ -103,9 +106,10 @@ def _merge_vtt(
 
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_vtt_overlaps(all_cues)
-    out = output_dir / f"{lang}.vtt"
+    out = artifacts.sidecar_path(output_dir, f"{lang}.vtt")
     _write_vtt(all_cues, out)
     logger.info(f"  Merged VTT: {len(all_cues)} cues → {out.name}")
+    _ = slug  # API compat
 
 
 def _merge_cues_json(

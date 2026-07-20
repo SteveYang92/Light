@@ -6,7 +6,7 @@ from pathlib import Path
 
 from light_models import seconds_to_ass
 
-from .. import logger
+from .. import artifacts, logger
 from .dedup import _dedup_annotation_terms, _dedup_vtt_overlaps
 from .parse import _EPS, _ass_to_seconds, _parse_vtt, _write_vtt
 
@@ -19,7 +19,7 @@ def _merge_annotations_ass(
     split_points: list[float] | None,
     slug: str,
 ) -> None:
-    has_any = any((seg / "annotations.ass").exists() for seg in seg_dirs)
+    has_any = any(artifacts.find_sidecar(seg, "annotations.ass") for seg in seg_dirs)
     if not has_any:
         return
 
@@ -29,8 +29,8 @@ def _merge_annotations_ass(
     in_header = True
 
     for k, seg in enumerate(seg_dirs):
-        ass_path = seg / "annotations.ass"
-        if not ass_path.exists():
+        ass_path = artifacts.find_sidecar(seg, "annotations.ass")
+        if ass_path is None:
             continue
         offset = offsets[k]
         seg_dur = durations[k]
@@ -70,9 +70,10 @@ def _merge_annotations_ass(
     all_events = _dedup_annotation_terms(all_events)
     event_lines = [",".join(fields) + "\n" for _, _, _, fields in all_events]
 
-    out = output_dir / "annotations.ass"
+    out = artifacts.sidecar_path(output_dir, "annotations.ass")
     out.write_text("".join(header_lines + event_lines), encoding="utf-8")
     logger.info(f"  Merged annotations.ass: {len(event_lines)} entries → {out.name}")
+    _ = slug
 
 
 def _merge_annotations_vtt(
@@ -86,12 +87,13 @@ def _merge_annotations_vtt(
     all_cues: list[tuple[float, float, str, str]] = []
     N = len(seg_dirs)
 
-    has_any = any((seg / "annotations.vtt").exists() for seg in seg_dirs)
+    has_any = any(artifacts.find_sidecar(seg, "annotations.vtt") for seg in seg_dirs)
     if not has_any:
         return
 
     for k, seg in enumerate(seg_dirs):
-        cues = _parse_vtt(seg / "annotations.vtt")
+        src = artifacts.find_sidecar(seg, "annotations.vtt") or (seg / "annotations.vtt")
+        cues = _parse_vtt(src)
         offset = offsets[k]
         seg_dur = durations[k]
         for start, end, text, settings in cues:
@@ -114,5 +116,6 @@ def _merge_annotations_vtt(
     all_cues.sort(key=lambda c: c[0])
     all_cues = _dedup_vtt_overlaps(all_cues)
     all_cues = _dedup_annotation_terms(all_cues)
-    out = output_dir / "annotations.vtt"
+    out = artifacts.sidecar_path(output_dir, "annotations.vtt")
     _write_vtt(all_cues, out)
+    _ = slug

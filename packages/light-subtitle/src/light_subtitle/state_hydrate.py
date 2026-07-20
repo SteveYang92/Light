@@ -159,11 +159,32 @@ def hydrate_translated_cues(orch: Orchestrator) -> None:
     )
 
 
+def hydrate_annotations(orch: Orchestrator) -> None:
+    """Fill ``state.annotations`` from disk (or cue fields) for export resume.
+
+    ``--resume-from export`` skips the annotate step; without this hydrate,
+    ``--annotate`` alone leaves ``state.annotations`` empty and export writes
+    no ``video.annotations.*`` even though ASS/VTT may already exist.
+    """
+    loaded = artifacts.load_annotations(_out(orch.config))
+    if loaded:
+        orch.state.annotations = loaded
+        return
+    if orch.state.translated_cues:
+        orch.state.annotations = {c.unit_id: c.annotation for c in orch.state.translated_cues if c.annotation}
+
+
+def hydrate_annotate_inputs(orch: Orchestrator) -> None:
+    hydrate_translated_cues(orch)
+    hydrate_annotations(orch)
+
+
 def hydrate_subtitle_export(orch: Orchestrator) -> None:
     hydrate_plan_segments(orch)
     raw = artifacts.raw_cues_path(_out(orch.config))
     if raw.exists():
         hydrate_translated_cues(orch)
+    hydrate_annotations(orch)
 
 
 def _out(config_or_dir: SubtitleConfig | str | Path) -> Path:

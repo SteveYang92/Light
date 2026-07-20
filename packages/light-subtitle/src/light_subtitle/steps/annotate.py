@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .. import logger
+from .. import artifacts, logger
 from ..pipeline import annotate as annotate_pipeline
 from ..reporting import StageStatus
 from .progress import STAGE_ANNOTATE
@@ -42,4 +42,5 @@ def _run_annotate(orch: Orchestrator) -> None:
     if usage:
         orch.usage_tracker.record("annotate", usage)
     orch.state.annotations = {c.unit_id: c.annotation for c in orch.state.translated_cues if c.annotation}
+    artifacts.save_annotations(orch.config.output_dir, orch.state.annotations)
     logger.info(f"  Annotations: {len(orch.state.annotations)} terms annotated")

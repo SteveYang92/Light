@@ -222,17 +222,19 @@ class TestDedupAnnotationTerms:
         assert len(result) == 1
 
 
-def test_copy_single_segment_overwrites_existing_bare_files(tmp_path: Path) -> None:
-    """Single-segment merge must refresh root bare files after segment re-export."""
+def test_copy_single_segment_overwrites_existing_sidecar_files(tmp_path: Path) -> None:
+    """Single-segment merge must refresh root video.* sidecars after segment re-export."""
     slug = "demo"
     seg_dir = tmp_path / ".seg1"
     seg_dir.mkdir()
-    (seg_dir / "bilingual.ass").write_text("new", encoding="utf-8")
-    (seg_dir / "bilingual.vtt").write_text("WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\n新\nnew\n\n", encoding="utf-8")
-    (tmp_path / "bilingual.ass").write_text("old", encoding="utf-8")
-    (tmp_path / "bilingual.vtt").write_text("old", encoding="utf-8")
+    (seg_dir / "video.bilingual.ass").write_text("new", encoding="utf-8")
+    (seg_dir / "video.bilingual.vtt").write_text(
+        "WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\n新\nnew\n\n", encoding="utf-8"
+    )
+    (tmp_path / "video.bilingual.ass").write_text("old", encoding="utf-8")
+    (tmp_path / "video.bilingual.vtt").write_text("old", encoding="utf-8")
 
     _copy_single_segment(tmp_path, seg_dir, slug)
 
-    assert (tmp_path / "bilingual.ass").read_text(encoding="utf-8") == "new"
-    assert "新" in (tmp_path / "bilingual.vtt").read_text(encoding="utf-8")
+    assert (tmp_path / "video.bilingual.ass").read_text(encoding="utf-8") == "new"
+    assert "新" in (tmp_path / "video.bilingual.vtt").read_text(encoding="utf-8")

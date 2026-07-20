@@ -25,15 +25,20 @@ def test_wants_bilingual_exports_from_config_flag(tmp_path: Path) -> None:
 
 
 def test_wants_bilingual_exports_from_existing_ass(tmp_path: Path) -> None:
+    (tmp_path / "video.bilingual.ass").write_text("[Script Info]", encoding="utf-8")
+    assert _wants_bilingual_exports(_orch(tmp_path)) is True
+
+
+def test_wants_bilingual_exports_from_legacy_bare_ass(tmp_path: Path) -> None:
     (tmp_path / "bilingual.ass").write_text("[Script Info]", encoding="utf-8")
     assert _wants_bilingual_exports(_orch(tmp_path)) is True
 
 
 def test_wants_bilingual_exports_from_existing_en_track(tmp_path: Path) -> None:
-    (tmp_path / "en.vtt").write_text("WEBVTT\n\n", encoding="utf-8")
+    (tmp_path / "video.en.vtt").write_text("WEBVTT\n\n", encoding="utf-8")
     assert _wants_bilingual_exports(_orch(tmp_path)) is True
 
 
 def test_wants_bilingual_exports_monolingual(tmp_path: Path) -> None:
-    (tmp_path / "zh.vtt").write_text("WEBVTT\n\n", encoding="utf-8")
+    (tmp_path / "video.zh.vtt").write_text("WEBVTT\n\n", encoding="utf-8")
     assert _wants_bilingual_exports(_orch(tmp_path)) is False

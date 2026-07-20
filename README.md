@@ -149,7 +149,7 @@ uv run light-subtitle -i input.mp4 --target-lang zh --resume-from subtitle
 
 **进度显示**：默认只显示结构化进度——每个阶段的开始/完成/跳过/失败（`▶/✓/–/✗`），长阶段（规划、翻译、注解）附带节流分数进度条（如 `[======----] 60% 翻译`）；终端交互环境（TTY）使用 Rich 实时刷新视图，非 TTY/CI 输出纯文本行（可安全捕获）。完整过程日志始终写入产物目录的 `pipeline_*.log`；`--verbose` / `-v` 恢复旧式全量日志流（同时强制纯文本进度）。长视频分段处理时，阶段行带 `[segN/M]` 前缀标识各分段，合并阶段单独显示。中断（Ctrl+C）时提示 `--resume` 续跑方式与日志路径。
 
-**双语字幕样式**：`bilingual.ass` 导出即自含圆角背景盒（中英文各一个整块盒，盒随文字宽高自适应，多行一个盒）。PlayRes 高度固定 1080，宽度按视频画幅纵横比设定（16:9 时为 1920；非 16:9 如 3324×2160 则为 1662），避免 libass 横向/纵向缩放不一致导致背景盒包不住字。样式参数可用 `--style-config <yaml>` 覆盖（字段见 `packages/light-subtitle/src/light_subtitle/style/config.py`，如 `box_enabled: false` 可关盒回退描边样式）：
+**双语字幕样式**：`video.bilingual.ass` 导出即自含圆角背景盒（中英文各一个整块盒，盒随文字宽高自适应，多行一个盒）。PlayRes 高度固定 1080，宽度按视频画幅纵横比设定（16:9 时为 1920；非 16:9 如 3324×2160 则为 1662），避免 libass 横向/纵向缩放不一致导致背景盒包不住字。样式参数可用 `--style-config <yaml>` 覆盖（字段见 `packages/light-subtitle/src/light_subtitle/style/config.py`，如 `box_enabled: false` 可关盒回退描边样式）：
 
 ```yaml
 # style.yaml 示例（均为默认值）
@@ -168,7 +168,7 @@ line_spacing: 1.12        # 多行堆叠行距（× 行高）
 
 #### pack — 烧录字幕到视频
 
-`pack` 是 `light-subtitle` 的子命令，把字幕硬烧进视频生成自包含 MP4（`{slug}_pack.mp4`）。自动识别主字幕：优先 `bilingual.ass`（双语，中上英下，自含圆角盒，按导出字体原样烧录），回退 `zh.srt`（单语中文，`--font` 生效）。可选叠加 `annotations.ass` 副图层（`--font` 生效）。
+`pack` 是 `light-subtitle` 的子命令，把字幕硬烧进视频生成自包含 MP4（`{slug}_pack.mp4`）。自动识别主字幕：优先 `video.bilingual.ass`（双语，中上英下，自含圆角盒，按导出字体原样烧录），回退 `video.zh.srt`（单语中文，`--font` 生效）。可选叠加 `video.annotations.ass` 副图层（`--font` 生效）。
 
 ```bash
 # 单语运行后烧中文字幕
@@ -314,13 +314,13 @@ python scripts/tts_dub.py output/<run> --engine http --mlx-url http://127.0.0.1:
 uv run light-qc -i output/en.srt --transcript output/transcript.json
 
 # 规则引擎 + LLM QC
-uv run light-qc -i output/en.srt --transcript output/transcript.json --llm
+uv run light-qc -i output/video.en.srt --transcript output/transcript.json --llm
 
 # 双语检查
-uv run light-qc -i output/en.srt -i output/zh.srt --source-lang en --target-lang zh --bilingual --transcript output/transcript.json
+uv run light-qc -i output/video.en.srt -i output/video.zh.srt --source-lang en --target-lang zh --bilingual --transcript output/transcript.json
 
 # 输出 HTML 报告
-uv run light-qc -i output/en.srt --transcript output/transcript.json -f html -o output/qc_report.html
+uv run light-qc -i output/video.en.srt --transcript output/transcript.json -f html -o output/qc_report.html
 ```
 
 完整参数见 `uv run light-qc --help`。
@@ -379,7 +379,7 @@ data/
     └── chunks/                    # >45min 视频的切分片段
         ├── chunk_000.mp4
         └── out_000/               # 该片段的 subtitle 产物
-            ├── zh.srt / zh.vtt
+            ├── video.zh.srt / video.zh.vtt
             └── transcript.json
 ```
 
@@ -394,7 +394,7 @@ data/
 
 ## 输出文件
 
-产物落在 ``output/<slug>/``（目录名即 slug），文件用裸名、不再二次加 slug 前缀：
+产物落在 ``output/<slug>/``（目录名即 slug）。播放器用字幕与 ``video.*`` 同 stem（``video.zh.srt`` 等），方便 IINA 等自动加载；``transcript.json`` / ``cues.json`` 保持裸名（resume / QC / TTS）：
 
 ```
 output/<slug>/
@@ -403,11 +403,11 @@ output/<slug>/
 ├── audio_asr.wav                 提取的音频
 ├── asr/
 │   └── asr_whisperx.json         ASR 词级结果（引擎名随 --asr 变化）
-├── en.srt / en.vtt               源语字幕
-├── zh.srt / zh.vtt               译语字幕
-├── bilingual.ass                 双语 ASS（自含圆角盒；PlayRes 按画幅纵横比）
-├── bilingual.vtt                 双语 VTT（Web 播放用）
-├── annotations.ass / .vtt        副字幕注解（--annotate）
+├── video.en.srt / video.en.vtt   源语字幕（IINA 侧车）
+├── video.zh.srt / video.zh.vtt   译语字幕
+├── video.bilingual.ass           双语 ASS（自含圆角盒；PlayRes 按画幅纵横比）
+├── video.bilingual.vtt           双语 VTT（Web 播放用）
+├── video.annotations.ass / .vtt  副字幕注解（--annotate）
 ├── cues.json                     字幕 cue 列表
 ├── transcript.json               标准化转录（含 word 时间戳，供 QC）
 ├── segment/
@@ -425,7 +425,7 @@ output/<slug>/
 └── qc_report.html                QC 报告（light-qc 生成，本地文件）
 ```
 
-长视频分段在 ``.segN/`` 下同样用裸名；合并后写回根目录裸名（``video.*`` 保持原样）。
+长视频分段在 ``.segN/`` 下同样用 ``video.*`` 侧车名；合并后写回根目录（``video.webm`` 保持原样）。
 ### Token 消耗统计（`usage_report.json`）
 
 管线结束后在 output 根目录生成 `usage_report.json`，按步骤汇总 LLM token 消耗（`correct` / `punct` / `context` / `translate.*` / `annotate`）。各步骤还会在对应 artifact 目录写入 `usage.json`（如 `punct_restore/usage.json`）。

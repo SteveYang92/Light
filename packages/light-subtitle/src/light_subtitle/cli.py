@@ -379,19 +379,30 @@ def _find_existing_video(output_dir: Path) -> tuple[Path, str] | None:
 def _finished_payload(work_dir: Path, slug: str, video_path: Path) -> dict:
     """Payload for the terminal RunEvent(finished) — artifacts, usage, log, duration."""
     artifact_names = (
+        "video.zh.srt",
+        "video.zh.vtt",
+        "video.en.srt",
+        "video.en.vtt",
+        "video.bilingual.ass",
+        "video.bilingual.vtt",
+        "video.annotations.ass",
+        "video.annotations.vtt",
+        "cues.json",
+        "transcript.json",
+    )
+    artifacts = [name for name in artifact_names if (work_dir / name).is_file()]
+    # Legacy bare / slug-prefixed files from older runs.
+    legacy_bare = (
         "zh.srt",
         "zh.vtt",
         "en.srt",
         "en.vtt",
         "bilingual.ass",
         "bilingual.vtt",
-        "cues.json",
-        "transcript.json",
         "annotations.ass",
         "annotations.vtt",
     )
-    artifacts = [name for name in artifact_names if (work_dir / name).is_file()]
-    # Legacy slug-prefixed files from older runs.
+    artifacts.extend(name for name in legacy_bare if (work_dir / name).is_file() and name not in artifacts)
     artifacts.extend(
         sorted(
             p.name
@@ -508,14 +519,14 @@ def pack(
 ):
     """Burn subtitles into video — produce a self-contained MP4.
 
-    Auto-detects the main subtitle from OUTPUT_DIR: prefers ``bilingual.ass``
-    (self-styled, 中上英下) when present, otherwise falls back to ``zh.srt``.
+    Auto-detects the main subtitle from OUTPUT_DIR: prefers ``video.bilingual.ass``
+    (self-styled, 中上英下) when present, otherwise falls back to ``video.zh.srt``.
     ``--font`` applies to all paths (ASS Style patch or SRT force_style) with
-    a built-in system fallback chain.  Optional ``.annotations.ass`` is
+    a built-in system fallback chain.  Optional ``video.annotations.ass`` is
     overlaid as a secondary track.  Writes ``{slug}_pack.mp4`` alongside the
     original video.
 
-    Run a bilingual pipeline first to get ``bilingual.ass``::
+    Run a bilingual pipeline first to get ``video.bilingual.ass``::
 
         uv run light-subtitle -i input.mp4 --target-lang zh --bilingual -o output
         uv run light-subtitle pack output

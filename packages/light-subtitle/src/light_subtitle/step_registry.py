@@ -18,12 +18,12 @@ from . import artifacts
 from .config import AsrEngine, SubtitleConfig
 from .pipeline.asr.artifacts import asr_words_path, audio_wav_path
 from .state_hydrate import (
+    hydrate_annotate_inputs,
     hydrate_asr_audio,
     hydrate_plan_segments,
     hydrate_segments_from_disk,
     hydrate_subtitle_export,
     hydrate_transcript_words,
-    hydrate_translated_cues,
     hydrate_words_after_correct,
     hydrate_words_after_punct,
 )
@@ -219,7 +219,7 @@ def build_step_definitions(config: SubtitleConfig) -> list[StepDefinition]:
             artifacts=lambda c: (artifacts.raw_cues_path(_out(c)),),
             progress_start=annotate._annotate_progress_start,
             progress_end=annotate._annotate_progress_end,
-            hydrate=hydrate_translated_cues,
+            hydrate=hydrate_annotate_inputs,
             enabled=lambda c: bool(c.annotate and c.target_lang),
         ),
         StepDefinition(

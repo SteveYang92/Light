@@ -30,7 +30,7 @@ def _cue_group(start: str, end: str, en: str, zh: str) -> str:
 def test_bilingual_ass_merge_keeps_box_and_both_languages(tmp_path: Path):
     seg = tmp_path / ".seg1"
     seg.mkdir()
-    (seg / "bilingual.ass").write_text(
+    (seg / "video.bilingual.ass").write_text(
         _HEADER
         + _cue_group("0:00:01.00", "0:00:03.00", "hello there", "你好")
         + _cue_group("0:00:04.00", "0:00:06.00", "second cue", "第二条"),
@@ -39,7 +39,7 @@ def test_bilingual_ass_merge_keeps_box_and_both_languages(tmp_path: Path):
 
     _merge_bilingual_ass(tmp_path, [seg], [0.0], [30.0], None, "slug")
 
-    merged = (tmp_path / "slug.bilingual.ass").read_text(encoding="utf-8")
+    merged = (tmp_path / "video.bilingual.ass").read_text(encoding="utf-8")
     dialogue = [line for line in merged.splitlines() if line.startswith("Dialogue:")]
     assert len(dialogue) == 8
     assert sum("BilingualEn" in line for line in dialogue) == 2
@@ -54,13 +54,13 @@ def test_bilingual_ass_merge_dedups_overlaps_by_group(tmp_path: Path):
     seg1.mkdir()
     seg2.mkdir()
     # seg1 tail cue (99.0–101.0 global) overlaps seg2's first kept cue.
-    (seg1 / "bilingual.ass").write_text(
+    (seg1 / "video.bilingual.ass").write_text(
         _HEADER + _cue_group("0:01:39.00", "0:01:41.00", "seg1 tail", "甲段结尾"),
         encoding="utf-8",
     )
     # seg2 starts at 90s global (10s overlap before the split point at 100s):
     # local 10.2–12.0 → global 100.2–102.0.
-    (seg2 / "bilingual.ass").write_text(
+    (seg2 / "video.bilingual.ass").write_text(
         _HEADER + _cue_group("0:00:10.20", "0:00:12.00", "seg2 head", "乙段开头"),
         encoding="utf-8",
     )
@@ -74,7 +74,7 @@ def test_bilingual_ass_merge_dedups_overlaps_by_group(tmp_path: Path):
         "slug",
     )
 
-    merged = (tmp_path / "slug.bilingual.ass").read_text(encoding="utf-8")
+    merged = (tmp_path / "video.bilingual.ass").read_text(encoding="utf-8")
     dialogue = [line for line in merged.splitlines() if line.startswith("Dialogue:")]
     assert len(dialogue) == 4  # the later group survives whole, the earlier one is dropped
     assert "seg2 head" in merged and "乙段开头" in merged

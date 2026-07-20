@@ -63,9 +63,10 @@ def run_pack(config: PackConfig) -> None:
 
     Discovers the video, main subtitle, and optional annotation subtitle from
     *config.output_dir*, then encodes with ffmpeg-full.  The main subtitle is
-    auto-detected: ``bilingual.ass`` (self-styled, burned via ``ass=``) is
-    preferred when present; otherwise falls back to ``zh.srt`` (burned via
-    ``subtitles=`` with ``force_style``).
+    auto-detected: ``video.bilingual.ass`` (self-styled, burned via ``ass=``) is
+    preferred when present; otherwise falls back to ``video.zh.srt`` (burned via
+    ``subtitles=`` with ``force_style``). Legacy bare ``bilingual.ass`` / ``zh.srt``
+    are still accepted.
     """
     output_dir = Path(config.output_dir).resolve()
     if not output_dir.is_dir():

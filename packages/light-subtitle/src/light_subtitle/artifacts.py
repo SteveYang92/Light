@@ -24,6 +24,8 @@ from light_models import Segment, SubtitleCue, Word
 # ── Filenames ───────────────────────────────────────────────────────────────
 
 TRANSCRIPT_JSON = "transcript.json"  # write: export step; read: resume, QC, backend
+CUES_JSON = "cues.json"  # write: export; read: TTS, pack tooling (not a player sidecar)
+ANNOTATIONS_JSON = "annotations.json"  # annotations/ — write: annotate step; read: export resume
 SEGMENT_JSON = "segment.json"  # segment/ — write: export step; read: resume
 PLAN_JSON = "plan.json"  # plan/ — write: planner; read: resume, join
 PLAN_JOINED_JSON = "plan.joined.json"  # plan/ — write: join; read: resume
@@ -35,6 +37,20 @@ PARTIAL_JSON = "partial.json"  # translations/ — write/read: live translation 
 FINGERPRINT_JSON = "fingerprint.json"  # translations/ — write/read: cache staleness check
 USAGE_JSON = "usage.json"  # translations/, plan/, and several step dirs
 QUALITY_JSON = "quality.json"  # translations/ — write: evaluate step
+
+# Player-facing sidecars share the downloaded video stem so players (IINA)
+# auto-load them next to ``video.webm`` / ``video.mp4``.
+VIDEO_STEM = "video"
+PLAYER_SIDECAR_SUFFIXES = (
+    "zh.srt",
+    "zh.vtt",
+    "en.srt",
+    "en.vtt",
+    "bilingual.ass",
+    "bilingual.vtt",
+    "annotations.ass",
+    "annotations.vtt",
+)
 
 
 # ── Directory helpers ───────────────────────────────────────────────────────
@@ -52,11 +68,82 @@ def segment_dir(output_dir: str | Path) -> Path:
     return Path(output_dir) / "segment"
 
 
+def annotations_dir(output_dir: str | Path) -> Path:
+    return Path(output_dir) / "annotations"
+
+
 # ── Leaf path helpers (take the pipeline output dir) ────────────────────────
 
 
 def transcript_path(output_dir: str | Path) -> Path:
     return Path(output_dir) / TRANSCRIPT_JSON
+
+
+def cues_path(output_dir: str | Path) -> Path:
+    return Path(output_dir) / CUES_JSON
+
+
+def annotations_path(output_dir: str | Path) -> Path:
+    """Persisted unit_id → annotation text map (resume-from export needs this)."""
+    return annotations_dir(output_dir) / ANNOTATIONS_JSON
+
+
+def sidecar_name(suffix: str) -> str:
+    """Player-facing filename: ``zh.srt`` → ``video.zh.srt``."""
+    return f"{VIDEO_STEM}.{suffix.lstrip('.')}"
+
+
+def sidecar_path(output_dir: str | Path, suffix: str) -> Path:
+    """Path for a player-facing subtitle sidecar under *output_dir*."""
+    return Path(output_dir) / sidecar_name(suffix)
+
+
+def find_sidecar(directory: str | Path, suffix: str, slug: str | None = None) -> Path | None:
+    """Resolve a sidecar preferring ``video.*``, then bare, then ``{slug}.*``.
+
+    Used by merge/resume readers so older bare / slug-prefixed runs still work.
+    """
+    directory = Path(directory)
+    suffix = suffix.lstrip(".")
+    candidates = [
+        directory / sidecar_name(suffix),
+        directory / suffix,
+    ]
+    if slug:
+        candidates.append(directory / f"{slug}.{suffix}")
+    for path in candidates:
+        if path.is_file():
+            return path
+    return None
+
+
+def migrate_legacy_sidecars(output_dir: str | Path, slug: str | None = None) -> list[str]:
+    """Move bare / ``{slug}.*`` player sidecars to ``video.*`` for IINA.
+
+    After a re-export that rewrites language tracks but skips annotations
+    (empty annotate state / ``--annotate`` off), leftover ``annotations.ass``
+    would otherwise stay unprefixed.  Returns the suffixes that were moved
+    or whose bare duplicates were removed.
+    """
+    output_dir = Path(output_dir)
+    changed: list[str] = []
+    for suffix in PLAYER_SIDECAR_SUFFIXES:
+        target = sidecar_path(output_dir, suffix)
+        legacies = [output_dir / suffix]
+        if slug:
+            legacies.append(output_dir / f"{slug}.{suffix}")
+        for legacy in legacies:
+            if not legacy.is_file():
+                continue
+            if legacy.resolve() == target.resolve():
+                continue
+            if not target.exists():
+                legacy.rename(target)
+                changed.append(suffix)
+            else:
+                legacy.unlink()
+                changed.append(suffix)
+    return changed
 
 
 def segment_json_path(output_dir: str | Path) -> Path:
@@ -137,6 +224,27 @@ def write_json(path: str | Path, data: object) -> None:
 def read_json(path: str | Path) -> Any:
     with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def save_annotations(output_dir: str | Path, annotations: dict[str, str]) -> Path:
+    """Persist the unit_id → annotation map for resume / re-export."""
+    path = annotations_path(output_dir)
+    write_json(path, dict(annotations))
+    return path
+
+
+def load_annotations(output_dir: str | Path) -> dict[str, str]:
+    """Load persisted annotations, or ``{}`` when missing / malformed."""
+    path = annotations_path(output_dir)
+    if not path.is_file():
+        return {}
+    try:
+        data = read_json(path)
+    except Exception:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {str(k): str(v) for k, v in data.items() if v}
 
 
 # ── Word (de)serialization ──────────────────────────────────────────────────

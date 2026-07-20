@@ -1,9 +1,10 @@
 """Merge segment outputs into unified video + subtitle + transcript files.
 
 Reads ``.seg1/``, ``.seg2/``, … directories under ``output_dir``, writes merged
-files with bare names (``zh.srt`` / ``zh.vtt`` / ``cues.json`` /
-``transcript.json`` / ``bilingual.ass`` / …).  The work directory itself is
-named by the slug, so products do not need a second slug prefix.
+player sidecars as ``video.zh.srt`` / ``video.bilingual.ass`` / … (same stem
+as ``video.*`` so IINA auto-loads them).  Machine artifacts
+(``cues.json``, ``transcript.json``) stay bare.  The work directory itself
+is named by the slug.
 
 The original ``video.*`` at the work-directory root is reused directly —
 segments are only processed for ASR.  Subtitle offsets are computed from
@@ -203,7 +204,7 @@ def _merge_multi(output_dir: Path, seg_dirs: list[Path], slug: str, overlap: flo
     # en track (source) — present in bilingual runs; no-op if en.srt/en.vtt absent.
     _merge_srt(output_dir, seg_dirs, offsets, durations, split_points, slug, lang="en")
     _merge_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug, lang="en")
-    # bilingual.ass / bilingual.vtt (merged ZH+EN display) — present in bilingual runs.
+    # bilingual ASS / VTT (merged ZH+EN display) — present in bilingual runs.
     _merge_bilingual_ass(output_dir, seg_dirs, offsets, durations, split_points, slug)
     _merge_bilingual_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug)
     _merge_cues_json(output_dir, seg_dirs, offsets, durations, split_points, slug)
@@ -211,35 +212,43 @@ def _merge_multi(output_dir: Path, seg_dirs: list[Path], slug: str, overlap: flo
     _merge_annotations_ass(output_dir, seg_dirs, offsets, durations, split_points, slug)
     _merge_annotations_vtt(output_dir, seg_dirs, offsets, durations, split_points, slug)
 
-    logger.info(f"\nMerge complete → {output_dir}/ (bare names)")
+    logger.info(f"\nMerge complete → {output_dir}/ (video.* sidecars)")
 
 
 # ── Single-segment fast path ────────────────────────────
 
 
 def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
-    """Copy files from a single segment dir to root with bare names."""
+    """Copy files from a single segment dir to root with video.-prefixed names."""
     import shutil
 
-    names = (
+    from .. import artifacts
+
+    # Player sidecars (written as video.*); also accept bare segment leftovers.
+    sidecar_suffixes = (
         "zh.srt",
         "zh.vtt",
         "en.srt",
         "en.vtt",
         "bilingual.ass",
         "bilingual.vtt",
-        "transcript.json",
-        "cues.json",
         "annotations.ass",
         "annotations.vtt",
     )
-    for name in names:
+    for suffix in sidecar_suffixes:
+        src = artifacts.find_sidecar(seg_dir, suffix) or (seg_dir / suffix)
+        if not src.exists():
+            continue
+        dst = artifacts.sidecar_path(output_dir, suffix)
+        if dst.exists():
+            dst.unlink()
+        shutil.copy2(src, dst)
+
+    for name in ("transcript.json", "cues.json"):
         src = seg_dir / name
         dst = output_dir / name
         if not src.exists():
             continue
-        # Overwrite stale root files — e.g. after ``--resume-from subtitle`` in
-        # ``.seg1/`` refreshes bare exports while root copies already exist.
         if dst.exists():
             dst.unlink()
         shutil.copy2(src, dst)
@@ -253,7 +262,7 @@ def _copy_single_segment(output_dir: Path, seg_dir: Path, slug: str) -> None:
 
     # Root already holds the original video.*; segment video is ASR-only.
     _ = slug  # API compat with merge_all callers
-    logger.info(f"  Single segment: copied from {seg_dir.name}/ → bare root names")
+    logger.info(f"  Single segment: copied from {seg_dir.name}/ → video.* sidecars")
 
 
 def _merge_usage_reports(output_dir: Path, seg_dirs: list[Path]) -> None:

@@ -69,9 +69,7 @@ def _wants_bilingual_exports(orch: Orchestrator) -> bool:
     slug = orch.config.slug or ""
     names = ("bilingual.ass", "bilingual.vtt", "en.srt", "en.vtt")
     for name in names:
-        if (out / name).exists():
-            return True
-        if slug and (out / f"{slug}.{name}").exists():
+        if artifacts.find_sidecar(out, name, slug) is not None:
             return True
     return False
 
