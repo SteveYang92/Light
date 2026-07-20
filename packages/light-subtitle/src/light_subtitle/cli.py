@@ -20,7 +20,7 @@ import typer
 
 from . import logger
 from .config import AsrEngine, SubtitleConfig
-from .download import derive_slug_from_path, download_video, find_cached_download
+from .download import derive_slug_from_path, find_cached_download, probe_slug
 from .reporting import Reporter, RunEvent, RunKind
 from .runner import process_video
 from .usage.report import load_usage_from_dir
@@ -230,7 +230,9 @@ def run(
             video_path, slug = cached
             logger.info(f"  Using cached download: {video_path}")
         else:
-            video_path, slug = download_video(url, output_base)
+            slug = probe_slug(url)
+            # placeholder — process_video will download and replace it
+            video_path = output_base / slug / "video.mp4"
     else:
         video_path = Path(input_path).resolve()
         # Use parent directory name as slug only when the file is our generic
@@ -311,7 +313,7 @@ def run(
             # earlier run already created ``{slug}.zh.srt``.
             _rename_outputs(work_dir, slug)
         _cleanup_temp(work_dir)
-        reporter.emit(RunEvent(RunKind.finished, _finished_payload(work_dir, slug)))
+        reporter.emit(RunEvent(RunKind.finished, _finished_payload(work_dir, slug, result.video_path)))
     except KeyboardInterrupt:
         reporter.emit(RunEvent(RunKind.failed, {"error": "已中断（Ctrl+C），可用 --resume 续跑", **_log_payload()}))
         raise
@@ -358,8 +360,8 @@ def _log_payload() -> dict:
     return {"log": str(path)} if path else {}
 
 
-def _finished_payload(work_dir: Path, slug: str) -> dict:
-    """Payload for the terminal RunEvent(finished) — artifacts, usage, log."""
+def _finished_payload(work_dir: Path, slug: str, video_path: Path) -> dict:
+    """Payload for the terminal RunEvent(finished) — artifacts, usage, log, duration."""
     artifacts = sorted(
         p.name for p in work_dir.glob(f"{slug}.*") if p.suffix in {".srt", ".vtt", ".ass", ".json"} and p.is_file()
     )
@@ -367,6 +369,12 @@ def _finished_payload(work_dir: Path, slug: str) -> dict:
     usage = _usage_line(work_dir)
     if usage:
         payload["usage"] = usage
+    try:
+        from .utils.ffmpeg import probe_duration
+
+        payload["duration"] = probe_duration(str(video_path))
+    except Exception:
+        pass
     return payload
 
 

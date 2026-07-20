@@ -170,7 +170,7 @@ class RichReporter:
             filled = round(view.progress * _PROGRESS_BAR_WIDTH)
             bar = "=" * filled + "-" * (_PROGRESS_BAR_WIDTH - filled)
             parts.append(f"[{bar}] {round(view.progress * 100)}%")
-        elapsed = _elapsed(view, time.monotonic())
+        elapsed = _elapsed(view, time.time())
         if elapsed:
             parts.append(elapsed)
         return " ".join(parts)
@@ -193,7 +193,12 @@ class RichReporter:
         if log:
             lines.append(f"日志: {log}")
         if self._started_ts is not None:
-            lines.append(f"耗时: {_format_elapsed(time.monotonic() - self._started_ts)}")
+            elapsed = time.monotonic() - self._started_ts
+            lines.append(f"耗时: {_format_elapsed(elapsed)}")
+            duration = payload.get("duration")
+            if duration and duration > 0:
+                rtf = elapsed / duration
+                lines.append(f"RTF: {rtf:.2f}（耗时 {_format_elapsed(elapsed)} / 时长 {_format_elapsed(duration)}）")
         return Text("\n".join(lines))
 
     def _failed_footer(self, snap: RunSnapshot) -> RenderableType:
@@ -219,7 +224,7 @@ def _elapsed(view: StageView, now: float) -> str:
         end = view.ts
     else:
         end = now
-    return _format_elapsed(end - view.started_ts)
+    return _format_elapsed(max(0.0, end - view.started_ts))
 
 
 def _format_elapsed(seconds: float) -> str:

@@ -93,7 +93,11 @@ def process_video(
             _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "复用已下载视频")
         else:
             _emit(reporter, STAGE_DOWNLOAD, StageStatus.started, 0.0, "下载中…")
-            video_path, slug = download_video(config.url, Path(config.output_dir))
+            video_path, slug = download_video(
+                config.url,
+                Path(config.output_dir),
+                progress=lambda f, m: _emit(reporter, STAGE_DOWNLOAD, StageStatus.progress, f, m),
+            )
             _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "下载完成")
         is_long = should_split(video_path, threshold=config.split_threshold)
     else:

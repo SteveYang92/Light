@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import time
 
 from light_subtitle.reporting import (
     STAGE_DOWNLOAD,
@@ -140,3 +141,117 @@ class TestStageLabels:
         run_stages = set(run_events.RUN_STAGES)
         missing = (step_stages | run_stages) - set(STAGE_LABELS)
         assert not missing, f"stages missing Chinese labels: {missing}"
+
+
+class TestElapsed:
+    def test_started_not_finished_returns_non_negative(self):
+        from light_subtitle.reporting.model import StageView
+        from light_subtitle.reporting.rich_ui import _elapsed
+
+        now = time.time()
+        view = StageView(
+            stage="download",
+            status=StageStatus.started,
+            progress=0.0,
+            message="下载中…",
+            ts=now - 5,
+            started_ts=now - 5,
+        )
+        result = _elapsed(view, now)
+        assert result == "5s"
+
+    def test_finished_returns_ts_minus_started(self):
+        from light_subtitle.reporting.model import StageView
+        from light_subtitle.reporting.rich_ui import _elapsed
+
+        ts = time.time()
+        view = StageView(
+            stage="download",
+            status=StageStatus.finished,
+            progress=1.0,
+            message="下载完成",
+            ts=ts,
+            started_ts=ts - 3,
+        )
+        result = _elapsed(view, ts)
+        assert result == "3s"
+
+    def test_no_started_ts_returns_empty(self):
+        from light_subtitle.reporting.model import StageView
+        from light_subtitle.reporting.rich_ui import _elapsed
+
+        view = StageView(
+            stage="download",
+            status=StageStatus.started,
+            progress=0.0,
+            message="下载中…",
+            ts=time.time(),
+            started_ts=None,
+        )
+        assert _elapsed(view, time.time()) == ""
+
+    def test_clock_mismatch_clamped_to_zero(self):
+        from light_subtitle.reporting.model import StageView
+        from light_subtitle.reporting.rich_ui import _elapsed
+
+        ts = time.time()
+        view = StageView(
+            stage="download",
+            status=StageStatus.started,
+            progress=0.0,
+            message="下载中…",
+            ts=ts,
+            started_ts=ts + 100,
+        )
+        assert _elapsed(view, ts) == "0s"
+
+
+class TestRtf:
+    def test_footer_with_duration_shows_rtf(self):
+        stream = io.StringIO()
+        reporter = PlainReporter(stream=stream)
+        reporter.emit(RunEvent(RunKind.started, {"slug": "demo"}, ts=0.0))
+        reporter.emit(
+            RunEvent(
+                RunKind.finished,
+                {"slug": "demo", "duration": 300.0, "log": "output/demo/pipeline.log"},
+                ts=0.1,
+            )
+        )
+        text = stream.getvalue()
+        assert "RTF:" in text
+        assert "时长" in text
+
+    def test_footer_without_duration_no_rtf(self):
+        stream = io.StringIO()
+        reporter = PlainReporter(stream=stream)
+        reporter.emit(RunEvent(RunKind.started, {"slug": "demo"}, ts=0.0))
+        reporter.emit(
+            RunEvent(
+                RunKind.finished,
+                {"slug": "demo", "log": "output/demo/pipeline.log"},
+                ts=0.1,
+            )
+        )
+        text = stream.getvalue()
+        assert "RTF:" not in text
+        assert "耗时:" in text
+
+    def test_rtf_rounded_to_two_decimals(self):
+        stream = io.StringIO()
+        reporter = PlainReporter(stream=stream)
+        reporter.emit(RunEvent(RunKind.started, {"slug": "demo"}, ts=0.0))
+        reporter.emit(
+            RunEvent(
+                RunKind.finished,
+                {"slug": "demo", "duration": 100.0},
+                ts=0.1,
+            )
+        )
+        text = stream.getvalue()
+        for line in text.splitlines():
+            if line.startswith("RTF:"):
+                rtf_section = line.split("（")[0]
+                rtf_str = rtf_section.split()[1]
+                rtf_val = float(rtf_str)
+                assert rtf_val == round(rtf_val, 2)

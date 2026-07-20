@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from light_subtitle.download import _slugify, derive_slug_from_path
 
@@ -48,3 +49,138 @@ class TestDeriveSlugFromPath:
     def test_filename_with_special_chars(self) -> None:
         slug = derive_slug_from_path(Path("Best of 2024! (Full).mkv"))
         assert slug == "Best_of_2024_Full"
+
+
+class TestDownloadProgress:
+    def test_progress_hook_monotonic_fractions(self) -> None:
+        progress_calls: list[float] = []
+
+        from light_subtitle.download import download_video
+
+        mock_ydl = MagicMock()
+        mock_info = {"title": "Test Video"}
+        captured_opts: dict = {}
+
+        def fake_make_ydl(opts):
+            captured_opts.update(opts)
+            return mock_ydl
+
+        with (
+            patch("light_subtitle.download._dump_json", return_value=mock_info),
+            patch("light_subtitle.download._make_ydl", side_effect=fake_make_ydl),
+            patch("light_subtitle.download._save_url_slug"),
+        ):
+            tmp = Path("/tmp/fake_output")
+            tmp.mkdir(parents=True, exist_ok=True)
+            (tmp / "Test_Video").mkdir(parents=True, exist_ok=True)
+            (tmp / "Test_Video" / "video.mp4").touch()
+
+            def mock_download(urls):
+                progress_cb = captured_opts["progress_hooks"][0]
+                progress_cb({"status": "downloading", "downloaded_bytes": 25, "total_bytes": 100})
+                progress_cb({"status": "downloading", "downloaded_bytes": 50, "total_bytes": 100})
+                progress_cb({"status": "downloading", "downloaded_bytes": 75, "total_bytes": 100})
+                progress_cb({"status": "downloading", "downloaded_bytes": 100, "total_bytes": 100})
+                progress_cb({"status": "finished"})
+
+            mock_ydl.download.side_effect = mock_download
+
+            download_video(
+                "https://example.com/video",
+                tmp,
+                progress=lambda f, m: progress_calls.append(f),
+            )
+
+        assert progress_calls == [0.25, 0.5, 0.75, 1.0, 1.0]
+
+    def test_progress_hook_with_estimate(self) -> None:
+        progress_calls: list[float] = []
+
+        from light_subtitle.download import download_video
+
+        mock_ydl = MagicMock()
+        mock_info = {"title": "Test Video"}
+        captured_opts: dict = {}
+
+        def fake_make_ydl(opts):
+            captured_opts.update(opts)
+            return mock_ydl
+
+        with (
+            patch("light_subtitle.download._dump_json", return_value=mock_info),
+            patch("light_subtitle.download._make_ydl", side_effect=fake_make_ydl),
+            patch("light_subtitle.download._save_url_slug"),
+        ):
+            tmp = Path("/tmp/fake_output")
+            (tmp / "Test_Video").mkdir(parents=True, exist_ok=True)
+            (tmp / "Test_Video" / "video.mp4").touch()
+
+            def mock_download(urls):
+                progress_cb = captured_opts["progress_hooks"][0]
+                progress_cb({"status": "downloading", "downloaded_bytes": 50, "total_bytes_estimate": 200})
+
+            mock_ydl.download.side_effect = mock_download
+
+            download_video(
+                "https://example.com/video",
+                tmp,
+                progress=lambda f, m: progress_calls.append(f),
+            )
+
+        assert progress_calls == [0.25]
+
+    def test_progress_hook_no_total_skips(self) -> None:
+        progress_calls: list[tuple[float, str]] = []
+
+        from light_subtitle.download import download_video
+
+        mock_ydl = MagicMock()
+        mock_info = {"title": "Test Video"}
+        captured_opts: dict = {}
+
+        def fake_make_ydl(opts):
+            captured_opts.update(opts)
+            return mock_ydl
+
+        with (
+            patch("light_subtitle.download._dump_json", return_value=mock_info),
+            patch("light_subtitle.download._make_ydl", side_effect=fake_make_ydl),
+            patch("light_subtitle.download._save_url_slug"),
+        ):
+            tmp = Path("/tmp/fake_output")
+            (tmp / "Test_Video").mkdir(parents=True, exist_ok=True)
+            (tmp / "Test_Video" / "video.mp4").touch()
+
+            def mock_download(urls):
+                progress_cb = captured_opts["progress_hooks"][0]
+                progress_cb({"status": "downloading", "downloaded_bytes": 50})
+
+            mock_ydl.download.side_effect = mock_download
+
+            download_video(
+                "https://example.com/video",
+                tmp,
+                progress=lambda f, m: progress_calls.append((f, m)),
+            )
+
+        assert len(progress_calls) == 0
+
+    def test_download_error_wraps(self) -> None:
+        from light_subtitle.download import _DownloadError, download_video
+
+        mock_ydl = MagicMock()
+        mock_info = {"title": "Test Video"}
+
+        with (
+            patch("light_subtitle.download._dump_json", return_value=mock_info),
+            patch("light_subtitle.download._make_ydl", return_value=mock_ydl),
+            patch("light_subtitle.download._save_url_slug"),
+        ):
+            mock_ydl.download.side_effect = _DownloadError("Connection reset")
+
+            try:
+                download_video("https://example.com/video", Path("/tmp/fake_output"))
+            except RuntimeError as e:
+                assert "yt-dlp download failed" in str(e)
+            else:
+                raise AssertionError("Expected RuntimeError")

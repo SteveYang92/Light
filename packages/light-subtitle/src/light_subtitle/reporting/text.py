@@ -118,6 +118,10 @@ class PlainReporter:
                 self._print(f"日志: {log}")
             elapsed = time.monotonic() - self._started_ts if self._started_ts is not None else 0.0
             self._print(f"耗时: {_format_elapsed(elapsed)}")
+            duration = payload.get("duration")
+            if duration and duration > 0:
+                rtf = elapsed / duration
+                self._print(f"RTF: {rtf:.2f}（耗时 {_format_elapsed(elapsed)} / 时长 {_format_elapsed(duration)}）")
         elif event.kind == RunKind.failed:
             self._print(f"✗ 运行失败: {payload.get('error', '')}")
             self._print("提示: 可用 --resume 或 --resume-from 续跑")

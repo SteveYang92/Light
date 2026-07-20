@@ -10,12 +10,33 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 _URL_SLUG_MAP = "url_slug_cache.json"
 
+try:
+    from yt_dlp import YoutubeDL
+    from yt_dlp.utils import DownloadError as _DownloadError
+except ImportError:
+    YoutubeDL = None  # type: ignore[assignment]
+    _DownloadError = Exception
 
-def download_video(url: str, output_dir: Path) -> tuple[Path, str]:
+
+def _make_ydl(opts: dict[str, Any]) -> Any:
+    """Create a yt-dlp YoutubeDL instance with the given options."""
+    if YoutubeDL is None:
+        raise ImportError("yt-dlp is not installed")
+    return YoutubeDL(opts)
+
+
+def download_video(
+    url: str,
+    output_dir: Path,
+    *,
+    progress: Callable[[float, str], None] | None = None,
+) -> tuple[Path, str]:
     """Download a video from *url* into *output_dir* and return (video_path, slug).
 
     The slug is derived from the video title (sanitised, 80 chars max).
@@ -23,6 +44,10 @@ def download_video(url: str, output_dir: Path) -> tuple[Path, str]:
 
     On success the URL → slug mapping is persisted so future runs can skip
     both the metadata probe and the download.
+
+    *progress* is called with (fraction, message) on each download status
+    update (``"downloading"`` / ``"finished"`` status from yt-dlp hooks).
+    When the total byte size is unknown, fraction is clamped to 0.0.
     """
 
     # ── Probe title + slug ──
@@ -33,20 +58,41 @@ def download_video(url: str, output_dir: Path) -> tuple[Path, str]:
     work_dir = output_dir / slug
     work_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Download ──
-    cmd = [
-        "yt-dlp",
-        "-o",
-        str(work_dir / "video.%(ext)s"),
-        "--no-playlist",
-        url,
-    ]
+    # ── Download (yt-dlp Python API) ──
+    outtmpl = str(work_dir / "video.%(ext)s")
+
+    def _hook(d: dict) -> None:
+        if progress is None:
+            return
+        status = d.get("status")
+        if status == "downloading":
+            downloaded = d.get("downloaded_bytes") or 0
+            total = d.get("total_bytes") or d.get("total_bytes_estimate")
+            if total and total > 0:
+                frac = downloaded / total
+                pct = round(frac * 100)
+                progress(frac, f"下载中... {pct}%")
+        elif status == "finished":
+            progress(1.0, "下载完成")
+
+    ydl_opts = {
+        "outtmpl": outtmpl,
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "progress_hooks": [_hook],
+    }
+
     try:
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
-    except subprocess.CalledProcessError as e:
-        stderr_tail = (e.stderr or "").strip()[-500:]
-        detail = f": {stderr_tail}" if stderr_tail else ""
-        raise RuntimeError(f"yt-dlp download failed (exit {e.returncode}){detail}") from e
+        from . import logger
+
+        with logger.capture_external_output():
+            ydl = _make_ydl(ydl_opts)
+            ydl.download([url])
+    except Exception as e:
+        if isinstance(e, _DownloadError):
+            raise RuntimeError(f"yt-dlp download failed: {e!s}") from e
+        raise
 
     # Find the downloaded file (extension may vary: .mp4, .webm, .mkv)
     candidates = list(work_dir.glob("video.*"))
@@ -86,6 +132,13 @@ def find_cached_download(url: str, output_dir: Path) -> tuple[Path, str] | None:
 def derive_slug_from_path(file_path: Path) -> str:
     """Derive a semantic slug from a local file path (stem only)."""
     return _slugify(file_path.stem)
+
+
+def probe_slug(url: str) -> str:
+    """Probe the video title from *url* and derive a slug (no download)."""
+    info_json = _dump_json(url)
+    title = info_json.get("title", "video")
+    return _slugify(title)
 
 
 # ── internal helpers ────────────────────────────────────
