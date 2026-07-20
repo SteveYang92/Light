@@ -56,7 +56,9 @@ class RichReporter:
                 self._start_live()
             # Live.update requires a RenderableType — a callable is not renderable
             # and raises NotRenderableError on refresh (blank/frozen TTY).
-            self._live.update(self._renderable())
+            # refresh=True so the finished footer (incl. RTF) paints immediately
+            # rather than waiting for the next auto-refresh tick before close().
+            self._live.update(self._renderable(), refresh=True)
 
     def close(self) -> None:
         """Stop the Live session (final frame stays on screen)."""

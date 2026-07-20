@@ -12,6 +12,7 @@ directly (backward-compatible with the legacy ``--input``-only path).
 from __future__ import annotations
 
 import dataclasses
+import json
 import os
 import sys
 from pathlib import Path
@@ -402,13 +403,57 @@ def _finished_payload(work_dir: Path, slug: str, video_path: Path) -> dict:
     usage = _usage_line(work_dir)
     if usage:
         payload["usage"] = usage
-    try:
-        from .utils.ffmpeg import probe_duration
-
-        payload["duration"] = probe_duration(str(video_path))
-    except Exception:
-        pass
+    duration = _resolve_media_duration(work_dir, video_path, slug)
+    if duration is not None and duration > 0:
+        payload["duration"] = duration
     return payload
+
+
+def _resolve_media_duration(work_dir: Path, video_path: Path, slug: str) -> float | None:
+    """Best-effort media duration for RTF (ffprobe, then transcript fallback).
+
+    ``result.video_path`` can go stale when an older run renamed ``video.*`` →
+    ``{slug}.*`` after the runner returned; always re-resolve under *work_dir*.
+    """
+    from .utils.ffmpeg import probe_duration
+
+    candidates: list[Path] = []
+    if video_path.is_file():
+        candidates.append(video_path)
+    found = find_video_in_dir(work_dir, slug)
+    if found is not None and found not in candidates:
+        candidates.append(found)
+
+    for path in candidates:
+        try:
+            return probe_duration(str(path))
+        except Exception:
+            continue
+
+    return _duration_from_transcript(work_dir)
+
+
+def _duration_from_transcript(work_dir: Path) -> float | None:
+    """Fallback duration from the last word/segment end in transcript.json."""
+    path = work_dir / "transcript.json"
+    if not path.is_file():
+        legacy = work_dir / f"{work_dir.name}.transcript.json"
+        path = legacy if legacy.is_file() else path
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    ends: list[float] = []
+    for key in ("words", "segments"):
+        for item in data.get(key) or []:
+            if isinstance(item, dict) and item.get("end") is not None:
+                try:
+                    ends.append(float(item["end"]))
+                except (TypeError, ValueError):
+                    continue
+    return max(ends) if ends else None
 
 
 def _usage_line(work_dir: Path) -> str:
