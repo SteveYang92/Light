@@ -91,13 +91,22 @@ class TestDownloadProgress:
 
             mock_ydl.download.side_effect = mock_download
 
+            messages: list[str] = []
+
+            def on_progress(frac: float, message: str) -> None:
+                progress_calls.append(frac)
+                messages.append(message)
+
             download_video(
                 "https://example.com/video",
                 tmp,
-                progress=lambda f, m: progress_calls.append(f),
+                progress=on_progress,
             )
 
         assert progress_calls == [0.0, 0.25, 0.5, 0.75, 1.0, 1.0]
+        assert messages[0] == "获取视频信息…"
+        assert all(m == "" for m in messages[1:-1])  # byte progress: empty message
+        assert messages[-1] == "下载完成"
 
     def test_progress_hook_with_estimate(self) -> None:
         progress_calls: list[float] = []

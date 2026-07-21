@@ -94,9 +94,8 @@ def download_video(
             downloaded = d.get("downloaded_bytes") or 0
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             if total and total > 0:
-                frac = downloaded / total
-                pct = round(frac * 100)
-                progress(frac, f"下载中... {pct}%")
+                # Stage label + progress bar carry status; no redundant message.
+                progress(downloaded / total, "")
         elif status == "finished":
             progress(1.0, "下载完成")
 

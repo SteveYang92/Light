@@ -136,7 +136,7 @@ def process_video(
             video_path = found
             _emit(reporter, STAGE_DOWNLOAD, StageStatus.finished, 1.0, "复用已下载视频")
         else:
-            _emit(reporter, STAGE_DOWNLOAD, StageStatus.started, 0.0, "下载中…")
+            _emit(reporter, STAGE_DOWNLOAD, StageStatus.started, 0.0, "")
             video_path, slug = download_video(
                 config.url,
                 Path(config.output_dir),

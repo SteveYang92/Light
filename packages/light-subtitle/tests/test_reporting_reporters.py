@@ -35,7 +35,7 @@ class TestPlainReporter:
         out = _drive_plain(
             [
                 RunEvent(RunKind.started, {"slug": "demo"}, ts=0.0),
-                _ev(STAGE_DOWNLOAD, StageStatus.started, 0.0, "下载中…"),
+                _ev(STAGE_DOWNLOAD, StageStatus.started, 0.0, ""),
                 _ev(STAGE_DOWNLOAD, StageStatus.finished, 1.0, "下载完成"),
                 _ev("translate", StageStatus.started, 0.0, "翻译中..."),
                 _ev("translate", StageStatus.finished, 1.0, "翻译完成 (561 条)"),
@@ -45,7 +45,7 @@ class TestPlainReporter:
         lines = out.splitlines()
         assert "── Light ──" in lines
         assert "输出: demo" in lines
-        assert "▶ 下载 — 下载中…" in lines
+        assert "▶ 下载" in lines
         assert "✓ 下载 — 下载完成" in lines
         assert "▶ 翻译 — 翻译中..." in lines
         assert "✓ 翻译 — 翻译完成 (561 条)" in lines
@@ -109,6 +109,7 @@ class TestRichReporter:
         text = console.file.getvalue()
         assert "模式: translate→zh" in text
         assert "输入: video.mp4" in text
+        assert "耗时:" in text
         assert "下载" in text
         assert "seg1/2" in text or "seg2/2" in text
 
@@ -131,6 +132,82 @@ class TestRichReporter:
         assert "无需翻译" in text
         assert "产物: demo.zh.srt" in text
         assert "用量: 1.2k tok" in text
+
+    def test_header_shows_live_elapsed(self):
+        from light_subtitle.reporting.rich_ui import RichReporter
+        from rich.console import Console
+
+        console = Console(file=io.StringIO(), force_terminal=False, width=100)
+        reporter = RichReporter(console=console, live=False)
+        reporter.emit(RunEvent(RunKind.started, {"slug": "demo", "mode": "mono"}, ts=0.0))
+        console.print(reporter._renderable())
+        text = console.file.getvalue()
+        assert "耗时:" in text
+        assert "模式: mono" in text
+
+    def test_stage_meta_width_stable_with_or_without_progress(self):
+        from light_subtitle.reporting.model import StageView
+        from light_subtitle.reporting.rich_ui import _ELAPSED_WIDTH, _PROGRESS_SLOT_WIDTH, RichReporter
+
+        reporter = RichReporter(live=False)
+        now = time.time()
+        started = StageView(
+            stage="asr",
+            status=StageStatus.started,
+            progress=0.0,
+            message="提取音频中...",
+            ts=now,
+            started_ts=now - 12,
+        )
+        progressing = StageView(
+            stage="translate",
+            status=StageStatus.progress,
+            progress=0.4,
+            message="批次 3/10...",
+            ts=now,
+            started_ts=now - 65,
+        )
+        finished = StageView(
+            stage="download",
+            status=StageStatus.finished,
+            progress=1.0,
+            message="下载完成",
+            ts=now,
+            started_ts=now - 8,
+        )
+        expected = _PROGRESS_SLOT_WIDTH + 1 + _ELAPSED_WIDTH
+        assert len(reporter._stage_meta(started)) == expected
+        assert len(reporter._stage_meta(progressing)) == expected
+        assert len(reporter._stage_meta(finished)) == expected
+        assert "40%" in reporter._stage_meta(progressing)
+        assert "=" in reporter._stage_meta(progressing)
+
+    def test_in_flight_elapsed_advances_on_rerender(self):
+        from unittest.mock import patch
+
+        from light_subtitle.reporting.rich_ui import RichReporter
+        from rich.console import Console
+
+        console = Console(file=io.StringIO(), force_terminal=False, width=120)
+        reporter = RichReporter(console=console, live=False)
+        started_wall = 1_000_000.0
+        reporter.emit(
+            ProgressEvent(
+                stage="asr",
+                status=StageStatus.started,
+                progress=0.0,
+                message="提取音频中...",
+                segment=None,
+                ts=started_wall,
+            )
+        )
+        with patch("light_subtitle.reporting.rich_ui.time.time", return_value=started_wall + 5):
+            meta_early = reporter._stage_meta(reporter.model().snapshot().segments[0].stages[0])
+        with patch("light_subtitle.reporting.rich_ui.time.time", return_value=started_wall + 42):
+            meta_late = reporter._stage_meta(reporter.model().snapshot().segments[0].stages[0])
+        assert "5s" in meta_early
+        assert "42s" in meta_late
+        assert meta_early != meta_late
 
 
 class TestStageLabels:

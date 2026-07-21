@@ -21,6 +21,9 @@ if TYPE_CHECKING:
 
 _SPINNER_FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 _PROGRESS_BAR_WIDTH = 18
+# "[==================] 100%" — bar brackets + space + 4-char percent slot
+_PROGRESS_SLOT_WIDTH = _PROGRESS_BAR_WIDTH + 2 + 1 + 4
+_ELAPSED_WIDTH = 7  # covers "999m59s"
 
 
 class RichReporter:
@@ -30,6 +33,10 @@ class RichReporter:
     to the real ``sys.stdout`` is created so later stream redirections by
     the logger do not affect the live view.  Set ``live=False`` to drive
     the model without a Live session (tests).
+
+    A daemon tick thread refreshes the Live panel on a fixed cadence so
+    spinner frames and elapsed timers keep moving even when no progress
+    events arrive (e.g. long ASR steps).
     """
 
     def __init__(self, console: Console | None = None, *, live: bool = True, refresh_per_second: float = 4.0) -> None:
@@ -41,6 +48,8 @@ class RichReporter:
         self._live = None
         self._frame = 0
         self._started_ts: float | None = None
+        self._stop = threading.Event()
+        self._tick_thread: threading.Thread | None = None
 
     # ── Reporter protocol ─────────────────────────────────────────────
 
@@ -59,10 +68,13 @@ class RichReporter:
             # refresh=True so the finished footer (incl. RTF) paints immediately
             # rather than waiting for the next auto-refresh tick before close().
             self._live.update(self._renderable(), refresh=True)
+            if isinstance(event, RunEvent) and event.kind in (RunKind.finished, RunKind.failed):
+                self._stop_tick()
 
     def close(self) -> None:
-        """Stop the Live session (final frame stays on screen)."""
+        """Stop the tick thread and Live session (final frame stays on screen)."""
         with self._lock:
+            self._stop_tick()
             if self._live is not None:
                 self._live.stop()
                 self._live = None
@@ -81,6 +93,42 @@ class RichReporter:
             transient=False,
         )
         self._live.start()
+        self._start_tick()
+
+    def _start_tick(self) -> None:
+        """Start a daemon that re-renders so spinner/elapsed keep ticking."""
+        if self._tick_thread is not None:
+            return
+        self._stop.clear()
+        interval = 1.0 / self._refresh_per_second if self._refresh_per_second > 0 else 0.25
+        self._tick_thread = threading.Thread(
+            target=self._tick_loop,
+            args=(interval,),
+            name="rich-reporter-tick",
+            daemon=True,
+        )
+        self._tick_thread.start()
+
+    def _stop_tick(self) -> None:
+        """Signal the tick thread to exit (caller must hold ``_lock``)."""
+        self._stop.set()
+        thread = self._tick_thread
+        self._tick_thread = None
+        if thread is not None and thread is not threading.current_thread():
+            # Release lock while joining so the tick can finish its critical section.
+            self._lock.release()
+            try:
+                thread.join(timeout=1.0)
+            finally:
+                self._lock.acquire()
+
+    def _tick_loop(self, interval: float) -> None:
+        while not self._stop.wait(interval):
+            with self._lock:
+                if self._live is None or self._stop.is_set():
+                    return
+                self._frame = (self._frame + 1) % len(_SPINNER_FRAMES)
+                self._live.update(self._renderable(), refresh=True)
 
     # ── rendering (rich imports stay inside) ──────────────────────────
 
@@ -111,6 +159,8 @@ class RichReporter:
                 lines.append(f"{label}: {value}")
         if not any(k in payload for k in ("mode", "input", "output")) and payload.get("slug"):
             lines.append(f"输出: {payload['slug']}")
+        if self._started_ts is not None:
+            lines.append(f"耗时: {_format_elapsed(time.monotonic() - self._started_ts)}")
         return Text("\n".join(lines) if lines else "Light", style="bold")
 
     def _stage_table(self, snap: RunSnapshot) -> RenderableType:
@@ -141,7 +191,12 @@ class RichReporter:
         table.add_column(ratio=1, overflow="fold")
         table.add_column(no_wrap=True, justify="right")
         for view in snap.run_stages:
-            table.add_row(self._status_icon(view), stage_label(view.stage), view.message, "")
+            table.add_row(
+                self._status_icon(view),
+                stage_label(view.stage),
+                view.message,
+                self._stage_meta(view),
+            )
         for segment in snap.segments:
             table.add_row(*self._segment_row(segment))
         return table
@@ -158,7 +213,7 @@ class RichReporter:
         else:
             icon = ICON_WAITING
             label = "等待"
-            meta = ""
+            meta = _blank_meta()
         detail = f"({done})" if done else ""
         return icon, f"{tag} {label}", detail, meta
 
@@ -168,16 +223,8 @@ class RichReporter:
         return STATUS_ICONS[view.status]
 
     def _stage_meta(self, view: StageView) -> str:
-        """Progress bar (for fractional progress) + elapsed time."""
-        parts: list[str] = []
-        if view.status == StageStatus.progress and 0.0 < view.progress < 1.0:
-            filled = round(view.progress * _PROGRESS_BAR_WIDTH)
-            bar = "=" * filled + "-" * (_PROGRESS_BAR_WIDTH - filled)
-            parts.append(f"[{bar}] {round(view.progress * 100)}%")
-        elapsed = _elapsed(view, time.time())
-        if elapsed:
-            parts.append(elapsed)
-        return " ".join(parts)
+        """Fixed-width progress slot + elapsed so the meta column never jumps."""
+        return f"{_progress_slot(view)} {_elapsed_slot(view, time.time())}"
 
     def _footer(self, snap: RunSnapshot) -> RenderableType:
         from rich.text import Text
@@ -218,6 +265,27 @@ class RichReporter:
 
 
 _ACTIVE_STATUSES = frozenset({StageStatus.started, StageStatus.progress, StageStatus.failed})
+
+
+def _progress_slot(view: StageView) -> str:
+    """Always-width bar+percent slot; filled only for fractional progress."""
+    if view.status == StageStatus.progress and 0.0 < view.progress < 1.0:
+        filled = round(view.progress * _PROGRESS_BAR_WIDTH)
+        bar = "=" * filled + "-" * (_PROGRESS_BAR_WIDTH - filled)
+        pct = f"{round(view.progress * 100):>3}%"
+        return f"[{bar}] {pct}"
+    return " " * _PROGRESS_SLOT_WIDTH
+
+
+def _elapsed_slot(view: StageView, now: float) -> str:
+    """Right-aligned fixed-width elapsed string (spaces when unknown)."""
+    text = _elapsed(view, now)
+    return f"{text:>{_ELAPSED_WIDTH}}" if text else " " * _ELAPSED_WIDTH
+
+
+def _blank_meta() -> str:
+    """Placeholder meta matching ``_stage_meta`` width (waiting rows)."""
+    return f"{' ' * _PROGRESS_SLOT_WIDTH} {' ' * _ELAPSED_WIDTH}"
 
 
 def _elapsed(view: StageView, now: float) -> str:
