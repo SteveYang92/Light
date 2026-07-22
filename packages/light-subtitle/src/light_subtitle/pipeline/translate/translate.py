@@ -436,6 +436,7 @@ def _parse_response(
                 end=seg.end,
                 text=text,
                 lang=config.target_lang,
+                speaker=seg.speaker,
                 words=list(seg.words),
             )
         )

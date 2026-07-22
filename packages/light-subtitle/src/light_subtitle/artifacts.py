@@ -287,6 +287,7 @@ def cue_to_dict(cue: SubtitleCue) -> dict:
         "end": cue.end,
         "text": cue.text,
         "lang": cue.lang,
+        "speaker": cue.speaker,
     }
 
 
