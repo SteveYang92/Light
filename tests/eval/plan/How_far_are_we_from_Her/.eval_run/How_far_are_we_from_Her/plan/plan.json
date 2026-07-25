@@ -22,23 +22,14 @@
     {
       "unit_id": "p0001",
       "start": 10.615,
-      "end": 11.615,
-      "speaker": "",
-      "text": "Where'd you get that name from?",
-      "word_start": 22,
-      "word_end": 28
-    },
-    {
-      "unit_id": "p0002",
-      "start": 12.256,
       "end": 13.537,
       "speaker": "",
-      "text": "I gave it to myself , actually.",
-      "word_start": 28,
+      "text": "Where'd you get that name from? I gave it to myself , actually.",
+      "word_start": 22,
       "word_end": 34
     },
     {
-      "unit_id": "p0003",
+      "unit_id": "p0002",
       "start": 13.917,
       "end": 16.599,
       "speaker": "",
@@ -47,7 +38,7 @@
       "word_end": 41
     },
     {
-      "unit_id": "p0004",
+      "unit_id": "p0003",
       "start": 17.28,
       "end": 24.226,
       "speaker": "",
@@ -56,7 +47,7 @@
       "word_end": 54
     },
     {
-      "unit_id": "p0006",
+      "unit_id": "p0004",
       "start": 24.95,
       "end": 28.152,
       "speaker": "",
@@ -65,7 +56,7 @@
       "word_end": 69
     },
     {
-      "unit_id": "p0007",
+      "unit_id": "p0005",
       "start": 28.292,
       "end": 31.494,
       "speaker": "",
@@ -74,7 +65,7 @@
       "word_end": 78
     },
     {
-      "unit_id": "p0008",
+      "unit_id": "p0006",
       "start": 31.954,
       "end": 35.756,
       "speaker": "",
@@ -83,7 +74,7 @@
       "word_end": 91
     },
     {
-      "unit_id": "p0009",
+      "unit_id": "p0007",
       "start": 36.397,
       "end": 40.459,
       "speaker": "",
@@ -92,7 +83,7 @@
       "word_end": 101
     },
     {
-      "unit_id": "p0010",
+      "unit_id": "p0008",
       "start": 40.919,
       "end": 44.661,
       "speaker": "",
@@ -101,25 +92,16 @@
       "word_end": 111
     },
     {
-      "unit_id": "p0011",
+      "unit_id": "p0009",
       "start": 45.342,
-      "end": 46.662,
-      "speaker": "",
-      "text": "Let me know if I start to slouch.",
-      "word_start": 111,
-      "word_end": 119
-    },
-    {
-      "unit_id": "p0012",
-      "start": 47.243,
       "end": 50.485,
       "speaker": "",
-      "text": "I've got you. You're starting to slouch forward.",
-      "word_start": 119,
+      "text": "Let me know if I start to slouch. I've got you. You're starting to slouch forward.",
+      "word_start": 111,
       "word_end": 127
     },
     {
-      "unit_id": "p0013_0",
+      "unit_id": "p0010_0",
       "start": 50.965,
       "end": 55.051,
       "speaker": "",
@@ -128,7 +110,7 @@
       "word_end": 141
     },
     {
-      "unit_id": "p0013_1",
+      "unit_id": "p0010_1",
       "start": 55.551,
       "end": 61.494,
       "speaker": "",
@@ -137,7 +119,7 @@
       "word_end": 161
     },
     {
-      "unit_id": "p0014",
+      "unit_id": "p0011",
       "start": 62.334,
       "end": 65.395,
       "speaker": "",
@@ -146,7 +128,7 @@
       "word_end": 172
     },
     {
-      "unit_id": "p0015",
+      "unit_id": "p0012",
       "start": 66.216,
       "end": 72.838,
       "speaker": "",
@@ -155,7 +137,7 @@
       "word_end": 189
     },
     {
-      "unit_id": "p0016_0",
+      "unit_id": "p0013_0",
       "start": 73.359,
       "end": 80.678,
       "speaker": "",
@@ -164,7 +146,7 @@
       "word_end": 204
     },
     {
-      "unit_id": "p0016_1",
+      "unit_id": "p0013_1",
       "start": 80.678,
       "end": 84.565,
       "speaker": "",
@@ -173,7 +155,7 @@
       "word_end": 214
     },
     {
-      "unit_id": "p0017",
+      "unit_id": "p0014",
       "start": 85.245,
       "end": 90.289,
       "speaker": "",
@@ -182,7 +164,7 @@
       "word_end": 233
     },
     {
-      "unit_id": "p0018_0",
+      "unit_id": "p0015_0",
       "start": 90.83,
       "end": 92.451,
       "speaker": "",
@@ -191,7 +173,7 @@
       "word_end": 240
     },
     {
-      "unit_id": "p0018_1",
+      "unit_id": "p0015_1",
       "start": 92.651,
       "end": 98.436,
       "speaker": "",
@@ -200,7 +182,7 @@
       "word_end": 255
     },
     {
-      "unit_id": "p0019",
+      "unit_id": "p0016",
       "start": 98.997,
       "end": 103.7,
       "speaker": "",
@@ -209,7 +191,7 @@
       "word_end": 269
     },
     {
-      "unit_id": "p0020",
+      "unit_id": "p0017",
       "start": 104.161,
       "end": 107.944,
       "speaker": "",
@@ -218,7 +200,7 @@
       "word_end": 276
     },
     {
-      "unit_id": "p0021",
+      "unit_id": "p0018",
       "start": 108.264,
       "end": 109.425,
       "speaker": "",
@@ -227,7 +209,7 @@
       "word_end": 282
     },
     {
-      "unit_id": "p0022",
+      "unit_id": "p0019",
       "start": 110.866,
       "end": 113.928,
       "speaker": "",
@@ -236,7 +218,7 @@
       "word_end": 293
     },
     {
-      "unit_id": "p0023",
+      "unit_id": "p0020",
       "start": 115.429,
       "end": 118.07,
       "speaker": "",
@@ -245,7 +227,7 @@
       "word_end": 302
     },
     {
-      "unit_id": "p0024",
+      "unit_id": "p0021",
       "start": 119.091,
       "end": 125.314,
       "speaker": "",
@@ -254,7 +236,7 @@
       "word_end": 318
     },
     {
-      "unit_id": "p0025",
+      "unit_id": "p0022",
       "start": 125.834,
       "end": 131.097,
       "speaker": "",
@@ -263,7 +245,7 @@
       "word_end": 334
     },
     {
-      "unit_id": "p0026",
+      "unit_id": "p0023_0",
       "start": 131.577,
       "end": 133.438,
       "speaker": "",
@@ -272,25 +254,16 @@
       "word_end": 341
     },
     {
-      "unit_id": "p0027",
+      "unit_id": "p0023_1",
       "start": 135.179,
-      "end": 137.14,
-      "speaker": "",
-      "text": "Boots and cats and boots and cats.",
-      "word_start": 341,
-      "word_end": 348
-    },
-    {
-      "unit_id": "p0028",
-      "start": 137.701,
       "end": 140.042,
       "speaker": "",
-      "text": "B-S-T-S-T-S, birds, cats, cats, cats.",
-      "word_start": 348,
+      "text": "Boots and cats and boots and cats. B-S-T-S-T-S, birds, cats, cats, cats.",
+      "word_start": 341,
       "word_end": 353
     },
     {
-      "unit_id": "p0029",
+      "unit_id": "p0024",
       "start": 141.903,
       "end": 145.704,
       "speaker": "",
@@ -299,7 +272,7 @@
       "word_end": 362
     },
     {
-      "unit_id": "p0030",
+      "unit_id": "p0025",
       "start": 146.045,
       "end": 149.946,
       "speaker": "",
@@ -308,7 +281,7 @@
       "word_end": 372
     },
     {
-      "unit_id": "p0031_0",
+      "unit_id": "p0026_0",
       "start": 150.247,
       "end": 151.407,
       "speaker": "",
@@ -317,7 +290,7 @@
       "word_end": 377
     },
     {
-      "unit_id": "p0031_1",
+      "unit_id": "p0026_1",
       "start": 151.667,
       "end": 155.089,
       "speaker": "",
@@ -326,7 +299,7 @@
       "word_end": 389
     },
     {
-      "unit_id": "p0031_2",
+      "unit_id": "p0026_2",
       "start": 155.189,
       "end": 160.431,
       "speaker": "",
@@ -335,7 +308,7 @@
       "word_end": 404
     },
     {
-      "unit_id": "p0032",
+      "unit_id": "p0027",
       "start": 161.172,
       "end": 165.774,
       "speaker": "",
@@ -344,7 +317,7 @@
       "word_end": 417
     },
     {
-      "unit_id": "p0033_0",
+      "unit_id": "p0028_0",
       "start": 166.302,
       "end": 169.372,
       "speaker": "",
@@ -353,7 +326,7 @@
       "word_end": 424
     },
     {
-      "unit_id": "p0033_1",
+      "unit_id": "p0028_1",
       "start": 169.372,
       "end": 173.567,
       "speaker": "",
@@ -362,7 +335,7 @@
       "word_end": 433
     },
     {
-      "unit_id": "p0034",
+      "unit_id": "p0029",
       "start": 174.568,
       "end": 178.21,
       "speaker": "",
@@ -371,7 +344,7 @@
       "word_end": 451
     },
     {
-      "unit_id": "p0035",
+      "unit_id": "p0030",
       "start": 178.691,
       "end": 185.075,
       "speaker": "",
@@ -380,7 +353,7 @@
       "word_end": 469
     },
     {
-      "unit_id": "p0036",
+      "unit_id": "p0031",
       "start": 186.536,
       "end": 190.719,
       "speaker": "",
@@ -389,7 +362,7 @@
       "word_end": 480
     },
     {
-      "unit_id": "p0037_0",
+      "unit_id": "p0032_0",
       "start": 192.34,
       "end": 198.443,
       "speaker": "",
@@ -398,7 +371,7 @@
       "word_end": 494
     },
     {
-      "unit_id": "p0037_1",
+      "unit_id": "p0032_1",
       "start": 198.604,
       "end": 201.165,
       "speaker": "",
@@ -407,7 +380,7 @@
       "word_end": 499
     },
     {
-      "unit_id": "p0038_0",
+      "unit_id": "p0033_0",
       "start": 201.925,
       "end": 208.148,
       "speaker": "",
@@ -416,7 +389,7 @@
       "word_end": 514
     },
     {
-      "unit_id": "p0038_1",
+      "unit_id": "p0033_1",
       "start": 208.448,
       "end": 210.088,
       "speaker": "",
@@ -425,7 +398,7 @@
       "word_end": 519
     },
     {
-      "unit_id": "p0039",
+      "unit_id": "p0034",
       "start": 210.769,
       "end": 217.572,
       "speaker": "",
@@ -434,7 +407,7 @@
       "word_end": 538
     },
     {
-      "unit_id": "p0040",
+      "unit_id": "p0035",
       "start": 218.532,
       "end": 223.334,
       "speaker": "",
@@ -443,7 +416,7 @@
       "word_end": 551
     },
     {
-      "unit_id": "p0041",
+      "unit_id": "p0036",
       "start": 223.97,
       "end": 228.734,
       "speaker": "",
@@ -452,7 +425,7 @@
       "word_end": 565
     },
     {
-      "unit_id": "p0042",
+      "unit_id": "p0037",
       "start": 229.694,
       "end": 233.617,
       "speaker": "",
@@ -461,7 +434,7 @@
       "word_end": 575
     },
     {
-      "unit_id": "p0043_0",
+      "unit_id": "p0038_0",
       "start": 234.278,
       "end": 238.361,
       "speaker": "",
@@ -470,7 +443,7 @@
       "word_end": 584
     },
     {
-      "unit_id": "p0043_1",
+      "unit_id": "p0038_1",
       "start": 238.641,
       "end": 242.724,
       "speaker": "",
@@ -479,7 +452,7 @@
       "word_end": 594
     },
     {
-      "unit_id": "p0044",
+      "unit_id": "p0039",
       "start": 243.284,
       "end": 247.648,
       "speaker": "",
@@ -488,7 +461,7 @@
       "word_end": 606
     },
     {
-      "unit_id": "p0045",
+      "unit_id": "p0040",
       "start": 248.428,
       "end": 250.75,
       "speaker": "",
@@ -497,7 +470,7 @@
       "word_end": 615
     },
     {
-      "unit_id": "p0046",
+      "unit_id": "p0041",
       "start": 251.406,
       "end": 257.671,
       "speaker": "",
@@ -506,25 +479,34 @@
       "word_end": 632
     },
     {
-      "unit_id": "p0047_0",
+      "unit_id": "p0042_0",
       "start": 258.832,
-      "end": 262.135,
+      "end": 260.234,
       "speaker": "",
-      "text": "Shit. Yo. Yo, it's Husk.",
+      "text": "Shit. Yo. Yo,",
       "word_start": 632,
-      "word_end": 637
+      "word_end": 635
     },
     {
-      "unit_id": "p0047_1",
-      "start": 262.195,
+      "unit_id": "p0042_1",
+      "start": 260.614,
+      "end": 267.179,
+      "speaker": "",
+      "text": "it's Husk. Keep it going when I'm rapping.",
+      "word_start": 635,
+      "word_end": 643
+    },
+    {
+      "unit_id": "p0042_2",
+      "start": 267.42,
       "end": 270.122,
       "speaker": "",
-      "text": "Keep it going when I'm rapping. Yo. Yo, it's Husk. I'm... I'm...",
-      "word_start": 637,
+      "text": "Yo. Yo, it's Husk. I'm... I'm...",
+      "word_start": 643,
       "word_end": 649
     },
     {
-      "unit_id": "p0048",
+      "unit_id": "p0043",
       "start": 275.178,
       "end": 281.262,
       "speaker": "",
@@ -533,7 +515,7 @@
       "word_end": 668
     },
     {
-      "unit_id": "p0049_0",
+      "unit_id": "p0044_0",
       "start": 282.063,
       "end": 287.226,
       "speaker": "",
@@ -542,7 +524,7 @@
       "word_end": 679
     },
     {
-      "unit_id": "p0049_1",
+      "unit_id": "p0044_1",
       "start": 287.706,
       "end": 294.051,
       "speaker": "",
@@ -551,7 +533,7 @@
       "word_end": 695
     },
     {
-      "unit_id": "p0050",
+      "unit_id": "p0045",
       "start": 294.491,
       "end": 300.235,
       "speaker": "",
@@ -560,7 +542,7 @@
       "word_end": 710
     },
     {
-      "unit_id": "p0051_0",
+      "unit_id": "p0046_0",
       "start": 301.116,
       "end": 304.378,
       "speaker": "",
@@ -569,7 +551,7 @@
       "word_end": 718
     },
     {
-      "unit_id": "p0051_1",
+      "unit_id": "p0046_1",
       "start": 304.498,
       "end": 311.037,
       "speaker": "",
@@ -578,7 +560,7 @@
       "word_end": 734
     },
     {
-      "unit_id": "p0052",
+      "unit_id": "p0047",
       "start": 311.838,
       "end": 316.62,
       "speaker": "",
@@ -587,7 +569,7 @@
       "word_end": 746
     },
     {
-      "unit_id": "p0053",
+      "unit_id": "p0048",
       "start": 317.24,
       "end": 319.742,
       "speaker": "",
@@ -596,7 +578,7 @@
       "word_end": 752
     },
     {
-      "unit_id": "p0054_0",
+      "unit_id": "p0049_0",
       "start": 320.222,
       "end": 323.543,
       "speaker": "",
@@ -605,7 +587,7 @@
       "word_end": 764
     },
     {
-      "unit_id": "p0054_1",
+      "unit_id": "p0049_1",
       "start": 324.004,
       "end": 328.286,
       "speaker": "",
@@ -614,7 +596,7 @@
       "word_end": 773
     },
     {
-      "unit_id": "p0055",
+      "unit_id": "p0050",
       "start": 328.798,
       "end": 335.201,
       "speaker": "",
@@ -623,7 +605,7 @@
       "word_end": 793
     },
     {
-      "unit_id": "p0056",
+      "unit_id": "p0051",
       "start": 335.821,
       "end": 338.182,
       "speaker": "",
@@ -632,7 +614,7 @@
       "word_end": 800
     },
     {
-      "unit_id": "p0057",
+      "unit_id": "p0052_0",
       "start": 339.783,
       "end": 341.043,
       "speaker": "",
@@ -641,7 +623,7 @@
       "word_end": 805
     },
     {
-      "unit_id": "p0058",
+      "unit_id": "p0052_1",
       "start": 342.464,
       "end": 347.626,
       "speaker": "",
@@ -650,7 +632,7 @@
       "word_end": 819
     },
     {
-      "unit_id": "p0059",
+      "unit_id": "p0053_0",
       "start": 347.766,
       "end": 350.427,
       "speaker": "",
@@ -659,7 +641,7 @@
       "word_end": 830
     },
     {
-      "unit_id": "p0060",
+      "unit_id": "p0053_1",
       "start": 351.868,
       "end": 356.23,
       "speaker": "",
@@ -668,7 +650,7 @@
       "word_end": 841
     },
     {
-      "unit_id": "p0061_0",
+      "unit_id": "p0054_0",
       "start": 358.875,
       "end": 361.277,
       "speaker": "",
@@ -677,7 +659,7 @@
       "word_end": 850
     },
     {
-      "unit_id": "p0061_1",
+      "unit_id": "p0054_1",
       "start": 361.697,
       "end": 366.581,
       "speaker": "",
@@ -686,7 +668,7 @@
       "word_end": 865
     },
     {
-      "unit_id": "p0062",
+      "unit_id": "p0055_0",
       "start": 367.081,
       "end": 370.763,
       "speaker": "",
@@ -695,7 +677,7 @@
       "word_end": 877
     },
     {
-      "unit_id": "p0063",
+      "unit_id": "p0055_1",
       "start": 371.264,
       "end": 375.006,
       "speaker": "",
@@ -704,7 +686,7 @@
       "word_end": 890
     },
     {
-      "unit_id": "p0064",
+      "unit_id": "p0056",
       "start": 375.827,
       "end": 381.291,
       "speaker": "",
@@ -713,7 +695,7 @@
       "word_end": 905
     },
     {
-      "unit_id": "p0065",
+      "unit_id": "p0057",
       "start": 382.051,
       "end": 384.553,
       "speaker": "",
@@ -722,7 +704,7 @@
       "word_end": 912
     },
     {
-      "unit_id": "p0066_0",
+      "unit_id": "p0058_0",
       "start": 387.106,
       "end": 390.248,
       "speaker": "",
@@ -731,7 +713,7 @@
       "word_end": 920
     },
     {
-      "unit_id": "p0066_1",
+      "unit_id": "p0058_1",
       "start": 390.308,
       "end": 393.57,
       "speaker": "",
@@ -740,7 +722,7 @@
       "word_end": 932
     },
     {
-      "unit_id": "p0066_2",
+      "unit_id": "p0058_2",
       "start": 393.831,
       "end": 396.172,
       "speaker": "",
@@ -749,25 +731,43 @@
       "word_end": 948
     },
     {
-      "unit_id": "p0066_3",
+      "unit_id": "p0058_3",
       "start": 397.393,
+      "end": 399.454,
+      "speaker": "",
+      "text": "Wow, he's right. They are really hot.",
+      "word_start": 948,
+      "word_end": 955
+    },
+    {
+      "unit_id": "p0058_4",
+      "start": 400.295,
       "end": 403.077,
       "speaker": "",
-      "text": "Wow, he's right. They are really hot. See? I told you, Tatia, you have hot feet.",
-      "word_start": 948,
+      "text": "See? I told you, Tatia, you have hot feet.",
+      "word_start": 955,
       "word_end": 964
     },
     {
-      "unit_id": "p0066_4",
+      "unit_id": "p0058_5",
       "start": 403.197,
+      "end": 405.158,
+      "speaker": "",
+      "text": "You do. Face it. They're my favorite thing about her.",
+      "word_start": 964,
+      "word_end": 974
+    },
+    {
+      "unit_id": "p0058_6",
+      "start": 405.579,
       "end": 407.92,
       "speaker": "",
-      "text": "You do. Face it. They're my favorite thing about her. Really? That's it? My feet? Oh.",
-      "word_start": 964,
+      "text": "Really? That's it? My feet? Oh.",
+      "word_start": 974,
       "word_end": 980
     },
     {
-      "unit_id": "p0067_0",
+      "unit_id": "p0059_0",
       "start": 408.681,
       "end": 409.739,
       "speaker": "",
@@ -776,7 +776,7 @@
       "word_end": 984
     },
     {
-      "unit_id": "p0067_1",
+      "unit_id": "p0059_1",
       "start": 409.739,
       "end": 416.747,
       "speaker": "",
@@ -785,7 +785,7 @@
       "word_end": 999
     },
     {
-      "unit_id": "p0068_0",
+      "unit_id": "p0060_0",
       "start": 416.747,
       "end": 419.946,
       "speaker": "",
@@ -794,7 +794,7 @@
       "word_end": 1011
     },
     {
-      "unit_id": "p0068_1",
+      "unit_id": "p0060_1",
       "start": 419.946,
       "end": 426.658,
       "speaker": "",
@@ -803,7 +803,7 @@
       "word_end": 1031
     },
     {
-      "unit_id": "p0069",
+      "unit_id": "p0061",
       "start": 427.439,
       "end": 433.444,
       "speaker": "",
@@ -812,25 +812,16 @@
       "word_end": 1045
     },
     {
-      "unit_id": "p0070",
+      "unit_id": "p0062",
       "start": 434.265,
-      "end": 436.607,
-      "speaker": "",
-      "text": "These segments are called speaker turns.",
-      "word_start": 1045,
-      "word_end": 1051
-    },
-    {
-      "unit_id": "p0071",
-      "start": 437.548,
       "end": 439.93,
       "speaker": "",
-      "text": "In a real conversation, they often overlap.",
-      "word_start": 1051,
+      "text": "These segments are called speaker turns. In a real conversation, they often overlap.",
+      "word_start": 1045,
       "word_end": 1058
     },
     {
-      "unit_id": "p0072",
+      "unit_id": "p0063",
       "start": 440.35,
       "end": 444.614,
       "speaker": "",
@@ -839,7 +830,7 @@
       "word_end": 1069
     },
     {
-      "unit_id": "p0073_0",
+      "unit_id": "p0064_0",
       "start": 445.674,
       "end": 449.798,
       "speaker": "",
@@ -848,7 +839,7 @@
       "word_end": 1080
     },
     {
-      "unit_id": "p0073_1",
+      "unit_id": "p0064_1",
       "start": 449.998,
       "end": 452.721,
       "speaker": "",
@@ -857,7 +848,7 @@
       "word_end": 1087
     },
     {
-      "unit_id": "p0074",
+      "unit_id": "p0065",
       "start": 453.241,
       "end": 459.227,
       "speaker": "",
@@ -866,7 +857,7 @@
       "word_end": 1103
     },
     {
-      "unit_id": "p0075_0",
+      "unit_id": "p0066_0",
       "start": 459.247,
       "end": 461.629,
       "speaker": "",
@@ -875,7 +866,7 @@
       "word_end": 1108
     },
     {
-      "unit_id": "p0075_1",
+      "unit_id": "p0066_1",
       "start": 461.669,
       "end": 468.155,
       "speaker": "",
@@ -884,7 +875,7 @@
       "word_end": 1120
     },
     {
-      "unit_id": "p0076",
+      "unit_id": "p0067_0",
       "start": 468.475,
       "end": 471.498,
       "speaker": "",
@@ -893,7 +884,7 @@
       "word_end": 1130
     },
     {
-      "unit_id": "p0077",
+      "unit_id": "p0067_1",
       "start": 472.014,
       "end": 477.259,
       "speaker": "",
@@ -902,7 +893,7 @@
       "word_end": 1143
     },
     {
-      "unit_id": "p0078_0",
+      "unit_id": "p0068_0",
       "start": 478.139,
       "end": 480.982,
       "speaker": "",
@@ -911,7 +902,7 @@
       "word_end": 1151
     },
     {
-      "unit_id": "p0078_1",
+      "unit_id": "p0068_1",
       "start": 481.362,
       "end": 485.245,
       "speaker": "",
@@ -920,7 +911,7 @@
       "word_end": 1162
     },
     {
-      "unit_id": "p0079",
+      "unit_id": "p0069",
       "start": 485.986,
       "end": 488.768,
       "speaker": "",
@@ -929,25 +920,16 @@
       "word_end": 1169
     },
     {
-      "unit_id": "p0080",
+      "unit_id": "p0070",
       "start": 490.91,
-      "end": 493.453,
-      "speaker": "",
-      "text": "Can you be spontaneous and answer questions as you hear them?",
-      "word_start": 1169,
-      "word_end": 1180
-    },
-    {
-      "unit_id": "p0081",
-      "start": 494.493,
       "end": 495.915,
       "speaker": "",
-      "text": "Absolutely. I'm ready when you are.",
-      "word_start": 1180,
+      "text": "Can you be spontaneous and answer questions as you hear them? Absolutely. I'm ready when you are.",
+      "word_start": 1169,
       "word_end": 1186
     },
     {
-      "unit_id": "p0082",
+      "unit_id": "p0071_0",
       "start": 497.896,
       "end": 499.718,
       "speaker": "",
@@ -956,7 +938,7 @@
       "word_end": 1194
     },
     {
-      "unit_id": "p0083_0",
+      "unit_id": "p0071_1",
       "start": 501.867,
       "end": 508.17,
       "speaker": "",
@@ -965,25 +947,16 @@
       "word_end": 1208
     },
     {
-      "unit_id": "p0083_1",
+      "unit_id": "p0071_2",
       "start": 508.311,
-      "end": 511.633,
-      "speaker": "",
-      "text": "one for the user and one for the assistant.",
-      "word_start": 1208,
-      "word_end": 1217
-    },
-    {
-      "unit_id": "p0083_2",
-      "start": 511.653,
       "end": 513.174,
       "speaker": "",
-      "text": "Crucially, neither stream is ever discontinued.",
-      "word_start": 1217,
+      "text": "one for the user and one for the assistant. Crucially, neither stream is ever discontinued.",
+      "word_start": 1208,
       "word_end": 1223
     },
     {
-      "unit_id": "p0084",
+      "unit_id": "p0072",
       "start": 527.382,
       "end": 533.186,
       "speaker": "",
@@ -992,7 +965,7 @@
       "word_end": 1242
     },
     {
-      "unit_id": "p0085",
+      "unit_id": "p0073",
       "start": 534.307,
       "end": 536.408,
       "speaker": "",
@@ -1001,7 +974,7 @@
       "word_end": 1251
     },
     {
-      "unit_id": "p0086_0",
+      "unit_id": "p0074_0",
       "start": 537.169,
       "end": 542.472,
       "speaker": "",
@@ -1010,7 +983,7 @@
       "word_end": 1270
     },
     {
-      "unit_id": "p0086_1",
+      "unit_id": "p0074_1",
       "start": 542.893,
       "end": 545.174,
       "speaker": "",
@@ -1019,7 +992,7 @@
       "word_end": 1278
     },
     {
-      "unit_id": "p0087_0",
+      "unit_id": "p0075_0",
       "start": 545.735,
       "end": 549.197,
       "speaker": "",
@@ -1028,7 +1001,7 @@
       "word_end": 1289
     },
     {
-      "unit_id": "p0087_1",
+      "unit_id": "p0075_1",
       "start": 549.657,
       "end": 552.799,
       "speaker": "",
@@ -1037,25 +1010,16 @@
       "word_end": 1299
     },
     {
-      "unit_id": "p0088",
+      "unit_id": "p0076",
       "start": 553.92,
-      "end": 556.342,
-      "speaker": "",
-      "text": "Formally, this is known as a full duplex.",
-      "word_start": 1299,
-      "word_end": 1307
-    },
-    {
-      "unit_id": "p0089",
-      "start": 556.734,
       "end": 560.576,
       "speaker": "",
-      "text": "The channel carries communication in both directions at the same time.",
-      "word_start": 1307,
+      "text": "Formally, this is known as a full duplex. The channel carries communication in both directions at the same time.",
+      "word_start": 1299,
       "word_end": 1318
     },
     {
-      "unit_id": "p0090",
+      "unit_id": "p0077",
       "start": 560.917,
       "end": 563.698,
       "speaker": "",
@@ -1064,7 +1028,7 @@
       "word_end": 1326
     },
     {
-      "unit_id": "p0091",
+      "unit_id": "p0078_0",
       "start": 565.019,
       "end": 567.3,
       "speaker": "",
@@ -1073,7 +1037,7 @@
       "word_end": 1332
     },
     {
-      "unit_id": "p0092",
+      "unit_id": "p0078_1",
       "start": 567.701,
       "end": 573.164,
       "speaker": "",
@@ -1082,7 +1046,7 @@
       "word_end": 1349
     },
     {
-      "unit_id": "p0093_0",
+      "unit_id": "p0079_0",
       "start": 573.925,
       "end": 576.946,
       "speaker": "",
@@ -1091,7 +1055,7 @@
       "word_end": 1356
     },
     {
-      "unit_id": "p0093_1",
+      "unit_id": "p0079_1",
       "start": 577.146,
       "end": 582.53,
       "speaker": "",
@@ -1100,7 +1064,7 @@
       "word_end": 1369
     },
     {
-      "unit_id": "p0093_2",
+      "unit_id": "p0079_2",
       "start": 583.366,
       "end": 587.769,
       "speaker": "",
@@ -1109,7 +1073,7 @@
       "word_end": 1383
     },
     {
-      "unit_id": "p0093_3",
+      "unit_id": "p0079_3",
       "start": 587.889,
       "end": 590.731,
       "speaker": "",
@@ -1118,7 +1082,7 @@
       "word_end": 1392
     },
     {
-      "unit_id": "p0094",
+      "unit_id": "p0080",
       "start": 591.672,
       "end": 594.534,
       "speaker": "",
@@ -1127,7 +1091,7 @@
       "word_end": 1403
     },
     {
-      "unit_id": "p0095",
+      "unit_id": "p0081_0",
       "start": 595.234,
       "end": 599.437,
       "speaker": "",
@@ -1136,7 +1100,7 @@
       "word_end": 1417
     },
     {
-      "unit_id": "p0096",
+      "unit_id": "p0081_1",
       "start": 600.097,
       "end": 602.839,
       "speaker": "",
@@ -1145,7 +1109,7 @@
       "word_end": 1425
     },
     {
-      "unit_id": "p0097",
+      "unit_id": "p0082",
       "start": 603.339,
       "end": 609.283,
       "speaker": "",
@@ -1154,7 +1118,7 @@
       "word_end": 1441
     },
     {
-      "unit_id": "p0098",
+      "unit_id": "p0083",
       "start": 609.724,
       "end": 616.633,
       "speaker": "",
@@ -1163,7 +1127,7 @@
       "word_end": 1461
     },
     {
-      "unit_id": "p0099",
+      "unit_id": "p0084",
       "start": 617.173,
       "end": 619.155,
       "speaker": "",
@@ -1172,7 +1136,7 @@
       "word_end": 1467
     },
     {
-      "unit_id": "p0100_0",
+      "unit_id": "p0085",
       "start": 619.735,
       "end": 622.444,
       "speaker": "",
@@ -1181,7 +1145,7 @@
       "word_end": 1474
     },
     {
-      "unit_id": "p0100_1",
+      "unit_id": "p0086_0",
       "start": 622.444,
       "end": 628.796,
       "speaker": "",
@@ -1190,16 +1154,25 @@
       "word_end": 1493
     },
     {
-      "unit_id": "p0100_2",
+      "unit_id": "p0086_1",
       "start": 628.796,
+      "end": 631.231,
+      "speaker": "",
+      "text": "you know, you go against the philosophy of machine learning.",
+      "word_start": 1493,
+      "word_end": 1503
+    },
+    {
+      "unit_id": "p0087",
+      "start": 631.231,
       "end": 634.557,
       "speaker": "",
-      "text": "you know, you go against the philosophy of machine learning. So, you know, there is always this attraction to trying doing things end-to-end.",
-      "word_start": 1493,
+      "text": "So, you know, there is always this attraction to trying doing things end-to-end.",
+      "word_start": 1503,
       "word_end": 1516
     },
     {
-      "unit_id": "p0101",
+      "unit_id": "p0088",
       "start": 634.557,
       "end": 638.086,
       "speaker": "",
@@ -1208,16 +1181,25 @@
       "word_end": 1530
     },
     {
-      "unit_id": "p0102_0",
+      "unit_id": "p0089_0",
       "start": 638.086,
+      "end": 641.501,
+      "speaker": "",
+      "text": "And when we had to write a tweet about the announcement,",
+      "word_start": 1530,
+      "word_end": 1541
+    },
+    {
+      "unit_id": "p0089_1",
+      "start": 641.501,
       "end": 644.422,
       "speaker": "",
-      "text": "And when we had to write a tweet about the announcement, Someone made me notice, hey, you know, your thing is called full duplex.",
-      "word_start": 1530,
+      "text": "Someone made me notice, hey, you know, your thing is called full duplex.",
+      "word_start": 1541,
       "word_end": 1554
     },
     {
-      "unit_id": "p0102_1",
+      "unit_id": "p0089_2",
       "start": 644.422,
       "end": 646.708,
       "speaker": "",
@@ -1226,7 +1208,7 @@
       "word_end": 1565
     },
     {
-      "unit_id": "p0102_2",
+      "unit_id": "p0089_3",
       "start": 646.708,
       "end": 649.659,
       "speaker": "",
@@ -1235,7 +1217,7 @@
       "word_end": 1577
     },
     {
-      "unit_id": "p0103_0",
+      "unit_id": "p0090_0",
       "start": 650.18,
       "end": 653.042,
       "speaker": "",
@@ -1244,7 +1226,7 @@
       "word_end": 1582
     },
     {
-      "unit_id": "p0103_1",
+      "unit_id": "p0090_1",
       "start": 653.762,
       "end": 657.204,
       "speaker": "",
@@ -1253,7 +1235,7 @@
       "word_end": 1596
     },
     {
-      "unit_id": "p0104_0",
+      "unit_id": "p0091_0",
       "start": 658.085,
       "end": 662.108,
       "speaker": "",
@@ -1262,7 +1244,7 @@
       "word_end": 1609
     },
     {
-      "unit_id": "p0104_1",
+      "unit_id": "p0091_1",
       "start": 662.728,
       "end": 666.731,
       "speaker": "",
@@ -1271,7 +1253,7 @@
       "word_end": 1623
     },
     {
-      "unit_id": "p0105",
+      "unit_id": "p0092",
       "start": 667.791,
       "end": 671.434,
       "speaker": "",
@@ -1280,7 +1262,7 @@
       "word_end": 1631
     },
     {
-      "unit_id": "p0106",
+      "unit_id": "p0093",
       "start": 672.13,
       "end": 679.052,
       "speaker": "",
@@ -1289,7 +1271,7 @@
       "word_end": 1651
     },
     {
-      "unit_id": "p0107",
+      "unit_id": "p0094",
       "start": 680.372,
       "end": 682.293,
       "speaker": "",
@@ -1298,7 +1280,7 @@
       "word_end": 1659
     },
     {
-      "unit_id": "p0108",
+      "unit_id": "p0095",
       "start": 683.053,
       "end": 688.775,
       "speaker": "",
@@ -1307,7 +1289,7 @@
       "word_end": 1680
     },
     {
-      "unit_id": "p0109_0",
+      "unit_id": "p0096_0",
       "start": 689.775,
       "end": 693.656,
       "speaker": "",
@@ -1316,7 +1298,7 @@
       "word_end": 1692
     },
     {
-      "unit_id": "p0109_1",
+      "unit_id": "p0096_1",
       "start": 694.716,
       "end": 700.578,
       "speaker": "",
@@ -1325,7 +1307,7 @@
       "word_end": 1706
     },
     {
-      "unit_id": "p0109_2",
+      "unit_id": "p0096_2",
       "start": 701.118,
       "end": 703.94,
       "speaker": "",
@@ -1334,7 +1316,7 @@
       "word_end": 1715
     },
     {
-      "unit_id": "p0110",
+      "unit_id": "p0097",
       "start": 704.901,
       "end": 711.705,
       "speaker": "",
@@ -1343,7 +1325,7 @@
       "word_end": 1733
     },
     {
-      "unit_id": "p0111",
+      "unit_id": "p0098",
       "start": 712.346,
       "end": 714.947,
       "speaker": "",
@@ -1352,7 +1334,7 @@
       "word_end": 1741
     },
     {
-      "unit_id": "p0112",
+      "unit_id": "p0099",
       "start": 715.928,
       "end": 719.711,
       "speaker": "",
@@ -1361,7 +1343,7 @@
       "word_end": 1753
     },
     {
-      "unit_id": "p0113",
+      "unit_id": "p0100",
       "start": 720.191,
       "end": 725.875,
       "speaker": "",
@@ -1370,7 +1352,7 @@
       "word_end": 1768
     },
     {
-      "unit_id": "p0114",
+      "unit_id": "p0101",
       "start": 726.675,
       "end": 731.499,
       "speaker": "",
@@ -1379,25 +1361,16 @@
       "word_end": 1780
     },
     {
-      "unit_id": "p0115_0",
+      "unit_id": "p0102_0",
       "start": 732.82,
-      "end": 733.961,
-      "speaker": "",
-      "text": "Following the same principle,",
-      "word_start": 1780,
-      "word_end": 1784
-    },
-    {
-      "unit_id": "p0115_1",
-      "start": 734.241,
       "end": 738.185,
       "speaker": "",
-      "text": "Moshi decomposes a single audio frame into one semantic token",
-      "word_start": 1784,
+      "text": "Following the same principle, Moshi decomposes a single audio frame into one semantic token",
+      "word_start": 1780,
       "word_end": 1794
     },
     {
-      "unit_id": "p0115_2",
+      "unit_id": "p0102_1",
       "start": 738.645,
       "end": 740.367,
       "speaker": "",
@@ -1406,7 +1379,7 @@
       "word_end": 1798
     },
     {
-      "unit_id": "p0116",
+      "unit_id": "p0103",
       "start": 741.187,
       "end": 745.932,
       "speaker": "",
@@ -1415,7 +1388,7 @@
       "word_end": 1809
     },
     {
-      "unit_id": "p0117",
+      "unit_id": "p0104",
       "start": 746.672,
       "end": 750.576,
       "speaker": "",
@@ -1424,7 +1397,7 @@
       "word_end": 1823
     },
     {
-      "unit_id": "p0118",
+      "unit_id": "p0105",
       "start": 751.637,
       "end": 757.262,
       "speaker": "",
@@ -1433,7 +1406,7 @@
       "word_end": 1838
     },
     {
-      "unit_id": "p0119_0",
+      "unit_id": "p0106_0",
       "start": 760.05,
       "end": 763.653,
       "speaker": "",
@@ -1442,7 +1415,7 @@
       "word_end": 1851
     },
     {
-      "unit_id": "p0119_1",
+      "unit_id": "p0106_1",
       "start": 764.033,
       "end": 767.256,
       "speaker": "",
@@ -1451,7 +1424,7 @@
       "word_end": 1861
     },
     {
-      "unit_id": "p0120",
+      "unit_id": "p0107",
       "start": 768.157,
       "end": 771.98,
       "speaker": "",
@@ -1460,7 +1433,7 @@
       "word_end": 1872
     },
     {
-      "unit_id": "p0121_0",
+      "unit_id": "p0108_0",
       "start": 772.56,
       "end": 777.184,
       "speaker": "",
@@ -1469,7 +1442,7 @@
       "word_end": 1882
     },
     {
-      "unit_id": "p0121_1",
+      "unit_id": "p0108_1",
       "start": 777.825,
       "end": 780.627,
       "speaker": "",
@@ -1478,25 +1451,16 @@
       "word_end": 1889
     },
     {
-      "unit_id": "p0122",
+      "unit_id": "p0109",
       "start": 781.428,
-      "end": 782.288,
-      "speaker": "",
-      "text": "Why is that helpful?",
-      "word_start": 1889,
-      "word_end": 1893
-    },
-    {
-      "unit_id": "p0123",
-      "start": 782.829,
       "end": 786.111,
       "speaker": "",
-      "text": "Because we're imposing a conceptual hierarchy here.",
-      "word_start": 1893,
+      "text": "Why is that helpful? Because we're imposing a conceptual hierarchy here.",
+      "word_start": 1889,
       "word_end": 1900
     },
     {
-      "unit_id": "p0124_0",
+      "unit_id": "p0110_0",
       "start": 786.632,
       "end": 789.034,
       "speaker": "",
@@ -1505,7 +1469,7 @@
       "word_end": 1904
     },
     {
-      "unit_id": "p0124_1",
+      "unit_id": "p0110_1",
       "start": 789.526,
       "end": 797.191,
       "speaker": "",
@@ -1514,7 +1478,7 @@
       "word_end": 1918
     },
     {
-      "unit_id": "p0125",
+      "unit_id": "p0111",
       "start": 797.211,
       "end": 800.112,
       "speaker": "",
@@ -1523,7 +1487,7 @@
       "word_end": 1925
     },
     {
-      "unit_id": "p0126",
+      "unit_id": "p0112",
       "start": 800.993,
       "end": 807.837,
       "speaker": "",
@@ -1532,25 +1496,16 @@
       "word_end": 1941
     },
     {
-      "unit_id": "p0127",
+      "unit_id": "p0113",
       "start": 808.577,
-      "end": 812.219,
-      "speaker": "",
-      "text": "Text might actually be one of the reasons why we're thriving as a species.",
-      "word_start": 1941,
-      "word_end": 1955
-    },
-    {
-      "unit_id": "p0128",
-      "start": 812.68,
       "end": 814.121,
       "speaker": "",
-      "text": "It's a very efficient signal.",
-      "word_start": 1955,
+      "text": "Text might actually be one of the reasons why we're thriving as a species. It's a very efficient signal.",
+      "word_start": 1941,
       "word_end": 1960
     },
     {
-      "unit_id": "p0129_0",
+      "unit_id": "p0114_0",
       "start": 814.961,
       "end": 819.64,
       "speaker": "",
@@ -1559,7 +1514,7 @@
       "word_end": 1971
     },
     {
-      "unit_id": "p0129_1",
+      "unit_id": "p0114_1",
       "start": 820.401,
       "end": 823.924,
       "speaker": "",
@@ -1568,7 +1523,7 @@
       "word_end": 1979
     },
     {
-      "unit_id": "p0130",
+      "unit_id": "p0115",
       "start": 824.764,
       "end": 829.288,
       "speaker": "",
@@ -1577,7 +1532,7 @@
       "word_end": 1992
     },
     {
-      "unit_id": "p0131",
+      "unit_id": "p0116",
       "start": 830.329,
       "end": 833.592,
       "speaker": "",
@@ -1586,7 +1541,7 @@
       "word_end": 2003
     },
     {
-      "unit_id": "p0132",
+      "unit_id": "p0117",
       "start": 834.753,
       "end": 837.795,
       "speaker": "",
@@ -1595,7 +1550,7 @@
       "word_end": 2014
     },
     {
-      "unit_id": "p0133",
+      "unit_id": "p0118",
       "start": 838.816,
       "end": 840.057,
       "speaker": "",
@@ -1604,7 +1559,7 @@
       "word_end": 2020
     },
     {
-      "unit_id": "p0134",
+      "unit_id": "p0119",
       "start": 840.377,
       "end": 846.302,
       "speaker": "",
@@ -1613,7 +1568,7 @@
       "word_end": 2039
     },
     {
-      "unit_id": "p0135",
+      "unit_id": "p0120",
       "start": 847.018,
       "end": 853.004,
       "speaker": "",
@@ -1622,7 +1577,7 @@
       "word_end": 2059
     },
     {
-      "unit_id": "p0136",
+      "unit_id": "p0121",
       "start": 853.625,
       "end": 856.668,
       "speaker": "",
@@ -1631,7 +1586,7 @@
       "word_end": 2069
     },
     {
-      "unit_id": "p0137",
+      "unit_id": "p0122",
       "start": 857.169,
       "end": 861.013,
       "speaker": "",
@@ -1640,7 +1595,7 @@
       "word_end": 2080
     },
     {
-      "unit_id": "p0138_0",
+      "unit_id": "p0123_0",
       "start": 862.014,
       "end": 866.258,
       "speaker": "",
@@ -1649,7 +1604,7 @@
       "word_end": 2090
     },
     {
-      "unit_id": "p0138_1",
+      "unit_id": "p0123_1",
       "start": 866.659,
       "end": 869.582,
       "speaker": "",
@@ -1658,7 +1613,7 @@
       "word_end": 2097
     },
     {
-      "unit_id": "p0139",
+      "unit_id": "p0124",
       "start": 870.366,
       "end": 877.312,
       "speaker": "",
@@ -1667,7 +1622,7 @@
       "word_end": 2121
     },
     {
-      "unit_id": "p0140_0",
+      "unit_id": "p0125_0",
       "start": 878.433,
       "end": 882.256,
       "speaker": "",
@@ -1676,7 +1631,7 @@
       "word_end": 2130
     },
     {
-      "unit_id": "p0140_1",
+      "unit_id": "p0125_1",
       "start": 882.996,
       "end": 885.538,
       "speaker": "",
@@ -1685,7 +1640,7 @@
       "word_end": 2138
     },
     {
-      "unit_id": "p0141_0",
+      "unit_id": "p0126_0",
       "start": 886.559,
       "end": 889.101,
       "speaker": "",
@@ -1694,7 +1649,7 @@
       "word_end": 2149
     },
     {
-      "unit_id": "p0141_1",
+      "unit_id": "p0126_1",
       "start": 889.622,
       "end": 894.565,
       "speaker": "",
@@ -1703,7 +1658,7 @@
       "word_end": 2164
     },
     {
-      "unit_id": "p0142",
+      "unit_id": "p0127_0",
       "start": 895.426,
       "end": 900.03,
       "speaker": "",
@@ -1712,7 +1667,7 @@
       "word_end": 2180
     },
     {
-      "unit_id": "p0143",
+      "unit_id": "p0127_1",
       "start": 900.862,
       "end": 906.505,
       "speaker": "",
@@ -1721,7 +1676,7 @@
       "word_end": 2198
     },
     {
-      "unit_id": "p0144",
+      "unit_id": "p0128",
       "start": 907.365,
       "end": 911.167,
       "speaker": "",
@@ -1730,7 +1685,7 @@
       "word_end": 2209
     },
     {
-      "unit_id": "p0145",
+      "unit_id": "p0129",
       "start": 911.708,
       "end": 914.289,
       "speaker": "",
@@ -1739,7 +1694,7 @@
       "word_end": 2217
     },
     {
-      "unit_id": "p0146_0",
+      "unit_id": "p0130_0",
       "start": 915.009,
       "end": 918.951,
       "speaker": "",
@@ -1748,7 +1703,7 @@
       "word_end": 2229
     },
     {
-      "unit_id": "p0146_1",
+      "unit_id": "p0130_1",
       "start": 919.411,
       "end": 924.194,
       "speaker": "",
@@ -1757,7 +1712,7 @@
       "word_end": 2244
     },
     {
-      "unit_id": "p0147",
+      "unit_id": "p0131",
       "start": 924.778,
       "end": 931.56,
       "speaker": "",
@@ -1766,7 +1721,7 @@
       "word_end": 2263
     },
     {
-      "unit_id": "p0148",
+      "unit_id": "p0132",
       "start": 932.22,
       "end": 937.282,
       "speaker": "",
@@ -1775,7 +1730,7 @@
       "word_end": 2276
     },
     {
-      "unit_id": "p0149",
+      "unit_id": "p0133",
       "start": 938.082,
       "end": 940.322,
       "speaker": "",
@@ -1784,7 +1739,7 @@
       "word_end": 2283
     },
     {
-      "unit_id": "p0150_0",
+      "unit_id": "p0134_0",
       "start": 940.843,
       "end": 944.444,
       "speaker": "",
@@ -1793,7 +1748,7 @@
       "word_end": 2291
     },
     {
-      "unit_id": "p0150_1",
+      "unit_id": "p0134_1",
       "start": 945.004,
       "end": 952.866,
       "speaker": "",
@@ -1802,25 +1757,16 @@
       "word_end": 2306
     },
     {
-      "unit_id": "p0151",
+      "unit_id": "p0135",
       "start": 953.802,
-      "end": 954.962,
-      "speaker": "",
-      "text": "What changed your mind?",
-      "word_start": 2306,
-      "word_end": 2310
-    },
-    {
-      "unit_id": "p0152",
-      "start": 955.082,
       "end": 957.663,
       "speaker": "",
-      "text": "Why did you join the other camp?",
-      "word_start": 2310,
+      "text": "What changed your mind? Why did you join the other camp?",
+      "word_start": 2306,
       "word_end": 2317
     },
     {
-      "unit_id": "p0153",
+      "unit_id": "p0136",
       "start": 958.464,
       "end": 960.224,
       "speaker": "",
@@ -1829,7 +1775,7 @@
       "word_end": 2326
     },
     {
-      "unit_id": "p0154",
+      "unit_id": "p0137",
       "start": 960.304,
       "end": 965.366,
       "speaker": "",
@@ -1838,7 +1784,7 @@
       "word_end": 2342
     },
     {
-      "unit_id": "p0155",
+      "unit_id": "p0138_0",
       "start": 966.026,
       "end": 969.247,
       "speaker": "",
@@ -1847,25 +1793,34 @@
       "word_end": 2357
     },
     {
-      "unit_id": "p0156",
+      "unit_id": "p0138_1",
       "start": 969.347,
-      "end": 973.328,
+      "end": 971.028,
       "speaker": "",
-      "text": "And so Unmute was just the open source framework to take any LLM and make it speak. Right.",
+      "text": "And so Unmute was just the open source framework",
       "word_start": 2357,
-      "word_end": 2375
+      "word_end": 2366
     },
     {
-      "unit_id": "p0157_0",
-      "start": 973.889,
+      "unit_id": "p0138_2",
+      "start": 971.048,
+      "end": 973.048,
+      "speaker": "",
+      "text": "to take any LLM and make it speak.",
+      "word_start": 2366,
+      "word_end": 2374
+    },
+    {
+      "unit_id": "p0139_0",
+      "start": 973.108,
       "end": 979.143,
       "speaker": "",
-      "text": "And in a way it drew much more interest from big companies than Moshi, right?",
-      "word_start": 2375,
+      "text": "Right. And in a way it drew much more interest from big companies than Moshi, right?",
+      "word_start": 2374,
       "word_end": 2390
     },
     {
-      "unit_id": "p0157_1",
+      "unit_id": "p0139_1",
       "start": 979.163,
       "end": 982.264,
       "speaker": "",
@@ -1874,7 +1829,7 @@
       "word_end": 2403
     },
     {
-      "unit_id": "p0158",
+      "unit_id": "p0140",
       "start": 982.665,
       "end": 986.867,
       "speaker": "",
@@ -1883,7 +1838,7 @@
       "word_end": 2418
     },
     {
-      "unit_id": "p0159",
+      "unit_id": "p0141",
       "start": 987.508,
       "end": 994.171,
       "speaker": "",
@@ -1892,7 +1847,7 @@
       "word_end": 2442
     },
     {
-      "unit_id": "p0160_0",
+      "unit_id": "p0142_0",
       "start": 994.712,
       "end": 997.613,
       "speaker": "",
@@ -1901,7 +1856,7 @@
       "word_end": 2448
     },
     {
-      "unit_id": "p0160_1",
+      "unit_id": "p0142_1",
       "start": 998.094,
       "end": 1001.756,
       "speaker": "",
@@ -1910,7 +1865,7 @@
       "word_end": 2460
     },
     {
-      "unit_id": "p0161",
+      "unit_id": "p0143",
       "start": 1002.096,
       "end": 1005.078,
       "speaker": "",
@@ -1919,7 +1874,7 @@
       "word_end": 2468
     },
     {
-      "unit_id": "p0162",
+      "unit_id": "p0144",
       "start": 1005.514,
       "end": 1008.617,
       "speaker": "",
@@ -1928,7 +1883,7 @@
       "word_end": 2479
     },
     {
-      "unit_id": "p0163",
+      "unit_id": "p0145",
       "start": 1009.198,
       "end": 1011.561,
       "speaker": "",
@@ -1937,7 +1892,7 @@
       "word_end": 2486
     },
     {
-      "unit_id": "p0164",
+      "unit_id": "p0146",
       "start": 1011.981,
       "end": 1016.486,
       "speaker": "",
@@ -1946,7 +1901,7 @@
       "word_end": 2499
     },
     {
-      "unit_id": "p0165",
+      "unit_id": "p0147",
       "start": 1016.946,
       "end": 1018.388,
       "speaker": "",
@@ -1955,7 +1910,7 @@
       "word_end": 2504
     },
     {
-      "unit_id": "p0166",
+      "unit_id": "p0148_0",
       "start": 1018.909,
       "end": 1025.035,
       "speaker": "",
@@ -1964,7 +1919,7 @@
       "word_end": 2519
     },
     {
-      "unit_id": "p0167",
+      "unit_id": "p0148_1",
       "start": 1025.316,
       "end": 1027.278,
       "speaker": "",
@@ -1973,7 +1928,7 @@
       "word_end": 2526
     },
     {
-      "unit_id": "p0168",
+      "unit_id": "p0149",
       "start": 1027.942,
       "end": 1033.166,
       "speaker": "",
@@ -1982,7 +1937,7 @@
       "word_end": 2545
     },
     {
-      "unit_id": "p0169",
+      "unit_id": "p0150",
       "start": 1033.226,
       "end": 1036.808,
       "speaker": "",
@@ -1991,25 +1946,16 @@
       "word_end": 2564
     },
     {
-      "unit_id": "p0170",
+      "unit_id": "p0151",
       "start": 1037.569,
-      "end": 1039.911,
-      "speaker": "",
-      "text": "What Samantha just did here is tool calling.",
-      "word_start": 2564,
-      "word_end": 2572
-    },
-    {
-      "unit_id": "p0171",
-      "start": 1040.191,
       "end": 1043.253,
       "speaker": "",
-      "text": "She had to call the Gmail API to access all those emails.",
-      "word_start": 2572,
+      "text": "What Samantha just did here is tool calling. She had to call the Gmail API to access all those emails.",
+      "word_start": 2564,
       "word_end": 2584
     },
     {
-      "unit_id": "p0172",
+      "unit_id": "p0152",
       "start": 1043.913,
       "end": 1048.897,
       "speaker": "",
@@ -2018,7 +1964,7 @@
       "word_end": 2597
     },
     {
-      "unit_id": "p0173_0",
+      "unit_id": "p0153_0",
       "start": 1049.417,
       "end": 1055.762,
       "speaker": "",
@@ -2027,7 +1973,7 @@
       "word_end": 2611
     },
     {
-      "unit_id": "p0173_1",
+      "unit_id": "p0153_1",
       "start": 1056.194,
       "end": 1059.097,
       "speaker": "",
@@ -2036,7 +1982,7 @@
       "word_end": 2620
     },
     {
-      "unit_id": "p0174",
+      "unit_id": "p0154_0",
       "start": 1059.577,
       "end": 1062.22,
       "speaker": "",
@@ -2045,16 +1991,25 @@
       "word_end": 2633
     },
     {
-      "unit_id": "p0175",
+      "unit_id": "p0154_1",
       "start": 1062.24,
+      "end": 1064.923,
+      "speaker": "",
+      "text": "He's going to do tool calling. He's going to reason.",
+      "word_start": 2633,
+      "word_end": 2643
+    },
+    {
+      "unit_id": "p0154_2",
+      "start": 1064.943,
       "end": 1067.105,
       "speaker": "",
-      "text": "He's going to do tool calling. He's going to reason. He's going to do web searches and so on.",
-      "word_start": 2633,
+      "text": "He's going to do web searches and so on.",
+      "word_start": 2643,
       "word_end": 2652
     },
     {
-      "unit_id": "p0176",
+      "unit_id": "p0155",
       "start": 1067.806,
       "end": 1073.191,
       "speaker": "",
@@ -2063,7 +2018,7 @@
       "word_end": 2675
     },
     {
-      "unit_id": "p0177",
+      "unit_id": "p0156",
       "start": 1073.531,
       "end": 1080.078,
       "speaker": "",
@@ -2072,7 +2027,7 @@
       "word_end": 2699
     },
     {
-      "unit_id": "p0178",
+      "unit_id": "p0157",
       "start": 1080.502,
       "end": 1085.405,
       "speaker": "",
@@ -2081,7 +2036,7 @@
       "word_end": 2717
     },
     {
-      "unit_id": "p0179",
+      "unit_id": "p0158",
       "start": 1085.425,
       "end": 1087.186,
       "speaker": "",
@@ -2090,7 +2045,7 @@
       "word_end": 2727
     },
     {
-      "unit_id": "p0180",
+      "unit_id": "p0159",
       "start": 1088.206,
       "end": 1094.45,
       "speaker": "",
@@ -2099,7 +2054,7 @@
       "word_end": 2743
     },
     {
-      "unit_id": "p0181",
+      "unit_id": "p0160",
       "start": 1095.05,
       "end": 1097.431,
       "speaker": "",
@@ -2108,7 +2063,7 @@
       "word_end": 2749
     },
     {
-      "unit_id": "p0182",
+      "unit_id": "p0161",
       "start": 1098.212,
       "end": 1104.115,
       "speaker": "",
@@ -2117,7 +2072,7 @@
       "word_end": 2766
     },
     {
-      "unit_id": "p0183",
+      "unit_id": "p0162",
       "start": 1104.695,
       "end": 1109.138,
       "speaker": "",
@@ -2126,7 +2081,7 @@
       "word_end": 2780
     },
     {
-      "unit_id": "p0184_0",
+      "unit_id": "p0163_0",
       "start": 1110.078,
       "end": 1113.339,
       "speaker": "",
@@ -2135,7 +2090,7 @@
       "word_end": 2790
     },
     {
-      "unit_id": "p0184_1",
+      "unit_id": "p0163_1",
       "start": 1113.539,
       "end": 1119.481,
       "speaker": "",
@@ -2144,7 +2099,7 @@
       "word_end": 2806
     },
     {
-      "unit_id": "p0184_2",
+      "unit_id": "p0163_2",
       "start": 1119.541,
       "end": 1121.021,
       "speaker": "",
@@ -2153,7 +2108,7 @@
       "word_end": 2813
     },
     {
-      "unit_id": "p0185",
+      "unit_id": "p0164",
       "start": 1122.002,
       "end": 1125.983,
       "speaker": "",
@@ -2162,7 +2117,7 @@
       "word_end": 2825
     },
     {
-      "unit_id": "p0186",
+      "unit_id": "p0165",
       "start": 1126.683,
       "end": 1132.105,
       "speaker": "",
@@ -2171,7 +2126,7 @@
       "word_end": 2841
     },
     {
-      "unit_id": "p0187",
+      "unit_id": "p0166",
       "start": 1132.685,
       "end": 1136.746,
       "speaker": "",
@@ -2180,7 +2135,7 @@
       "word_end": 2853
     },
     {
-      "unit_id": "p0188",
+      "unit_id": "p0167",
       "start": 1137.222,
       "end": 1140.084,
       "speaker": "",
@@ -2189,7 +2144,7 @@
       "word_end": 2863
     },
     {
-      "unit_id": "p0189",
+      "unit_id": "p0168",
       "start": 1140.664,
       "end": 1145.987,
       "speaker": "",
@@ -2198,7 +2153,7 @@
       "word_end": 2880
     },
     {
-      "unit_id": "p0190",
+      "unit_id": "p0169",
       "start": 1146.947,
       "end": 1151.17,
       "speaker": "",
@@ -2207,7 +2162,7 @@
       "word_end": 2894
     },
     {
-      "unit_id": "p0191_0",
+      "unit_id": "p0170_0",
       "start": 1151.61,
       "end": 1157.513,
       "speaker": "",
@@ -2216,7 +2171,7 @@
       "word_end": 2908
     },
     {
-      "unit_id": "p0191_1",
+      "unit_id": "p0170_1",
       "start": 1158.554,
       "end": 1164.737,
       "speaker": "",
@@ -2225,25 +2180,16 @@
       "word_end": 2922
     },
     {
-      "unit_id": "p0192_0",
+      "unit_id": "p0171_0",
       "start": 1164.897,
-      "end": 1165.998,
-      "speaker": "",
-      "text": "And this one is very interesting",
-      "word_start": 2922,
-      "word_end": 2928
-    },
-    {
-      "unit_id": "p0192_1",
-      "start": 1166.018,
       "end": 1168.155,
       "speaker": "",
-      "text": "because When you look at text models,",
-      "word_start": 2928,
+      "text": "And this one is very interesting because When you look at text models,",
+      "word_start": 2922,
       "word_end": 2935
     },
     {
-      "unit_id": "p0192_2",
+      "unit_id": "p0171_1",
       "start": 1168.896,
       "end": 1172.719,
       "speaker": "",
@@ -2252,7 +2198,7 @@
       "word_end": 2947
     },
     {
-      "unit_id": "p0192_3",
+      "unit_id": "p0171_2",
       "start": 1172.78,
       "end": 1175.282,
       "speaker": "",
@@ -2261,61 +2207,34 @@
       "word_end": 2957
     },
     {
-      "unit_id": "p0193_0",
+      "unit_id": "p0172_0",
       "start": 1175.702,
-      "end": 1179.966,
+      "end": 1178.845,
       "speaker": "",
-      "text": "Asking the question, is this conversation natural? It's very hard, right?",
+      "text": "Asking the question, is this conversation natural?",
       "word_start": 2957,
-      "word_end": 2968
+      "word_end": 2964
     },
     {
-      "unit_id": "p0193_1",
-      "start": 1180.006,
+      "unit_id": "p0172_1",
+      "start": 1178.865,
       "end": 1182.709,
       "speaker": "",
-      "text": "To find an objective automatic metric of that.",
-      "word_start": 2968,
+      "text": "It's very hard, right? To find an objective automatic metric of that.",
+      "word_start": 2964,
       "word_end": 2976
     },
     {
-      "unit_id": "p0194",
+      "unit_id": "p0173_0",
       "start": 1183.029,
-      "end": 1183.91,
-      "speaker": "",
-      "text": "What does natural mean?",
-      "word_start": 2976,
-      "word_end": 2980
-    },
-    {
-      "unit_id": "p0195",
-      "start": 1184.07,
-      "end": 1186.112,
-      "speaker": "",
-      "text": "Is it that the pauses were at the right time?",
-      "word_start": 2980,
-      "word_end": 2990
-    },
-    {
-      "unit_id": "p0196",
-      "start": 1186.152,
-      "end": 1187.553,
-      "speaker": "",
-      "text": "Was it that the tone was right?",
-      "word_start": 2990,
-      "word_end": 2997
-    },
-    {
-      "unit_id": "p0197",
-      "start": 1187.674,
       "end": 1189.315,
       "speaker": "",
-      "text": "Is it what was said that was meaningful?",
-      "word_start": 2997,
+      "text": "What does natural mean? Is it that the pauses were at the right time? Was it that the tone was right? Is it what was said that was meaningful?",
+      "word_start": 2976,
       "word_end": 3005
     },
     {
-      "unit_id": "p0198",
+      "unit_id": "p0173_1",
       "start": 1189.816,
       "end": 1192.379,
       "speaker": "",
@@ -2324,7 +2243,7 @@
       "word_end": 3016
     },
     {
-      "unit_id": "p0199",
+      "unit_id": "p0174",
       "start": 1192.379,
       "end": 1198.802,
       "speaker": "",
@@ -2333,7 +2252,7 @@
       "word_end": 3035
     },
     {
-      "unit_id": "p0200",
+      "unit_id": "p0175",
       "start": 1199.383,
       "end": 1202.605,
       "speaker": "",
@@ -2342,7 +2261,7 @@
       "word_end": 3046
     },
     {
-      "unit_id": "p0201",
+      "unit_id": "p0176",
       "start": 1202.905,
       "end": 1206.668,
       "speaker": "",
@@ -2351,7 +2270,7 @@
       "word_end": 3059
     },
     {
-      "unit_id": "p0202",
+      "unit_id": "p0177",
       "start": 1207.488,
       "end": 1212.912,
       "speaker": "",
@@ -2360,7 +2279,7 @@
       "word_end": 3078
     },
     {
-      "unit_id": "p0203",
+      "unit_id": "p0178",
       "start": 1212.972,
       "end": 1217.295,
       "speaker": "",
@@ -2369,7 +2288,7 @@
       "word_end": 3095
     },
     {
-      "unit_id": "p0204",
+      "unit_id": "p0179",
       "start": 1218.536,
       "end": 1224.359,
       "speaker": "",
@@ -2378,7 +2297,7 @@
       "word_end": 3111
     },
     {
-      "unit_id": "p0205",
+      "unit_id": "p0180",
       "start": 1225.019,
       "end": 1228.521,
       "speaker": "",
@@ -2387,7 +2306,7 @@
       "word_end": 3122
     },
     {
-      "unit_id": "p0206",
+      "unit_id": "p0181",
       "start": 1229.281,
       "end": 1236.024,
       "speaker": "",
@@ -2396,7 +2315,7 @@
       "word_end": 3141
     },
     {
-      "unit_id": "p0207_0",
+      "unit_id": "p0182_0",
       "start": 1236.524,
       "end": 1241.106,
       "speaker": "",
@@ -2405,7 +2324,7 @@
       "word_end": 3150
     },
     {
-      "unit_id": "p0207_1",
+      "unit_id": "p0182_1",
       "start": 1241.266,
       "end": 1243.547,
       "speaker": "",
@@ -2414,7 +2333,7 @@
       "word_end": 3157
     },
     {
-      "unit_id": "p0208",
+      "unit_id": "p0183",
       "start": 1244.147,
       "end": 1247.928,
       "speaker": "",
@@ -2423,7 +2342,7 @@
       "word_end": 3168
     },
     {
-      "unit_id": "p0209",
+      "unit_id": "p0184",
       "start": 1248.909,
       "end": 1251.61,
       "speaker": "",
@@ -2432,7 +2351,7 @@
       "word_end": 3179
     },
     {
-      "unit_id": "p0210",
+      "unit_id": "p0185_0",
       "start": 1252.354,
       "end": 1254.095,
       "speaker": "",
@@ -2441,7 +2360,7 @@
       "word_end": 3184
     },
     {
-      "unit_id": "p0211_0",
+      "unit_id": "p0185_1",
       "start": 1254.375,
       "end": 1259.316,
       "speaker": "",
@@ -2450,7 +2369,7 @@
       "word_end": 3198
     },
     {
-      "unit_id": "p0211_1",
+      "unit_id": "p0185_2",
       "start": 1259.896,
       "end": 1262.997,
       "speaker": "",
@@ -2459,7 +2378,7 @@
       "word_end": 3210
     },
     {
-      "unit_id": "p0212",
+      "unit_id": "p0185_3",
       "start": 1263.577,
       "end": 1267.238,
       "speaker": "",
@@ -2468,7 +2387,7 @@
       "word_end": 3221
     },
     {
-      "unit_id": "p0213_0",
+      "unit_id": "p0186_0",
       "start": 1267.839,
       "end": 1272.6,
       "speaker": "",
@@ -2477,7 +2396,7 @@
       "word_end": 3234
     },
     {
-      "unit_id": "p0213_1",
+      "unit_id": "p0186_1",
       "start": 1273.04,
       "end": 1277.762,
       "speaker": "",
@@ -2486,7 +2405,7 @@
       "word_end": 3249
     },
     {
-      "unit_id": "p0214",
+      "unit_id": "p0186_2",
       "start": 1278.162,
       "end": 1280.784,
       "speaker": "",
@@ -2495,7 +2414,7 @@
       "word_end": 3256
     },
     {
-      "unit_id": "p0215",
+      "unit_id": "p0187",
       "start": 1281.064,
       "end": 1286.737,
       "speaker": "",
@@ -2504,7 +2423,7 @@
       "word_end": 3274
     },
     {
-      "unit_id": "p0216",
+      "unit_id": "p0188",
       "start": 1287.178,
       "end": 1288.921,
       "speaker": "",

@@ -15,7 +15,7 @@
       "unit_id": "p0000_1",
       "start": 4.009,
       "end": 9.153,
-      "text": "？讲的是内向的西奥多爱上了他的AI助手萨曼莎。",
+      "text": "？讲的是内向的Theodore爱上了他的AI助手Samantha的故事。",
       "lang": "zh",
       "speaker": ""
     },
@@ -24,7 +24,7 @@
       "unit_id": "p0001",
       "start": 10.615,
       "end": 13.537,
-      "text": "这名字谁给你起的？其实是我自己取的。",
+      "text": "这名字你从哪听来的？其实是我自己取的。",
       "lang": "zh",
       "speaker": ""
     },
@@ -51,7 +51,7 @@
       "unit_id": "p0003_1",
       "start": 19.902,
       "end": 24.226,
-      "text": "，承诺给ChatGPT语音助手带来重大升级。",
+      "text": "，承诺对ChatGPT语音助手进行重大升级。",
       "lang": "zh",
       "speaker": ""
     },
@@ -69,7 +69,7 @@
       "unit_id": "p0005",
       "start": 25.871,
       "end": 28.152,
-      "text": "往上穿的话，会有点松松垮垮的。",
+      "text": "往上穿的话，会显得有点松垮。",
       "lang": "zh",
       "speaker": ""
     },
@@ -78,36 +78,36 @@
       "unit_id": "p0006",
       "start": 28.292,
       "end": 31.494,
-      "text": "不过现在宽松款很流行，你不觉得吗？",
+      "text": "不过现在松垮风很流行，你不觉得吗？",
       "lang": "zh",
       "speaker": ""
     }
   ],
   "usage": {
-    "prompt_tokens": 4088,
-    "completion_tokens": 314,
-    "total_tokens": 4402,
+    "prompt_tokens": 4093,
+    "completion_tokens": 317,
+    "total_tokens": 4410,
     "prompt_cache_hit_tokens": 3712,
-    "prompt_cache_miss_tokens": 376,
+    "prompt_cache_miss_tokens": 381,
     "calls": 1,
     "breakdown": {
       "translate.translate": {
         "prompt_tokens": 3006,
         "prompt_cache_hit_tokens": 2944,
         "prompt_cache_miss_tokens": 62,
-        "completion_tokens": 255,
-        "total_tokens": 3261
+        "completion_tokens": 258,
+        "total_tokens": 3264
       },
       "translate.align_check": {
-        "prompt_tokens": 1082,
+        "prompt_tokens": 1087,
         "prompt_cache_hit_tokens": 768,
-        "prompt_cache_miss_tokens": 314,
+        "prompt_cache_miss_tokens": 319,
         "completion_tokens": 59,
-        "total_tokens": 1141
+        "total_tokens": 1146
       }
     }
   },
-  "duration_s": 3.687,
+  "duration_s": 3.891,
   "error": null,
   "skipped": false
 }

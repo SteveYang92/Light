@@ -29,6 +29,15 @@ Mandatory term translations — deviations are terminology defects:
 {% endfor %}
 </glossary>
 {% endif %}
+{% if summary %}
+
+<content_summary>
+Context the translator also saw — use it to judge topic, tone, and terminology fit:
+{% if summary.overview %}- **Overview**: {{ summary.overview }}{% endif %}
+{% if summary.key_topics %}- **Key Topics**: {{ summary.key_topics | join(", ") }}{% endif %}
+{% if summary.speakers %}- **Speakers**: {% for sid, role in summary.speakers.items() %}{{ sid }} ({{ role }}){% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+</content_summary>
+{% endif %}
 
 <source_units>
 {{ source_lines }}
@@ -51,5 +60,7 @@ Return ONLY a JSON object — no markdown fences, no prose before or after:
 - score: integer 1-5 per the anchors in <scoring_scale>.
 - summary: one-sentence overall verdict for the dimension.
 - issues: one entry per defective unit or cue — each entry names exactly ONE unit/cue and its ONE concrete problem; empty list when the dimension has no issues. MUST be empty when the score is 5.
+- Only list a unit/cue when you are confident it is a defect. If your own analysis concludes the rendering is acceptable (e.g. deliberate filler removal, idiomatic compression), do NOT list it — not even with a caveat.
+- Report each defective unit/cue under exactly ONE dimension — the most fitting one. Never double-report the same unit/cue for the same underlying problem.
 - language: write summary and issues in Chinese (中文); keep original-language quotes (source text, terms) in the original language.
 </output_contract>

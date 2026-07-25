@@ -2,7 +2,7 @@
   "case": "The_prompting_playbook__u0000-u0022",
   "output": [
     {
-      "unit_id": "p0000",
+      "unit_id": "p0000_0",
       "start": 22.386,
       "end": 26.289,
       "text": "Thank you so much for joining me this afternoon in the breakout room.",
@@ -102,7 +102,7 @@
       ]
     },
     {
-      "unit_id": "p0001",
+      "unit_id": "p0000_1",
       "start": 26.869,
       "end": 31.572,
       "text": "The last session today of Code with Claude. I hope you've all had a fantastic day so far.",
@@ -237,7 +237,7 @@
       ]
     },
     {
-      "unit_id": "p0002",
+      "unit_id": "p0001",
       "start": 32.173,
       "end": 37.617,
       "text": "My name is Margot Van Laar. I am an applied AI engineer at Anthropic here in London.",
@@ -365,7 +365,7 @@
       ]
     },
     {
-      "unit_id": "p0003",
+      "unit_id": "p0002",
       "start": 38.157,
       "end": 42.06,
       "text": "And this afternoon, we're going to be talking about the prompting playbook.",
@@ -458,7 +458,7 @@
       ]
     },
     {
-      "unit_id": "p0004_0",
+      "unit_id": "p0003_0",
       "start": 42.72,
       "end": 46.283,
       "text": "And prompting is arguably one of the first skills,",
@@ -530,7 +530,7 @@
       ]
     },
     {
-      "unit_id": "p0004_1",
+      "unit_id": "p0003_1",
       "start": 46.503,
       "end": 52.646,
       "text": "if not the first skill that we had to learn as engineers when we first started to work with LLMs.",
@@ -679,7 +679,7 @@
       ]
     },
     {
-      "unit_id": "p0005_0",
+      "unit_id": "p0004_0",
       "start": 52.987,
       "end": 54.067,
       "text": "And even now,",
@@ -709,7 +709,7 @@
       ]
     },
     {
-      "unit_id": "p0005_1",
+      "unit_id": "p0004_1",
       "start": 54.127,
       "end": 60.87,
       "text": "it continues to be one of the most critical skills to building effective AI systems.",
@@ -823,10 +823,10 @@
       ]
     },
     {
-      "unit_id": "p0006_0",
+      "unit_id": "p0005_0",
       "start": 61.83,
-      "end": 65.052,
-      "text": "So today we're going to discuss some best practices",
+      "end": 69.714,
+      "text": "So today we're going to discuss some best practices in the context of two practical scenarios",
       "speaker": "",
       "words": [
         {
@@ -891,16 +891,7 @@
           "end": 65.052,
           "confidence": 0.919,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0006_1",
-      "start": 66.332,
-      "end": 71.875,
-      "text": "in the context of two practical scenarios that you're probably encountering at work.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " in",
           "start": 66.332,
@@ -949,7 +940,16 @@
           "end": 69.714,
           "confidence": 0.764,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0005_1",
+      "start": 69.754,
+      "end": 71.875,
+      "text": "that you're probably encountering at work.",
+      "speaker": "",
+      "words": [
         {
           "text": " that",
           "start": 69.754,
@@ -995,7 +995,7 @@
       ]
     },
     {
-      "unit_id": "p0007",
+      "unit_id": "p0006",
       "start": 72.355,
       "end": 78.818,
       "text": "The first is where you have an existing prompt in production that you've been maintaining for some time.",
@@ -1130,7 +1130,7 @@
       ]
     },
     {
-      "unit_id": "p0008_0",
+      "unit_id": "p0007_0",
       "start": 80.41,
       "end": 84.932,
       "text": "And possibly you're migrating it to a new model or making a change to the architecture,",
@@ -1251,7 +1251,7 @@
       ]
     },
     {
-      "unit_id": "p0008_1",
+      "unit_id": "p0007_1",
       "start": 84.952,
       "end": 87.573,
       "text": "and for some reason, it's no longer working as well.",
@@ -1330,7 +1330,7 @@
       ]
     },
     {
-      "unit_id": "p0009_0",
+      "unit_id": "p0008_0",
       "start": 88.214,
       "end": 93.076,
       "text": "The second scenario is where we're building an entirely new agentic use case from the ground up,",
@@ -1458,7 +1458,7 @@
       ]
     },
     {
-      "unit_id": "p0009_1",
+      "unit_id": "p0008_1",
       "start": 93.196,
       "end": 95.617,
       "text": "and we need to build the prompt from zero to one.",
@@ -1544,7 +1544,7 @@
       ]
     },
     {
-      "unit_id": "p0010",
+      "unit_id": "p0009",
       "start": 98.762,
       "end": 104.726,
       "text": "In order to illustrate these best practices, I don't just want to give you a list of do's and don'ts.",
@@ -1693,7 +1693,7 @@
       ]
     },
     {
-      "unit_id": "p0011_0",
+      "unit_id": "p0010_0",
       "start": 105.046,
       "end": 110.53,
       "text": "I want to walk through a practical example that's been inspired by real prompts",
@@ -1800,7 +1800,7 @@
       ]
     },
     {
-      "unit_id": "p0011_1",
+      "unit_id": "p0010_1",
       "start": 110.63,
       "end": 115.314,
       "text": "that I've seen some of our customers work with who are building on Claude.",
@@ -1908,14 +1908,14 @@
     }
   ],
   "usage": {
-    "prompt_tokens": 9791,
-    "prompt_cache_hit_tokens": 9216,
-    "prompt_cache_miss_tokens": 575,
-    "completion_tokens": 140,
-    "total_tokens": 9931,
-    "calls": 7
+    "prompt_tokens": 11277,
+    "prompt_cache_hit_tokens": 10368,
+    "prompt_cache_miss_tokens": 909,
+    "completion_tokens": 151,
+    "total_tokens": 11428,
+    "calls": 8
   },
-  "duration_s": 3.38,
+  "duration_s": 4.044,
   "error": null,
   "skipped": false
 }

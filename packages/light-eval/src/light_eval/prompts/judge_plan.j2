@@ -19,6 +19,13 @@ The plan step operates under duration constraints — judge its choices *within*
 Consequence: a mid-clause boundary can be the *correct* choice when every cleaner alternative would violate the duration budget. When you suggest merging two units, only do so if the merged duration stays within the soft cap — compute it from the timestamps before reporting.
 </step_constraints>
 
+<non_defects>
+These are correct-by-design, NOT defects — never list them in issues:
+- A mid-clause boundary whose two neighboring units would exceed the soft cap ({{ max_duration }}×1.15s) if merged. Example: "p0007 ends mid-clause, but p0007+p0008 would run 8.9s — over the cap" means the split is right; report nothing.
+- A unit longer than {{ max_duration }}s that is a single source fragment with no internal split point (kept whole by design; a later step splits it at the word level).
+- A boundary that reads slightly awkward when every cleaner alternative would violate the duration budget.
+</non_defects>
+
 <dimensions>
 boundary_quality — Within the duration-budget feasible space, are the chosen boundaries the semantically best available? Only deduct when a boundary exists that satisfies the budget AND is semantically cleaner but was not used. A mid-clause break forced by the budget is acceptable.
 
@@ -44,5 +51,8 @@ Return ONLY a JSON object — no markdown fences, no prose before or after:
 - score: integer 1-5 per the anchors in <scoring_scale>.
 - summary: one-sentence overall verdict for the dimension.
 - issues: one entry per defective unit — each entry names exactly ONE unit and its ONE concrete problem; empty list when the dimension has no issues. MUST be empty when the score is 5.
+- Only list a unit when you are confident it is a defect. If your own analysis concludes the choice is acceptable (e.g. forced by the duration budget, or matching a pattern in <non_defects>), do NOT list it — not even with a caveat.
+- Report each defective unit under exactly ONE dimension — the most fitting one. Never double-report the same unit for the same underlying problem.
+- A merge suggestion must name both unit ids in the problem text (e.g. "p0003 与 p0004 应合并") — it is re-checked against the timestamps, and infeasible ones are discarded.
 - language: write summary and issues in Chinese (中文); keep original-language quotes (source text, terms) in the original language.
 </output_contract>

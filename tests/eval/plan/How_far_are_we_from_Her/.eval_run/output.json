@@ -176,8 +176,8 @@
     {
       "unit_id": "p0001",
       "start": 10.615,
-      "end": 11.615,
-      "text": "Where'd you get that name from?",
+      "end": 13.537,
+      "text": "Where'd you get that name from? I gave it to myself , actually.",
       "speaker": "",
       "words": [
         {
@@ -221,16 +221,7 @@
           "end": 11.615,
           "confidence": 0.001,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0002",
-      "start": 12.256,
-      "end": 13.537,
-      "text": "I gave it to myself , actually.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " I",
           "start": 12.256,
@@ -276,7 +267,7 @@
       ]
     },
     {
-      "unit_id": "p0003",
+      "unit_id": "p0002",
       "start": 13.917,
       "end": 16.599,
       "text": "Fast forward 13 years to July 2026.",
@@ -334,7 +325,7 @@
       ]
     },
     {
-      "unit_id": "p0004",
+      "unit_id": "p0003",
       "start": 17.28,
       "end": 24.226,
       "text": "openai releases gpt live , promising a meaningful upgrade to their ChatGPT voice assistant.",
@@ -434,7 +425,7 @@
       ]
     },
     {
-      "unit_id": "p0006",
+      "unit_id": "p0004",
       "start": 24.95,
       "end": 28.152,
       "text": "What do you think? If you go up, it's going to get kind of baggy.",
@@ -548,7 +539,7 @@
       ]
     },
     {
-      "unit_id": "p0007",
+      "unit_id": "p0005",
       "start": 28.292,
       "end": 31.494,
       "text": "Although baggy is very popular now, don't you think?",
@@ -620,7 +611,7 @@
       ]
     },
     {
-      "unit_id": "p0008",
+      "unit_id": "p0006",
       "start": 31.954,
       "end": 35.756,
       "text": "And OpenAI are not the only ones trying to bring Her to life.",
@@ -720,7 +711,7 @@
       ]
     },
     {
-      "unit_id": "p0009",
+      "unit_id": "p0007",
       "start": 36.397,
       "end": 40.459,
       "text": "Just two months ago, Thinking Machines announced their interaction models.",
@@ -799,7 +790,7 @@
       ]
     },
     {
-      "unit_id": "p0010",
+      "unit_id": "p0008",
       "start": 40.919,
       "end": 44.661,
       "text": "They respond in real time and jump in very proactively.",
@@ -878,10 +869,10 @@
       ]
     },
     {
-      "unit_id": "p0011",
+      "unit_id": "p0009",
       "start": 45.342,
-      "end": 46.662,
-      "text": "Let me know if I start to slouch.",
+      "end": 50.485,
+      "text": "Let me know if I start to slouch. I've got you. You're starting to slouch forward.",
       "speaker": "",
       "words": [
         {
@@ -939,16 +930,7 @@
           "end": 46.662,
           "confidence": 0.961,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0012",
-      "start": 47.243,
-      "end": 50.485,
-      "text": "I've got you. You're starting to slouch forward.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " I've",
           "start": 47.243,
@@ -1008,7 +990,7 @@
       ]
     },
     {
-      "unit_id": "p0013_0",
+      "unit_id": "p0010_0",
       "start": 50.965,
       "end": 55.051,
       "text": "So why are the frontier labs rushing in this direction all of a sudden,",
@@ -1115,7 +1097,7 @@
       ]
     },
     {
-      "unit_id": "p0013_1",
+      "unit_id": "p0010_1",
       "start": 55.551,
       "end": 61.494,
       "text": "and what is it about these new voice agents that allows them to be so much more fluent and responsive?",
@@ -1264,7 +1246,7 @@
       ]
     },
     {
-      "unit_id": "p0014",
+      "unit_id": "p0011",
       "start": 62.334,
       "end": 65.395,
       "text": "Well, I found the one person who can answer these questions.",
@@ -1350,7 +1332,7 @@
       ]
     },
     {
-      "unit_id": "p0015",
+      "unit_id": "p0012",
       "start": 66.216,
       "end": 72.838,
       "text": "Neil Zeghidour spent years at FAANG building the audio tech behind products like google meet and NotebookLM.",
@@ -1478,7 +1460,7 @@
       ]
     },
     {
-      "unit_id": "p0016_0",
+      "unit_id": "p0013_0",
       "start": 73.359,
       "end": 80.678,
       "text": "he then founded Qtai, the paris-based non-profit lab that built the very first full-duplex assistant.",
@@ -1592,7 +1574,7 @@
       ]
     },
     {
-      "unit_id": "p0016_1",
+      "unit_id": "p0013_1",
       "start": 80.678,
       "end": 84.565,
       "text": "That's the new class of models behind the recent launches.",
@@ -1671,7 +1653,7 @@
       ]
     },
     {
-      "unit_id": "p0017",
+      "unit_id": "p0014",
       "start": 85.245,
       "end": 90.289,
       "text": "But before we get to the bleeding edge, let's remind ourselves where we were less than a month ago.",
@@ -1813,7 +1795,7 @@
       ]
     },
     {
-      "unit_id": "p0018_0",
+      "unit_id": "p0015_0",
       "start": 90.83,
       "end": 92.451,
       "text": "When I looked at the ChatGPT app,",
@@ -1871,7 +1853,7 @@
       ]
     },
     {
-      "unit_id": "p0018_1",
+      "unit_id": "p0015_1",
       "start": 92.651,
       "end": 98.436,
       "text": "I noticed there are actually multiple options for a voice, including standard, advanced, and live.",
@@ -1985,7 +1967,7 @@
       ]
     },
     {
-      "unit_id": "p0019",
+      "unit_id": "p0016",
       "start": 98.997,
       "end": 103.7,
       "text": "About a dozen papers later, I realized that these are not just quality increments.",
@@ -2092,7 +2074,7 @@
       ]
     },
     {
-      "unit_id": "p0020",
+      "unit_id": "p0017",
       "start": 104.161,
       "end": 107.944,
       "text": "They're conceptually different ways of modeling conversations.",
@@ -2150,7 +2132,7 @@
       ]
     },
     {
-      "unit_id": "p0021",
+      "unit_id": "p0018",
       "start": 108.264,
       "end": 109.425,
       "text": "Let's take a look at standard.",
@@ -2201,7 +2183,7 @@
       ]
     },
     {
-      "unit_id": "p0022",
+      "unit_id": "p0019",
       "start": 110.866,
       "end": 113.928,
       "text": "I'm in a library right now. Can you tell I'm whispering?",
@@ -2287,7 +2269,7 @@
       ]
     },
     {
-      "unit_id": "p0023",
+      "unit_id": "p0020",
       "start": 115.429,
       "end": 118.07,
       "text": "I can do that. Imagine I'm lowering my voice.",
@@ -2359,7 +2341,7 @@
       ]
     },
     {
-      "unit_id": "p0024",
+      "unit_id": "p0021",
       "start": 119.091,
       "end": 125.314,
       "text": "Hey, am I whispering right now? It does sound like you're speaking more quietly than normal.",
@@ -2480,7 +2462,7 @@
       ]
     },
     {
-      "unit_id": "p0025",
+      "unit_id": "p0022",
       "start": 125.834,
       "end": 131.097,
       "text": "Yes, I don't actually measure your volume precisely, but your voice comes across as a whisper.",
@@ -2601,7 +2583,7 @@
       ]
     },
     {
-      "unit_id": "p0026",
+      "unit_id": "p0023_0",
       "start": 131.577,
       "end": 133.438,
       "text": "All right, could you beatbox for me?",
@@ -2659,10 +2641,10 @@
       ]
     },
     {
-      "unit_id": "p0027",
+      "unit_id": "p0023_1",
       "start": 135.179,
-      "end": 137.14,
-      "text": "Boots and cats and boots and cats.",
+      "end": 140.042,
+      "text": "Boots and cats and boots and cats. B-S-T-S-T-S, birds, cats, cats, cats.",
       "speaker": "",
       "words": [
         {
@@ -2713,16 +2695,7 @@
           "end": 137.14,
           "confidence": 0.983,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0028",
-      "start": 137.701,
-      "end": 140.042,
-      "text": "B-S-T-S-T-S, birds, cats, cats, cats.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " B-S-T-S-T-S,",
           "start": 137.701,
@@ -2761,7 +2734,7 @@
       ]
     },
     {
-      "unit_id": "p0029",
+      "unit_id": "p0024",
       "start": 141.903,
       "end": 145.704,
       "text": "Okay, so what in the world is happening here?",
@@ -2833,7 +2806,7 @@
       ]
     },
     {
-      "unit_id": "p0030",
+      "unit_id": "p0025",
       "start": 146.045,
       "end": 149.946,
       "text": "The issue is standard mode is basically an LLM wrapper.",
@@ -2912,7 +2885,7 @@
       ]
     },
     {
-      "unit_id": "p0031_0",
+      "unit_id": "p0026_0",
       "start": 150.247,
       "end": 151.407,
       "text": "If you ask the assistant,",
@@ -2956,7 +2929,7 @@
       ]
     },
     {
-      "unit_id": "p0031_1",
+      "unit_id": "p0026_1",
       "start": 151.667,
       "end": 155.089,
       "text": "it will tell you it was built on top of GPT 5.5,",
@@ -3049,7 +3022,7 @@
       ]
     },
     {
-      "unit_id": "p0031_2",
+      "unit_id": "p0026_2",
       "start": 155.189,
       "end": 160.431,
       "text": "which is a pure language model that cannot process or produce audio on its own.",
@@ -3163,7 +3136,7 @@
       ]
     },
     {
-      "unit_id": "p0032",
+      "unit_id": "p0027",
       "start": 161.172,
       "end": 165.774,
       "text": "There's an entire pipeline of additional components that gives it a voice interface.",
@@ -3263,7 +3236,7 @@
       ]
     },
     {
-      "unit_id": "p0033_0",
+      "unit_id": "p0028_0",
       "start": 166.302,
       "end": 169.3719375,
       "text": "A voice activity detection or VAD model",
@@ -3321,7 +3294,7 @@
       ]
     },
     {
-      "unit_id": "p0033_1",
+      "unit_id": "p0028_1",
       "start": 169.3719375,
       "end": 173.567,
       "text": "continuously analyzes the audio waveform captured by the microphone.",
@@ -3393,7 +3366,7 @@
       ]
     },
     {
-      "unit_id": "p0034",
+      "unit_id": "p0029",
       "start": 174.568,
       "end": 178.21,
       "text": "When did you give it to yourself? Well, right when you asked me if I had a name.",
@@ -3528,7 +3501,7 @@
       ]
     },
     {
-      "unit_id": "p0035",
+      "unit_id": "p0030",
       "start": 178.691,
       "end": 185.075,
       "text": "Every 30 milliseconds or so, it makes a binary decision. Is the user speaking or are they silent?",
@@ -3663,7 +3636,7 @@
       ]
     },
     {
-      "unit_id": "p0036",
+      "unit_id": "p0031",
       "start": 186.536,
       "end": 190.719,
       "text": "After long enough silence, it concludes the speaker is done talking.",
@@ -3749,7 +3722,7 @@
       ]
     },
     {
-      "unit_id": "p0037_0",
+      "unit_id": "p0032_0",
       "start": 192.34,
       "end": 198.443,
       "text": "Then every identified speech portion is passed on to an automatic speech recognition model,",
@@ -3856,7 +3829,7 @@
       ]
     },
     {
-      "unit_id": "p0037_1",
+      "unit_id": "p0032_1",
       "start": 198.604,
       "end": 201.165,
       "text": "or ASR, which transcribes it.",
@@ -3900,7 +3873,7 @@
       ]
     },
     {
-      "unit_id": "p0038_0",
+      "unit_id": "p0033_0",
       "start": 201.925,
       "end": 208.148,
       "text": "Next, a pure language model, like GPT 5.5, reads the user input in text form",
@@ -4014,7 +3987,7 @@
       ]
     },
     {
-      "unit_id": "p0038_1",
+      "unit_id": "p0033_1",
       "start": 208.448,
       "end": 210.088,
       "text": "and produces a text response.",
@@ -4058,7 +4031,7 @@
       ]
     },
     {
-      "unit_id": "p0039",
+      "unit_id": "p0034",
       "start": 210.769,
       "end": 217.572,
       "text": "So, by the time the message gets to the LLM, the acoustics are lost in translation, I mean transcription.",
@@ -4200,7 +4173,7 @@
       ]
     },
     {
-      "unit_id": "p0040",
+      "unit_id": "p0035",
       "start": 218.532,
       "end": 223.334,
       "text": "And finally, a text-to-speech, or TTS model, reads the LLM response out loud.",
@@ -4300,7 +4273,7 @@
       ]
     },
     {
-      "unit_id": "p0041",
+      "unit_id": "p0036",
       "start": 223.97,
       "end": 228.734,
       "text": "This design is representative of a large class of voice assistants known as cascades.",
@@ -4407,7 +4380,7 @@
       ]
     },
     {
-      "unit_id": "p0042",
+      "unit_id": "p0037",
       "start": 229.694,
       "end": 233.617,
       "text": "Cascades can be quite slow since latency accumulates across components.",
@@ -4486,7 +4459,7 @@
       ]
     },
     {
-      "unit_id": "p0043_0",
+      "unit_id": "p0038_0",
       "start": 234.278,
       "end": 238.361,
       "text": "OpenAI hasn't published latencies for GPT 5.5 in particular,",
@@ -4558,7 +4531,7 @@
       ]
     },
     {
-      "unit_id": "p0043_1",
+      "unit_id": "p0038_1",
       "start": 238.641,
       "end": 242.724,
       "text": "but its predecessors took multiple seconds to respond with voice.",
@@ -4637,7 +4610,7 @@
       ]
     },
     {
-      "unit_id": "p0044",
+      "unit_id": "p0039",
       "start": 243.284,
       "end": 247.648,
       "text": "For reference, a human takes a little over 200 milliseconds on average.",
@@ -4730,7 +4703,7 @@
       ]
     },
     {
-      "unit_id": "p0045",
+      "unit_id": "p0040",
       "start": 248.428,
       "end": 250.75,
       "text": "Now let's see how this compares to advanced mode.",
@@ -4802,7 +4775,7 @@
       ]
     },
     {
-      "unit_id": "p0046",
+      "unit_id": "p0041",
       "start": 251.406,
       "end": 257.671,
       "text": "Yo, can you, uh, beatbox a beat and I'm gonna rap on it. Alright, let's do it.",
@@ -4930,10 +4903,10 @@
       ]
     },
     {
-      "unit_id": "p0047_0",
+      "unit_id": "p0042_0",
       "start": 258.832,
-      "end": 262.135,
-      "text": "Shit. Yo. Yo, it's Husk.",
+      "end": 260.234,
+      "text": "Shit. Yo. Yo,",
       "speaker": "",
       "words": [
         {
@@ -4956,7 +4929,16 @@
           "end": 260.234,
           "confidence": 0.766,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0042_1",
+      "start": 260.614,
+      "end": 267.179,
+      "text": "it's Husk. Keep it going when I'm rapping.",
+      "speaker": "",
+      "words": [
         {
           "text": " it's",
           "start": 260.614,
@@ -4970,16 +4952,7 @@
           "end": 262.135,
           "confidence": 0.735,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0047_1",
-      "start": 262.195,
-      "end": 270.122,
-      "text": "Keep it going when I'm rapping. Yo. Yo, it's Husk. I'm... I'm...",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Keep",
           "start": 262.195,
@@ -5021,7 +4994,16 @@
           "end": 267.179,
           "confidence": 0.79,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0042_2",
+      "start": 267.42,
+      "end": 270.122,
+      "text": "Yo. Yo, it's Husk. I'm... I'm...",
+      "speaker": "",
+      "words": [
         {
           "text": " Yo.",
           "start": 267.42,
@@ -5067,7 +5049,7 @@
       ]
     },
     {
-      "unit_id": "p0048",
+      "unit_id": "p0043",
       "start": 275.178,
       "end": 281.262,
       "text": "Okay, at least we're making progress. It might not beatbox perfectly, but at least it feels more audio native.",
@@ -5209,7 +5191,7 @@
       ]
     },
     {
-      "unit_id": "p0049_0",
+      "unit_id": "p0044_0",
       "start": 282.063,
       "end": 287.226,
       "text": "The model behind it is GPT-4o, where O stands for omnimodal,",
@@ -5295,7 +5277,7 @@
       ]
     },
     {
-      "unit_id": "p0049_1",
+      "unit_id": "p0044_1",
       "start": 287.706,
       "end": 294.051,
       "text": "meaning it can process text, audio, image, and video without passing them through a text bottleneck.",
@@ -5416,7 +5398,7 @@
       ]
     },
     {
-      "unit_id": "p0050",
+      "unit_id": "p0045",
       "start": 294.491,
       "end": 300.235,
       "text": "It falls into a category that is the complete opposite of cascades, namely end-to-end models.",
@@ -5530,7 +5512,7 @@
       ]
     },
     {
-      "unit_id": "p0051_0",
+      "unit_id": "p0046_0",
       "start": 301.116,
       "end": 304.378,
       "text": "An end-to-end voice assistant isn't necessarily a monolith,",
@@ -5595,7 +5577,7 @@
       ]
     },
     {
-      "unit_id": "p0051_1",
+      "unit_id": "p0046_1",
       "start": 304.498,
       "end": 311.037,
       "text": "but its components are all trained together on speech data, so input acoustics are never lost.",
@@ -5716,7 +5698,7 @@
       ]
     },
     {
-      "unit_id": "p0052",
+      "unit_id": "p0047",
       "start": 311.838,
       "end": 316.62,
       "text": "And removing the LLM bottleneck brings latency down to almost human level.",
@@ -5809,7 +5791,7 @@
       ]
     },
     {
-      "unit_id": "p0053",
+      "unit_id": "p0048",
       "start": 317.24,
       "end": 319.742,
       "text": "But GPT-4o is not exactly her.",
@@ -5860,7 +5842,7 @@
       ]
     },
     {
-      "unit_id": "p0054_0",
+      "unit_id": "p0049_0",
       "start": 320.222,
       "end": 323.543,
       "text": "The problem is it can only do one thing at a time,",
@@ -5953,7 +5935,7 @@
       ]
     },
     {
-      "unit_id": "p0054_1",
+      "unit_id": "p0049_1",
       "start": 324.004,
       "end": 328.286,
       "text": "either speak, i.e. beatbox, or listen, but never both.",
@@ -6025,7 +6007,7 @@
       ]
     },
     {
-      "unit_id": "p0055",
+      "unit_id": "p0050",
       "start": 328.798,
       "end": 335.201,
       "text": "Even regular conversations can feel a little bit like passing the baton back and forth between you and the assistant.",
@@ -6174,7 +6156,7 @@
       ]
     },
     {
-      "unit_id": "p0056",
+      "unit_id": "p0051",
       "start": 335.821,
       "end": 338.182,
       "text": "But GPT Live promises to change that.",
@@ -6232,7 +6214,7 @@
       ]
     },
     {
-      "unit_id": "p0057",
+      "unit_id": "p0052_0",
       "start": 339.783,
       "end": 341.043,
       "text": "Can you beatbox for me?",
@@ -6276,7 +6258,7 @@
       ]
     },
     {
-      "unit_id": "p0058",
+      "unit_id": "p0052_1",
       "start": 342.464,
       "end": 347.626,
       "text": "Sorry, I can't do beatboxing, but I can help in lots of other ways.",
@@ -6383,7 +6365,7 @@
       ]
     },
     {
-      "unit_id": "p0059",
+      "unit_id": "p0053_0",
       "start": 347.766,
       "end": 350.427,
       "text": "All right, tell me what's the plot of the movie Her?",
@@ -6469,7 +6451,7 @@
       ]
     },
     {
-      "unit_id": "p0060",
+      "unit_id": "p0053_1",
       "start": 351.868,
       "end": 356.23,
       "text": "Theodore is a lonely letter writer in a near future LA.",
@@ -6555,7 +6537,7 @@
       ]
     },
     {
-      "unit_id": "p0061_0",
+      "unit_id": "p0054_0",
       "start": 358.875,
       "end": 361.277,
       "text": "What I just did there is called back channeling.",
@@ -6627,7 +6609,7 @@
       ]
     },
     {
-      "unit_id": "p0061_1",
+      "unit_id": "p0054_1",
       "start": 361.697,
       "end": 366.581,
       "text": "I exaggerated a little, but humans do this often to acknowledge that they're paying attention.",
@@ -6741,7 +6723,7 @@
       ]
     },
     {
-      "unit_id": "p0062",
+      "unit_id": "p0055_0",
       "start": 367.081,
       "end": 370.763,
       "text": "It might sound mundane, but it's actually a challenge for voice assistants.",
@@ -6834,7 +6816,7 @@
       ]
     },
     {
-      "unit_id": "p0063",
+      "unit_id": "p0055_1",
       "start": 371.264,
       "end": 375.006,
       "text": "They need to decide whether your intervention should interrupt the conversation or not.",
@@ -6934,7 +6916,7 @@
       ]
     },
     {
-      "unit_id": "p0064",
+      "unit_id": "p0056",
       "start": 375.827,
       "end": 381.291,
       "text": "AI's ability to overlap naturally with humans is what brings GPT Live closer to her.",
@@ -7048,7 +7030,7 @@
       ]
     },
     {
-      "unit_id": "p0065",
+      "unit_id": "p0057",
       "start": 382.051,
       "end": 384.553,
       "text": "Listen to Samantha's interventions in this scene.",
@@ -7106,7 +7088,7 @@
       ]
     },
     {
-      "unit_id": "p0066_0",
+      "unit_id": "p0058_0",
       "start": 387.106,
       "end": 390.248,
       "text": "Wow, your feet? Really? Yes, he is obsessed.",
@@ -7171,7 +7153,7 @@
       ]
     },
     {
-      "unit_id": "p0066_1",
+      "unit_id": "p0058_1",
       "start": 390.308,
       "end": 393.57,
       "text": "What? Well, obsessed? And now you have to show them to me.",
@@ -7264,7 +7246,7 @@
       ]
     },
     {
-      "unit_id": "p0066_2",
+      "unit_id": "p0058_2",
       "start": 393.831,
       "end": 396.172,
       "text": "Come on, show them to me. You have to show them to me. Let me see.",
@@ -7385,10 +7367,10 @@
       ]
     },
     {
-      "unit_id": "p0066_3",
+      "unit_id": "p0058_3",
       "start": 397.393,
-      "end": 403.077,
-      "text": "Wow, he's right. They are really hot. See? I told you, Tatia, you have hot feet.",
+      "end": 399.454,
+      "text": "Wow, he's right. They are really hot.",
       "speaker": "",
       "words": [
         {
@@ -7439,7 +7421,16 @@
           "end": 399.454,
           "confidence": 0.912,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0058_4",
+      "start": 400.295,
+      "end": 403.077,
+      "text": "See? I told you, Tatia, you have hot feet.",
+      "speaker": "",
+      "words": [
         {
           "text": " See?",
           "start": 400.295,
@@ -7506,10 +7497,10 @@
       ]
     },
     {
-      "unit_id": "p0066_4",
+      "unit_id": "p0058_5",
       "start": 403.197,
-      "end": 407.92,
-      "text": "You do. Face it. They're my favorite thing about her. Really? That's it? My feet? Oh.",
+      "end": 405.158,
+      "text": "You do. Face it. They're my favorite thing about her.",
       "speaker": "",
       "words": [
         {
@@ -7581,7 +7572,16 @@
           "end": 405.158,
           "confidence": 0.251,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0058_6",
+      "start": 405.579,
+      "end": 407.92,
+      "text": "Really? That's it? My feet? Oh.",
+      "speaker": "",
+      "words": [
         {
           "text": " Really?",
           "start": 405.579,
@@ -7627,7 +7627,7 @@
       ]
     },
     {
-      "unit_id": "p0067_0",
+      "unit_id": "p0059_0",
       "start": 408.681,
       "end": 409.7386470588235,
       "text": "And here's what's interesting.",
@@ -7664,7 +7664,7 @@
       ]
     },
     {
-      "unit_id": "p0067_1",
+      "unit_id": "p0059_1",
       "start": 409.7386470588235,
       "end": 416.7473333333333,
       "text": "GPT-4o and GPT Live are two years apart, which is like 200 in AI years.",
@@ -7778,7 +7778,7 @@
       ]
     },
     {
-      "unit_id": "p0068_0",
+      "unit_id": "p0060_0",
       "start": 416.7473333333333,
       "end": 419.9455490196078,
       "text": "So you would think that the difference in quality comes from scale,",
@@ -7871,7 +7871,7 @@
       ]
     },
     {
-      "unit_id": "p0068_1",
+      "unit_id": "p0060_1",
       "start": 419.9455490196078,
       "end": 426.658,
       "text": "more parameters, more data, faster GPUs, but that's not necessarily the case, or it's a very small part of it.",
@@ -8020,7 +8020,7 @@
       ]
     },
     {
-      "unit_id": "p0069",
+      "unit_id": "p0061",
       "start": 427.439,
       "end": 433.444,
       "text": "The true unlock comes from the fact that GPT Live models conversations entirely differently.",
@@ -8127,10 +8127,10 @@
       ]
     },
     {
-      "unit_id": "p0070",
+      "unit_id": "p0062",
       "start": 434.265,
-      "end": 436.607,
-      "text": "These segments are called speaker turns.",
+      "end": 439.93,
+      "text": "These segments are called speaker turns. In a real conversation, they often overlap.",
       "speaker": "",
       "words": [
         {
@@ -8174,16 +8174,7 @@
           "end": 436.607,
           "confidence": 0.967,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0071",
-      "start": 437.548,
-      "end": 439.93,
-      "text": "In a real conversation, they often overlap.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " In",
           "start": 437.548,
@@ -8236,7 +8227,7 @@
       ]
     },
     {
-      "unit_id": "p0072",
+      "unit_id": "p0063",
       "start": 440.35,
       "end": 444.614,
       "text": "Samantha repeatedly chimes in while other characters are talking, like here.",
@@ -8322,7 +8313,7 @@
       ]
     },
     {
-      "unit_id": "p0073_0",
+      "unit_id": "p0064_0",
       "start": 445.674,
       "end": 449.798,
       "text": "The problem with GPT-4o is that it forces this whole conversation",
@@ -8408,7 +8399,7 @@
       ]
     },
     {
-      "unit_id": "p0073_1",
+      "unit_id": "p0064_1",
       "start": 449.998,
       "end": 452.721,
       "text": "into a single sequence of alternating turns.",
@@ -8466,7 +8457,7 @@
       ]
     },
     {
-      "unit_id": "p0074",
+      "unit_id": "p0065",
       "start": 453.241,
       "end": 459.227,
       "text": "But models like GPT Live completely throw away the concept of speaker turns. They're not turn-based.",
@@ -8587,7 +8578,7 @@
       ]
     },
     {
-      "unit_id": "p0075_0",
+      "unit_id": "p0066_0",
       "start": 459.247,
       "end": 461.629,
       "text": "They're more like time-based interaction",
@@ -8631,7 +8622,7 @@
       ]
     },
     {
-      "unit_id": "p0075_1",
+      "unit_id": "p0066_1",
       "start": 461.669,
       "end": 468.155,
       "text": "where they're continuously taking in audio, text, video, and continuously providing output.",
@@ -8724,7 +8715,7 @@
       ]
     },
     {
-      "unit_id": "p0076",
+      "unit_id": "p0067_0",
       "start": 468.475,
       "end": 471.498,
       "text": "Now, we cut this up in chunks of 20 milliseconds.",
@@ -8803,7 +8794,7 @@
       ]
     },
     {
-      "unit_id": "p0077",
+      "unit_id": "p0067_1",
       "start": 472.014,
       "end": 477.259,
       "text": "And this enables you to catch these things like interruptions and simultaneous speech.",
@@ -8903,7 +8894,7 @@
       ]
     },
     {
-      "unit_id": "p0078_0",
+      "unit_id": "p0068_0",
       "start": 478.139,
       "end": 480.982,
       "text": "This was Neera Murati in a Bloomberg interview.",
@@ -8968,7 +8959,7 @@
       ]
     },
     {
-      "unit_id": "p0078_1",
+      "unit_id": "p0068_1",
       "start": 481.362,
       "end": 485.245,
       "text": "She's the former CTO of OpenAI, now founder of Thinking Machines.",
@@ -9054,7 +9045,7 @@
       ]
     },
     {
-      "unit_id": "p0079",
+      "unit_id": "p0069",
       "start": 485.986,
       "end": 488.768,
       "text": "They're building something they call interaction models.",
@@ -9112,10 +9103,10 @@
       ]
     },
     {
-      "unit_id": "p0080",
+      "unit_id": "p0070",
       "start": 490.91,
-      "end": 493.453,
-      "text": "Can you be spontaneous and answer questions as you hear them?",
+      "end": 495.915,
+      "text": "Can you be spontaneous and answer questions as you hear them? Absolutely. I'm ready when you are.",
       "speaker": "",
       "words": [
         {
@@ -9194,16 +9185,7 @@
           "end": 493.453,
           "confidence": 0.909,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0081",
-      "start": 494.493,
-      "end": 495.915,
-      "text": "Absolutely. I'm ready when you are.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Absolutely.",
           "start": 494.493,
@@ -9249,7 +9231,7 @@
       ]
     },
     {
-      "unit_id": "p0082",
+      "unit_id": "p0071_0",
       "start": 497.896,
       "end": 499.718,
       "text": "What is this more or less prime number?",
@@ -9314,7 +9296,7 @@
       ]
     },
     {
-      "unit_id": "p0083_0",
+      "unit_id": "p0071_1",
       "start": 501.867,
       "end": 508.17,
       "text": "The core idea is to view this conversation as two separate concurrent audio streams,",
@@ -9421,10 +9403,10 @@
       ]
     },
     {
-      "unit_id": "p0083_1",
+      "unit_id": "p0071_2",
       "start": 508.311,
-      "end": 511.633,
-      "text": "one for the user and one for the assistant.",
+      "end": 513.174,
+      "text": "one for the user and one for the assistant. Crucially, neither stream is ever discontinued.",
       "speaker": "",
       "words": [
         {
@@ -9489,16 +9471,7 @@
           "end": 511.633,
           "confidence": 0.52,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0083_2",
-      "start": 511.653,
-      "end": 513.174,
-      "text": "Crucially, neither stream is ever discontinued.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Crucially,",
           "start": 511.653,
@@ -9544,7 +9517,7 @@
       ]
     },
     {
-      "unit_id": "p0084",
+      "unit_id": "p0072",
       "start": 527.382,
       "end": 533.186,
       "text": "When the user goes quiet, their stream simply carries silence, which is modeled like any regular piece of audio.",
@@ -9686,7 +9659,7 @@
       ]
     },
     {
-      "unit_id": "p0085",
+      "unit_id": "p0073",
       "start": 534.307,
       "end": 536.408,
       "text": "So there are no more turns to hand over.",
@@ -9758,7 +9731,7 @@
       ]
     },
     {
-      "unit_id": "p0086_0",
+      "unit_id": "p0074_0",
       "start": 537.169,
       "end": 542.472,
       "text": "For instance here, the agent is still answering the second question while the third one is already coming in.",
@@ -9900,7 +9873,7 @@
       ]
     },
     {
-      "unit_id": "p0086_1",
+      "unit_id": "p0074_1",
       "start": 542.893,
       "end": 545.174,
       "text": "It's listening and speaking at the same time.",
@@ -9965,7 +9938,7 @@
       ]
     },
     {
-      "unit_id": "p0087_0",
+      "unit_id": "p0075_0",
       "start": 545.735,
       "end": 549.197,
       "text": "A turn-based system would have to make an impossible choice here,",
@@ -10051,7 +10024,7 @@
       ]
     },
     {
-      "unit_id": "p0087_1",
+      "unit_id": "p0075_1",
       "start": 549.657,
       "end": 552.799,
       "text": "either cut its answer short or miss the incoming question.",
@@ -10130,10 +10103,10 @@
       ]
     },
     {
-      "unit_id": "p0088",
+      "unit_id": "p0076",
       "start": 553.92,
-      "end": 556.342,
-      "text": "Formally, this is known as a full duplex.",
+      "end": 560.576,
+      "text": "Formally, this is known as a full duplex. The channel carries communication in both directions at the same time.",
       "speaker": "",
       "words": [
         {
@@ -10191,16 +10164,7 @@
           "end": 556.342,
           "confidence": 0.942,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0089",
-      "start": 556.734,
-      "end": 560.576,
-      "text": "The channel carries communication in both directions at the same time.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " The",
           "start": 556.734,
@@ -10281,7 +10245,7 @@
       ]
     },
     {
-      "unit_id": "p0090",
+      "unit_id": "p0077",
       "start": 560.917,
       "end": 563.698,
       "text": "This is exactly how OpenAI describes GPT Live.",
@@ -10346,7 +10310,7 @@
       ]
     },
     {
-      "unit_id": "p0091",
+      "unit_id": "p0078_0",
       "start": 565.019,
       "end": 567.3,
       "text": "The traditional turn-based systems are half-duplex.",
@@ -10397,7 +10361,7 @@
       ]
     },
     {
-      "unit_id": "p0092",
+      "unit_id": "p0078_1",
       "start": 567.701,
       "end": 573.164,
       "text": "The channel still works in both directions, but the agent is either listening or speaking, never both.",
@@ -10525,7 +10489,7 @@
       ]
     },
     {
-      "unit_id": "p0093_0",
+      "unit_id": "p0079_0",
       "start": 573.925,
       "end": 576.946,
       "text": "The classic half-duplex device is the walkie-talkie,",
@@ -10583,7 +10547,7 @@
       ]
     },
     {
-      "unit_id": "p0093_1",
+      "unit_id": "p0079_1",
       "start": 577.146,
       "end": 582.53,
       "text": "invented around 1940 by Donald Hings and widely used during World War II.",
@@ -10683,7 +10647,7 @@
       ]
     },
     {
-      "unit_id": "p0093_2",
+      "unit_id": "p0079_2",
       "start": 583.366,
       "end": 587.769,
       "text": "It had a single antenna that acted both as a transmitter and the receiver,",
@@ -10790,7 +10754,7 @@
       ]
     },
     {
-      "unit_id": "p0093_3",
+      "unit_id": "p0079_3",
       "start": 587.889,
       "end": 590.731,
       "text": "so it physically couldn't do both things at once.",
@@ -10862,7 +10826,7 @@
       ]
     },
     {
-      "unit_id": "p0094",
+      "unit_id": "p0080",
       "start": 591.672,
       "end": 594.534,
       "text": "That's why soldiers sent over at the end of each message.",
@@ -10948,7 +10912,7 @@
       ]
     },
     {
-      "unit_id": "p0095",
+      "unit_id": "p0081_0",
       "start": 595.234,
       "end": 599.437,
       "text": "GPT Live made headlines, but it's not the first full duplex in the world.",
@@ -11055,7 +11019,7 @@
       ]
     },
     {
-      "unit_id": "p0096",
+      "unit_id": "p0081_1",
       "start": 600.097,
       "end": 602.839,
       "text": "In fact, it comes two years after Moshi.",
@@ -11120,7 +11084,7 @@
       ]
     },
     {
-      "unit_id": "p0097",
+      "unit_id": "p0082",
       "start": 603.339,
       "end": 609.283,
       "text": "Moshi is an open source voice assistant from Qtai, which is a nonprofit lab in Paris.",
@@ -11241,7 +11205,7 @@
       ]
     },
     {
-      "unit_id": "p0098",
+      "unit_id": "p0083",
       "start": 609.724,
       "end": 616.633,
       "text": "With less than 10 people, and in less than six months, they set a completely new direction for voice assistants.",
@@ -11390,7 +11354,7 @@
       ]
     },
     {
-      "unit_id": "p0099",
+      "unit_id": "p0084",
       "start": 617.173,
       "end": 619.155,
       "text": "Here's Nell on what motivated them.",
@@ -11441,7 +11405,7 @@
       ]
     },
     {
-      "unit_id": "p0100_0",
+      "unit_id": "p0085",
       "start": 619.735,
       "end": 622.4441111111112,
       "text": "It's almost ideological, I would say, right?",
@@ -11499,7 +11463,7 @@
       ]
     },
     {
-      "unit_id": "p0100_1",
+      "unit_id": "p0086_0",
       "start": 622.4441111111112,
       "end": 628.7963333333335,
       "text": "In a way, when you impose by your human hands a cascade instead of adjusting a single neural network,",
@@ -11641,10 +11605,10 @@
       ]
     },
     {
-      "unit_id": "p0100_2",
+      "unit_id": "p0086_1",
       "start": 628.7963333333335,
-      "end": 634.5565185185185,
-      "text": "you know, you go against the philosophy of machine learning. So, you know, there is always this attraction to trying doing things end-to-end.",
+      "end": 631.2305555555556,
+      "text": "you know, you go against the philosophy of machine learning.",
       "speaker": "",
       "words": [
         {
@@ -11716,7 +11680,16 @@
           "end": 631.2305555555556,
           "confidence": 0.6459158878504675,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0087",
+      "start": 631.2305555555556,
+      "end": 634.5565185185185,
+      "text": "So, you know, there is always this attraction to trying doing things end-to-end.",
+      "speaker": "",
+      "words": [
         {
           "text": " So,",
           "start": 631.2305555555556,
@@ -11811,7 +11784,7 @@
       ]
     },
     {
-      "unit_id": "p0101",
+      "unit_id": "p0088",
       "start": 634.5565185185185,
       "end": 638.086,
       "text": "What was not obvious was that we didn't even know what full duplex meant.",
@@ -11918,10 +11891,10 @@
       ]
     },
     {
-      "unit_id": "p0102_0",
+      "unit_id": "p0089_0",
       "start": 638.086,
-      "end": 644.4215555555555,
-      "text": "And when we had to write a tweet about the announcement, Someone made me notice, hey, you know, your thing is called full duplex.",
+      "end": 641.5006666666667,
+      "text": "And when we had to write a tweet about the announcement,",
       "speaker": "",
       "words": [
         {
@@ -12000,7 +11973,16 @@
           "end": 641.5006666666667,
           "confidence": 0.6459158878504675,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0089_1",
+      "start": 641.5006666666667,
+      "end": 644.4215555555555,
+      "text": "Someone made me notice, hey, you know, your thing is called full duplex.",
+      "speaker": "",
+      "words": [
         {
           "text": " Someone",
           "start": 641.5006666666667,
@@ -12095,7 +12077,7 @@
       ]
     },
     {
-      "unit_id": "p0102_1",
+      "unit_id": "p0089_2",
       "start": 644.4215555555555,
       "end": 646.7082222222223,
       "text": "And I looked at Wikipedia, like, oh, okay, it's full duplex.",
@@ -12181,7 +12163,7 @@
       ]
     },
     {
-      "unit_id": "p0102_2",
+      "unit_id": "p0089_3",
       "start": 646.7082222222223,
       "end": 649.659,
       "text": "And so then we started bragging about having a full duplex model.",
@@ -12274,7 +12256,7 @@
       ]
     },
     {
-      "unit_id": "p0103_0",
+      "unit_id": "p0090_0",
       "start": 650.18,
       "end": 653.042,
       "text": "So until early July, 2026,",
@@ -12318,7 +12300,7 @@
       ]
     },
     {
-      "unit_id": "p0103_1",
+      "unit_id": "p0090_1",
       "start": 653.762,
       "end": 657.204,
       "text": "it was the only full duplex model in the world for almost two years.",
@@ -12425,7 +12407,7 @@
       ]
     },
     {
-      "unit_id": "p0104_0",
+      "unit_id": "p0091_0",
       "start": 658.085,
       "end": 662.108,
       "text": "Since Moshi is a full duplex, it takes in parallel two audio streams,",
@@ -12525,7 +12507,7 @@
       ]
     },
     {
-      "unit_id": "p0104_1",
+      "unit_id": "p0091_1",
       "start": 662.728,
       "end": 666.731,
       "text": "one for listening to the user microphone and one for generating its own response.",
@@ -12632,7 +12614,7 @@
       ]
     },
     {
-      "unit_id": "p0105",
+      "unit_id": "p0092",
       "start": 667.791,
       "end": 671.434,
       "text": "This multitasking ability enables it to handle backchanneling.",
@@ -12697,7 +12679,7 @@
       ]
     },
     {
-      "unit_id": "p0106",
+      "unit_id": "p0093",
       "start": 672.13,
       "end": 679.052,
       "text": "When the user says something like, mm-hmm, the assistant is no longer forced to switch turns and can continue uninterrupted.",
@@ -12846,7 +12828,7 @@
       ]
     },
     {
-      "unit_id": "p0107",
+      "unit_id": "p0094",
       "start": 680.372,
       "end": 682.293,
       "text": "So how does Moshi work under the hood?",
@@ -12911,7 +12893,7 @@
       ]
     },
     {
-      "unit_id": "p0108",
+      "unit_id": "p0095",
       "start": 683.053,
       "end": 688.775,
       "text": "Well, to generate audio, we need to split it into small building blocks that can be predicted one at a time.",
@@ -13067,7 +13049,7 @@
       ]
     },
     {
-      "unit_id": "p0109_0",
+      "unit_id": "p0096_0",
       "start": 689.775,
       "end": 693.656,
       "text": "I think we could predict raw amplitudes like my animation is showing,",
@@ -13160,7 +13142,7 @@
       ]
     },
     {
-      "unit_id": "p0109_1",
+      "unit_id": "p0096_1",
       "start": 694.716,
       "end": 700.578,
       "text": "but for real-time speech, that would require at least 24,000 sequential predictions per second",
@@ -13267,7 +13249,7 @@
       ]
     },
     {
-      "unit_id": "p0109_2",
+      "unit_id": "p0096_2",
       "start": 701.118,
       "end": 703.94,
       "text": "which is a challenge even with the newest GPUs.",
@@ -13339,7 +13321,7 @@
       ]
     },
     {
-      "unit_id": "p0110",
+      "unit_id": "p0097",
       "start": 704.901,
       "end": 711.705,
       "text": "Instead, the most common approach is to segment the stream into fixed size frames, something like 80 milliseconds.",
@@ -13474,7 +13456,7 @@
       ]
     },
     {
-      "unit_id": "p0111",
+      "unit_id": "p0098",
       "start": 712.346,
       "end": 714.947,
       "text": "These are the audio equivalent of text tokens.",
@@ -13539,7 +13521,7 @@
       ]
     },
     {
-      "unit_id": "p0112",
+      "unit_id": "p0099",
       "start": 715.928,
       "end": 719.711,
       "text": "Oh, the analogy is not perfect because audio is a richer signal.",
@@ -13632,7 +13614,7 @@
       ]
     },
     {
-      "unit_id": "p0113",
+      "unit_id": "p0100",
       "start": 720.191,
       "end": 725.875,
       "text": "It combines semantics, or what is being said, with acoustics, or how it's being said.",
@@ -13746,7 +13728,7 @@
       ]
     },
     {
-      "unit_id": "p0114",
+      "unit_id": "p0101",
       "start": 726.675,
       "end": 731.499,
       "text": "Neil and his team proposed this decomposition back at Google with AudioLM.",
@@ -13839,10 +13821,10 @@
       ]
     },
     {
-      "unit_id": "p0115_0",
+      "unit_id": "p0102_0",
       "start": 732.82,
-      "end": 733.961,
-      "text": "Following the same principle,",
+      "end": 738.185,
+      "text": "Following the same principle, Moshi decomposes a single audio frame into one semantic token",
       "speaker": "",
       "words": [
         {
@@ -13872,16 +13854,7 @@
           "end": 733.961,
           "confidence": 0.803,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0115_1",
-      "start": 734.241,
-      "end": 738.185,
-      "text": "Moshi decomposes a single audio frame into one semantic token",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Moshi",
           "start": 734.241,
@@ -13955,7 +13928,7 @@
       ]
     },
     {
-      "unit_id": "p0115_2",
+      "unit_id": "p0102_1",
       "start": 738.645,
       "end": 740.367,
       "text": "and seven acoustic ones.",
@@ -13992,7 +13965,7 @@
       ]
     },
     {
-      "unit_id": "p0116",
+      "unit_id": "p0103",
       "start": 741.187,
       "end": 745.932,
       "text": "Now, these subtokens do indeed act very similarly to text ones.",
@@ -14078,7 +14051,7 @@
       ]
     },
     {
-      "unit_id": "p0117",
+      "unit_id": "p0104",
       "start": 746.672,
       "end": 750.576,
       "text": "They can be mapped to integer token IDs as well as real valued embeddings.",
@@ -14185,7 +14158,7 @@
       ]
     },
     {
-      "unit_id": "p0118",
+      "unit_id": "p0105",
       "start": 751.637,
       "end": 757.262,
       "text": "Audio tokenization is an entire subfield itself, and I covered it in this previous video.",
@@ -14299,7 +14272,7 @@
       ]
     },
     {
-      "unit_id": "p0119_0",
+      "unit_id": "p0106_0",
       "start": 760.05,
       "end": 763.653,
       "text": "Even though my diagrams are showing a single audio stream for the assistant,",
@@ -14399,7 +14372,7 @@
       ]
     },
     {
-      "unit_id": "p0119_1",
+      "unit_id": "p0106_1",
       "start": 764.033,
       "end": 767.256,
       "text": "there are actually eight of them, one for each subtoken.",
@@ -14478,7 +14451,7 @@
       ]
     },
     {
-      "unit_id": "p0120",
+      "unit_id": "p0107",
       "start": 768.157,
       "end": 771.98,
       "text": "By keeping them separate, we can artificially inject delays between them.",
@@ -14564,7 +14537,7 @@
       ]
     },
     {
-      "unit_id": "p0121_0",
+      "unit_id": "p0108_0",
       "start": 772.56,
       "end": 777.184,
       "text": "Specifically, acoustic tokens are delayed by two frames during pre-training",
@@ -14643,7 +14616,7 @@
       ]
     },
     {
-      "unit_id": "p0121_1",
+      "unit_id": "p0108_1",
       "start": 777.825,
       "end": 780.627,
       "text": "and one frame during fine-tuning and inference.",
@@ -14701,10 +14674,10 @@
       ]
     },
     {
-      "unit_id": "p0122",
+      "unit_id": "p0109",
       "start": 781.428,
-      "end": 782.288,
-      "text": "Why is that helpful?",
+      "end": 786.111,
+      "text": "Why is that helpful? Because we're imposing a conceptual hierarchy here.",
       "speaker": "",
       "words": [
         {
@@ -14734,16 +14707,7 @@
           "end": 782.288,
           "confidence": 0.851,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0123",
-      "start": 782.829,
-      "end": 786.111,
-      "text": "Because we're imposing a conceptual hierarchy here.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Because",
           "start": 782.829,
@@ -14796,7 +14760,7 @@
       ]
     },
     {
-      "unit_id": "p0124_0",
+      "unit_id": "p0110_0",
       "start": 786.632,
       "end": 789.034,
       "text": "First, generate coarse semantics,",
@@ -14833,7 +14797,7 @@
       ]
     },
     {
-      "unit_id": "p0124_1",
+      "unit_id": "p0110_1",
       "start": 789.526,
       "end": 797.191,
       "text": "the equivalent of phonemes or words, and only then vocalize them with fine-grained acoustics.",
@@ -14940,7 +14904,7 @@
       ]
     },
     {
-      "unit_id": "p0125",
+      "unit_id": "p0111",
       "start": 797.211,
       "end": 800.112,
       "text": "And the conceptual hierarchy doesn't stop here.",
@@ -14998,7 +14962,7 @@
       ]
     },
     {
-      "unit_id": "p0126",
+      "unit_id": "p0112",
       "start": 800.993,
       "end": 807.837,
       "text": "You see, over 5,000 years ago, we invented the top of the abstraction pyramid, written text.",
@@ -15119,10 +15083,10 @@
       ]
     },
     {
-      "unit_id": "p0127",
+      "unit_id": "p0113",
       "start": 808.577,
-      "end": 812.219,
-      "text": "Text might actually be one of the reasons why we're thriving as a species.",
+      "end": 814.121,
+      "text": "Text might actually be one of the reasons why we're thriving as a species. It's a very efficient signal.",
       "speaker": "",
       "words": [
         {
@@ -15222,16 +15186,7 @@
           "end": 812.219,
           "confidence": 0.837,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0128",
-      "start": 812.68,
-      "end": 814.121,
-      "text": "It's a very efficient signal.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " It's",
           "start": 812.68,
@@ -15270,7 +15225,7 @@
       ]
     },
     {
-      "unit_id": "p0129_0",
+      "unit_id": "p0114_0",
       "start": 814.961,
       "end": 819.64,
       "text": "Now, Moshi, by design, removes the text bottleneck in cascade assistants,",
@@ -15356,7 +15311,7 @@
       ]
     },
     {
-      "unit_id": "p0129_1",
+      "unit_id": "p0114_1",
       "start": 820.401,
       "end": 823.924,
       "text": "but its objection was forcing everything through text.",
@@ -15421,7 +15376,7 @@
       ]
     },
     {
-      "unit_id": "p0130",
+      "unit_id": "p0115",
       "start": 824.764,
       "end": 829.288,
       "text": "As long as the audio signal also goes through, text is pure upside.",
@@ -15521,7 +15476,7 @@
       ]
     },
     {
-      "unit_id": "p0131",
+      "unit_id": "p0116",
       "start": 830.329,
       "end": 833.592,
       "text": "Moshi brings it back in the form of an inner monologue.",
@@ -15607,7 +15562,7 @@
       ]
     },
     {
-      "unit_id": "p0132",
+      "unit_id": "p0117",
       "start": 834.753,
       "end": 837.795,
       "text": "It's a text stream output in addition to the audio stream.",
@@ -15693,7 +15648,7 @@
       ]
     },
     {
-      "unit_id": "p0133",
+      "unit_id": "p0118",
       "start": 838.816,
       "end": 840.057,
       "text": "But I wanna make something clear.",
@@ -15744,7 +15699,7 @@
       ]
     },
     {
-      "unit_id": "p0134",
+      "unit_id": "p0119",
       "start": 840.377,
       "end": 846.302,
       "text": "This is very different from the chain of thought in LLMs, where the model gets extra room for reasoning.",
@@ -15886,7 +15841,7 @@
       ]
     },
     {
-      "unit_id": "p0135",
+      "unit_id": "p0120",
       "start": 847.018,
       "end": 853.004,
       "text": "In contrast, the inner monologue doesn't delay the response at all, it advances at the same pace with the audio.",
@@ -16035,7 +15990,7 @@
       ]
     },
     {
-      "unit_id": "p0136",
+      "unit_id": "p0121",
       "start": 853.625,
       "end": 856.668,
       "text": "Its job is to keep the speech tethered to language.",
@@ -16114,7 +16069,7 @@
       ]
     },
     {
-      "unit_id": "p0137",
+      "unit_id": "p0122",
       "start": 857.169,
       "end": 861.013,
       "text": "Without it, Moshi might sound right, but say nothing of substance.",
@@ -16200,7 +16155,7 @@
       ]
     },
     {
-      "unit_id": "p0138_0",
+      "unit_id": "p0123_0",
       "start": 862.014,
       "end": 866.258,
       "text": "Moshi is basically an augmented LLM with a multimodal vocabulary",
@@ -16279,7 +16234,7 @@
       ]
     },
     {
-      "unit_id": "p0138_1",
+      "unit_id": "p0123_1",
       "start": 866.659,
       "end": 869.582,
       "text": "that includes both text and audio tokens.",
@@ -16337,7 +16292,7 @@
       ]
     },
     {
-      "unit_id": "p0139",
+      "unit_id": "p0124",
       "start": 870.366,
       "end": 877.312,
       "text": "In fact, a big portion of its weights are initialized from an LLM and fine-tuned with the rest of the weights on speech data.",
@@ -16514,7 +16469,7 @@
       ]
     },
     {
-      "unit_id": "p0140_0",
+      "unit_id": "p0125_0",
       "start": 878.433,
       "end": 882.256,
       "text": "Now, at its core, Moshi is a speech-to-speech architecture,",
@@ -16586,7 +16541,7 @@
       ]
     },
     {
-      "unit_id": "p0140_1",
+      "unit_id": "p0125_1",
       "start": 882.996,
       "end": 885.538,
       "text": "but the inner monologue makes it more versatile.",
@@ -16651,7 +16606,7 @@
       ]
     },
     {
-      "unit_id": "p0141_0",
+      "unit_id": "p0126_0",
       "start": 886.559,
       "end": 889.101,
       "text": "If we delay the text stream by a couple of seconds,",
@@ -16737,7 +16692,7 @@
       ]
     },
     {
-      "unit_id": "p0141_1",
+      "unit_id": "p0126_1",
       "start": 889.622,
       "end": 894.565,
       "text": "the model learns to transcribe the audio we just heard, making it a speech-to-text model.",
@@ -16851,7 +16806,7 @@
       ]
     },
     {
-      "unit_id": "p0142",
+      "unit_id": "p0127_0",
       "start": 895.426,
       "end": 900.03,
       "text": "The other way around, if we delay the audio stream, we can train a text-to-speech model,",
@@ -16972,7 +16927,7 @@
       ]
     },
     {
-      "unit_id": "p0143",
+      "unit_id": "p0127_1",
       "start": 900.862,
       "end": 906.505,
       "text": "Of course, at inference time, the TTS model will read user text rather than its own inner monologue.",
@@ -17107,7 +17062,7 @@
       ]
     },
     {
-      "unit_id": "p0144",
+      "unit_id": "p0128",
       "start": 907.365,
       "end": 911.167,
       "text": "So with a single model architecture, we get three different behaviors.",
@@ -17193,7 +17148,7 @@
       ]
     },
     {
-      "unit_id": "p0145",
+      "unit_id": "p0129",
       "start": 911.708,
       "end": 914.289,
       "text": "Moshi really paved the way for voice models.",
@@ -17258,7 +17213,7 @@
       ]
     },
     {
-      "unit_id": "p0146_0",
+      "unit_id": "p0130_0",
       "start": 915.009,
       "end": 918.951,
       "text": "It was trained on about 100 H100 GPUs for about a month,",
@@ -17351,7 +17306,7 @@
       ]
     },
     {
-      "unit_id": "p0146_1",
+      "unit_id": "p0130_1",
       "start": 919.411,
       "end": 924.194,
       "text": "which might sound like a lot, but for frontier labs, that's just a rounding error.",
@@ -17465,7 +17420,7 @@
       ]
     },
     {
-      "unit_id": "p0147",
+      "unit_id": "p0131",
       "start": 924.778,
       "end": 931.56,
       "text": "Yet, Moshi responds faster than the average human, and if you quantize it, it even runs on your MacBook.",
@@ -17607,7 +17562,7 @@
       ]
     },
     {
-      "unit_id": "p0148",
+      "unit_id": "p0132",
       "start": 932.22,
       "end": 937.282,
       "text": "So if full duplex models are so enticing, then why aren't they everywhere?",
@@ -17707,7 +17662,7 @@
       ]
     },
     {
-      "unit_id": "p0149",
+      "unit_id": "p0133",
       "start": 938.082,
       "end": 940.322,
       "text": "Well, here's something that might surprise you.",
@@ -17765,7 +17720,7 @@
       ]
     },
     {
-      "unit_id": "p0150_0",
+      "unit_id": "p0134_0",
       "start": 940.843,
       "end": 944.444,
       "text": "Neil, who founded Qtai, the nonprofit in Paris,",
@@ -17830,7 +17785,7 @@
       ]
     },
     {
-      "unit_id": "p0150_1",
+      "unit_id": "p0134_1",
       "start": 945.004,
       "end": 952.866,
       "text": "recently spun off Gradium, a for-profit arm that builds building blocks for, well, cascade systems.",
@@ -17944,10 +17899,10 @@
       ]
     },
     {
-      "unit_id": "p0151",
+      "unit_id": "p0135",
       "start": 953.802,
-      "end": 954.962,
-      "text": "What changed your mind?",
+      "end": 957.663,
+      "text": "What changed your mind? Why did you join the other camp?",
       "speaker": "",
       "words": [
         {
@@ -17977,16 +17932,7 @@
           "end": 954.962,
           "confidence": 0.922,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0152",
-      "start": 955.082,
-      "end": 957.663,
-      "text": "Why did you join the other camp?",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Why",
           "start": 955.082,
@@ -18039,7 +17985,7 @@
       ]
     },
     {
-      "unit_id": "p0153",
+      "unit_id": "p0136",
       "start": 958.464,
       "end": 960.224,
       "text": "So basically we look at where the market was.",
@@ -18111,7 +18057,7 @@
       ]
     },
     {
-      "unit_id": "p0154",
+      "unit_id": "p0137",
       "start": 960.304,
       "end": 965.366,
       "text": "So it was very surprising for us, but after Moshi, we did another release called Unmute.",
@@ -18232,7 +18178,7 @@
       ]
     },
     {
-      "unit_id": "p0155",
+      "unit_id": "p0138_0",
       "start": 966.026,
       "end": 969.247,
       "text": "So we had developed a streaming speech to text and a streaming text to speech.",
@@ -18346,10 +18292,10 @@
       ]
     },
     {
-      "unit_id": "p0156",
+      "unit_id": "p0138_1",
       "start": 969.347,
-      "end": 973.328,
-      "text": "And so Unmute was just the open source framework to take any LLM and make it speak. Right.",
+      "end": 971.028,
+      "text": "And so Unmute was just the open source framework",
       "speaker": "",
       "words": [
         {
@@ -18414,7 +18360,16 @@
           "end": 971.028,
           "confidence": 0.484,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0138_2",
+      "start": 971.048,
+      "end": 973.048,
+      "text": "to take any LLM and make it speak.",
+      "speaker": "",
+      "words": [
         {
           "text": " to",
           "start": 971.048,
@@ -18470,23 +18425,23 @@
           "end": 973.048,
           "confidence": 0.904,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0139_0",
+      "start": 973.108,
+      "end": 979.143,
+      "text": "Right. And in a way it drew much more interest from big companies than Moshi, right?",
+      "speaker": "",
+      "words": [
         {
           "text": " Right.",
           "start": 973.108,
           "end": 973.328,
           "confidence": 0.849,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0157_0",
-      "start": 973.889,
-      "end": 979.143,
-      "text": "And in a way it drew much more interest from big companies than Moshi, right?",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " And",
           "start": 973.889,
@@ -18595,7 +18550,7 @@
       ]
     },
     {
-      "unit_id": "p0157_1",
+      "unit_id": "p0139_1",
       "start": 979.163,
       "end": 982.264,
       "text": "Because I think they saw much more directly how they could use it.",
@@ -18695,7 +18650,7 @@
       ]
     },
     {
-      "unit_id": "p0158",
+      "unit_id": "p0140",
       "start": 982.665,
       "end": 986.867,
       "text": "Because, you know, in a way, the adoption of text models has been more mature.",
@@ -18809,7 +18764,7 @@
       ]
     },
     {
-      "unit_id": "p0159",
+      "unit_id": "p0141",
       "start": 987.508,
       "end": 994.171,
       "text": "And so a lot of companies already had a text model and they just wanted to turn it into a real-time conversational system.",
@@ -18986,7 +18941,7 @@
       ]
     },
     {
-      "unit_id": "p0160_0",
+      "unit_id": "p0142_0",
       "start": 994.712,
       "end": 997.613,
       "text": "The major disadvantage of end-to-end models",
@@ -19037,7 +18992,7 @@
       ]
     },
     {
-      "unit_id": "p0160_1",
+      "unit_id": "p0142_1",
       "start": 998.094,
       "end": 1001.756,
       "text": "is that you can't easily plug in the newest and greatest LLM.",
@@ -19130,7 +19085,7 @@
       ]
     },
     {
-      "unit_id": "p0161",
+      "unit_id": "p0143",
       "start": 1002.096,
       "end": 1005.078,
       "text": "You have to retrain the entire pipeline end-to-end.",
@@ -19195,7 +19150,7 @@
       ]
     },
     {
-      "unit_id": "p0162",
+      "unit_id": "p0144",
       "start": 1005.514,
       "end": 1008.617,
       "text": "And that is if you have access to the LLM weights.",
@@ -19281,7 +19236,7 @@
       ]
     },
     {
-      "unit_id": "p0163",
+      "unit_id": "p0145",
       "start": 1009.198,
       "end": 1011.561,
       "text": "So cascades are the practical approach today.",
@@ -19339,7 +19294,7 @@
       ]
     },
     {
-      "unit_id": "p0164",
+      "unit_id": "p0146",
       "start": 1011.981,
       "end": 1016.486,
       "text": "Arguably, they're the right thing if you're, say, a bank implementing customer support.",
@@ -19439,7 +19394,7 @@
       ]
     },
     {
-      "unit_id": "p0165",
+      "unit_id": "p0147",
       "start": 1016.946,
       "end": 1018.388,
       "text": "But that's the short-term view.",
@@ -19483,7 +19438,7 @@
       ]
     },
     {
-      "unit_id": "p0166",
+      "unit_id": "p0148_0",
       "start": 1018.909,
       "end": 1025.035,
       "text": "Companies like OpenAI and Thinking Machines have enough budget and talent to think longer term.",
@@ -19597,7 +19552,7 @@
       ]
     },
     {
-      "unit_id": "p0167",
+      "unit_id": "p0148_1",
       "start": 1025.316,
       "end": 1027.278,
       "text": "That's why they invest in end-to-end models.",
@@ -19655,7 +19610,7 @@
       ]
     },
     {
-      "unit_id": "p0168",
+      "unit_id": "p0149",
       "start": 1027.942,
       "end": 1033.166,
       "text": "And there's quite a bit of work they need to do in order to bring over all LLM capabilities.",
@@ -19797,7 +19752,7 @@
       ]
     },
     {
-      "unit_id": "p0169",
+      "unit_id": "p0150",
       "start": 1033.226,
       "end": 1036.808,
       "text": "You have several thousand emails regarding LA Weekly, but it looks like you haven't worked there in many years.",
@@ -19939,10 +19894,10 @@
       ]
     },
     {
-      "unit_id": "p0170",
+      "unit_id": "p0151",
       "start": 1037.569,
-      "end": 1039.911,
-      "text": "What Samantha just did here is tool calling.",
+      "end": 1043.253,
+      "text": "What Samantha just did here is tool calling. She had to call the Gmail API to access all those emails.",
       "speaker": "",
       "words": [
         {
@@ -20000,16 +19955,7 @@
           "end": 1039.911,
           "confidence": 0.907,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0171",
-      "start": 1040.191,
-      "end": 1043.253,
-      "text": "She had to call the Gmail API to access all those emails.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " She",
           "start": 1040.191,
@@ -20097,7 +20043,7 @@
       ]
     },
     {
-      "unit_id": "p0172",
+      "unit_id": "p0152",
       "start": 1043.913,
       "end": 1048.897,
       "text": "Both OpenAI and Thinking Machines have confirmed that they can already handle this.",
@@ -20197,7 +20143,7 @@
       ]
     },
     {
-      "unit_id": "p0173_0",
+      "unit_id": "p0153_0",
       "start": 1049.417,
       "end": 1055.762,
       "text": "The core speech-to-speech model delegates to an asynchronous background model, presumably a powerful LLM,",
@@ -20304,7 +20250,7 @@
       ]
     },
     {
-      "unit_id": "p0173_1",
+      "unit_id": "p0153_1",
       "start": 1056.194,
       "end": 1059.097,
       "text": "while keeping the conversation going at the same time.",
@@ -20376,7 +20322,7 @@
       ]
     },
     {
-      "unit_id": "p0174",
+      "unit_id": "p0154_0",
       "start": 1059.577,
       "end": 1062.22,
       "text": "The agent is going to do a lot of processing in the background.",
@@ -20476,10 +20422,10 @@
       ]
     },
     {
-      "unit_id": "p0175",
+      "unit_id": "p0154_1",
       "start": 1062.24,
-      "end": 1067.105,
-      "text": "He's going to do tool calling. He's going to reason. He's going to do web searches and so on.",
+      "end": 1064.923,
+      "text": "He's going to do tool calling. He's going to reason.",
       "speaker": "",
       "words": [
         {
@@ -20551,7 +20497,16 @@
           "end": 1064.923,
           "confidence": 0.797,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0154_2",
+      "start": 1064.943,
+      "end": 1067.105,
+      "text": "He's going to do web searches and so on.",
+      "speaker": "",
+      "words": [
         {
           "text": " He's",
           "start": 1064.943,
@@ -20618,7 +20573,7 @@
       ]
     },
     {
-      "unit_id": "p0176",
+      "unit_id": "p0155",
       "start": 1067.806,
       "end": 1073.191,
       "text": "But you don't want to just wait while all of this is done, right? It's going to take seconds to dozens of seconds.",
@@ -20788,7 +20743,7 @@
       ]
     },
     {
-      "unit_id": "p0177",
+      "unit_id": "p0156",
       "start": 1073.531,
       "end": 1080.078,
       "text": "What you want is to keep a natural flow of conversation that is kind of asynchronous with the computation that happens in the background.",
@@ -20965,7 +20920,7 @@
       ]
     },
     {
-      "unit_id": "p0178",
+      "unit_id": "p0157",
       "start": 1080.502,
       "end": 1085.405,
       "text": "So that's something we introduced with MoshiRag that is also used by the interaction model from Thinking Machines.",
@@ -21100,7 +21055,7 @@
       ]
     },
     {
-      "unit_id": "p0179",
+      "unit_id": "p0158",
       "start": 1085.425,
       "end": 1087.186,
       "text": "So instead of having one model, you have two models.",
@@ -21179,7 +21134,7 @@
       ]
     },
     {
-      "unit_id": "p0180",
+      "unit_id": "p0159",
       "start": 1088.206,
       "end": 1094.45,
       "text": "MoshiRag is a follow-up to the original Moshi that can pull in knowledge from external documents.",
@@ -21300,7 +21255,7 @@
       ]
     },
     {
-      "unit_id": "p0181",
+      "unit_id": "p0160",
       "start": 1095.05,
       "end": 1097.431,
       "text": "It does so mid-conversation without pausing.",
@@ -21351,7 +21306,7 @@
       ]
     },
     {
-      "unit_id": "p0182",
+      "unit_id": "p0161",
       "start": 1098.212,
       "end": 1104.115,
       "text": "The moment Moshi realizes it needs outside help, it drops a special token into its inner monologue.",
@@ -21479,7 +21434,7 @@
       ]
     },
     {
-      "unit_id": "p0183",
+      "unit_id": "p0162",
       "start": 1104.695,
       "end": 1109.138,
       "text": "This token fires off a request to a retrieval system running in the background.",
@@ -21586,7 +21541,7 @@
       ]
     },
     {
-      "unit_id": "p0184_0",
+      "unit_id": "p0163_0",
       "start": 1110.078,
       "end": 1113.339,
       "text": "Of course, retrieval takes time, maybe a second or more,",
@@ -21665,7 +21620,7 @@
       ]
     },
     {
-      "unit_id": "p0184_1",
+      "unit_id": "p0163_1",
       "start": 1113.539,
       "end": 1119.481,
       "text": "but MoshiRag was trained to fill that silence either with a rough answer or small talk",
@@ -21786,7 +21741,7 @@
       ]
     },
     {
-      "unit_id": "p0184_2",
+      "unit_id": "p0163_2",
       "start": 1119.541,
       "end": 1121.021,
       "text": "like, let me check that for you.",
@@ -21844,7 +21799,7 @@
       ]
     },
     {
-      "unit_id": "p0185",
+      "unit_id": "p0164",
       "start": 1122.002,
       "end": 1125.983,
       "text": "That's exactly what customer support humans do while their slow playbooks load.",
@@ -21937,7 +21892,7 @@
       ]
     },
     {
-      "unit_id": "p0186",
+      "unit_id": "p0165",
       "start": 1126.683,
       "end": 1132.105,
       "text": "When the document arrives as a sequence of embedded tokens, it's simply streamed into the model.",
@@ -22058,7 +22013,7 @@
       ]
     },
     {
-      "unit_id": "p0187",
+      "unit_id": "p0166",
       "start": 1132.685,
       "end": 1136.746,
       "text": "More precisely, it's like a fourth stream added to the existing three.",
@@ -22151,7 +22106,7 @@
       ]
     },
     {
-      "unit_id": "p0188",
+      "unit_id": "p0167",
       "start": 1137.222,
       "end": 1140.084,
       "text": "And the output is now grounded in the retrieved facts.",
@@ -22230,7 +22185,7 @@
       ]
     },
     {
-      "unit_id": "p0189",
+      "unit_id": "p0168",
       "start": 1140.664,
       "end": 1145.987,
       "text": "The strategy can be generalized well beyond RAG for any kind of delegation to a background model.",
@@ -22358,7 +22313,7 @@
       ]
     },
     {
-      "unit_id": "p0190",
+      "unit_id": "p0169",
       "start": 1146.947,
       "end": 1151.17,
       "text": "So what would it take for end-to-end models to actually become the dominant paradigm?",
@@ -22465,7 +22420,7 @@
       ]
     },
     {
-      "unit_id": "p0191_0",
+      "unit_id": "p0170_0",
       "start": 1151.61,
       "end": 1157.513,
       "text": "My intuition is, at this point, it's going to be mostly a post-training question,",
@@ -22572,7 +22527,7 @@
       ]
     },
     {
-      "unit_id": "p0191_1",
+      "unit_id": "p0170_1",
       "start": 1158.554,
       "end": 1164.737,
       "text": "which is creating the right synthetic instruction data and finding the right reward models.",
@@ -22679,10 +22634,10 @@
       ]
     },
     {
-      "unit_id": "p0192_0",
+      "unit_id": "p0171_0",
       "start": 1164.897,
-      "end": 1165.998,
-      "text": "And this one is very interesting",
+      "end": 1168.155,
+      "text": "And this one is very interesting because When you look at text models,",
       "speaker": "",
       "words": [
         {
@@ -22726,16 +22681,7 @@
           "end": 1165.998,
           "confidence": 0.756,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0192_1",
-      "start": 1166.018,
-      "end": 1168.155,
-      "text": "because When you look at text models,",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " because",
           "start": 1166.018,
@@ -22788,7 +22734,7 @@
       ]
     },
     {
-      "unit_id": "p0192_2",
+      "unit_id": "p0171_1",
       "start": 1168.896,
       "end": 1172.719,
       "text": "computing the reward for a verifiable problem, it can be exactly computed",
@@ -22881,7 +22827,7 @@
       ]
     },
     {
-      "unit_id": "p0192_3",
+      "unit_id": "p0171_2",
       "start": 1172.78,
       "end": 1175.282,
       "text": "and so you can scale it very well, the post-training.",
@@ -22960,10 +22906,10 @@
       ]
     },
     {
-      "unit_id": "p0193_0",
+      "unit_id": "p0172_0",
       "start": 1175.702,
-      "end": 1179.966,
-      "text": "Asking the question, is this conversation natural? It's very hard, right?",
+      "end": 1178.845,
+      "text": "Asking the question, is this conversation natural?",
       "speaker": "",
       "words": [
         {
@@ -23014,7 +22960,16 @@
           "end": 1178.845,
           "confidence": 0.779,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0172_1",
+      "start": 1178.865,
+      "end": 1182.709,
+      "text": "It's very hard, right? To find an objective automatic metric of that.",
+      "speaker": "",
+      "words": [
         {
           "text": " It's",
           "start": 1178.865,
@@ -23042,16 +22997,7 @@
           "end": 1179.966,
           "confidence": 0.83,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0193_1",
-      "start": 1180.006,
-      "end": 1182.709,
-      "text": "To find an objective automatic metric of that.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " To",
           "start": 1180.006,
@@ -23111,10 +23057,10 @@
       ]
     },
     {
-      "unit_id": "p0194",
+      "unit_id": "p0173_0",
       "start": 1183.029,
-      "end": 1183.91,
-      "text": "What does natural mean?",
+      "end": 1189.315,
+      "text": "What does natural mean? Is it that the pauses were at the right time? Was it that the tone was right? Is it what was said that was meaningful?",
       "speaker": "",
       "words": [
         {
@@ -23144,16 +23090,7 @@
           "end": 1183.91,
           "confidence": 0.62,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0195",
-      "start": 1184.07,
-      "end": 1186.112,
-      "text": "Is it that the pauses were at the right time?",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Is",
           "start": 1184.07,
@@ -23223,16 +23160,7 @@
           "end": 1186.112,
           "confidence": 0.908,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0196",
-      "start": 1186.152,
-      "end": 1187.553,
-      "text": "Was it that the tone was right?",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Was",
           "start": 1186.152,
@@ -23281,16 +23209,7 @@
           "end": 1187.553,
           "confidence": 0.89,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0197",
-      "start": 1187.674,
-      "end": 1189.315,
-      "text": "Is it what was said that was meaningful?",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " Is",
           "start": 1187.674,
@@ -23350,7 +23269,7 @@
       ]
     },
     {
-      "unit_id": "p0198",
+      "unit_id": "p0173_1",
       "start": 1189.816,
       "end": 1192.3793333333333,
       "text": "How do you pick the best out of two 10-minute conversations?",
@@ -23436,7 +23355,7 @@
       ]
     },
     {
-      "unit_id": "p0199",
+      "unit_id": "p0174",
       "start": 1192.3793333333333,
       "end": 1198.802,
       "text": "In the limits, the end-to-end systems are going to catch up, but what do you think that timeline is?",
@@ -23578,7 +23497,7 @@
       ]
     },
     {
-      "unit_id": "p0200",
+      "unit_id": "p0175",
       "start": 1199.383,
       "end": 1202.605,
       "text": "Being a bit pessimistic, I would say one or two years.",
@@ -23664,7 +23583,7 @@
       ]
     },
     {
-      "unit_id": "p0201",
+      "unit_id": "p0176",
       "start": 1202.905,
       "end": 1206.668,
       "text": "We're going to see very impressive stuff in the next year or so.",
@@ -23764,7 +23683,7 @@
       ]
     },
     {
-      "unit_id": "p0202",
+      "unit_id": "p0177",
       "start": 1207.488,
       "end": 1212.912,
       "text": "And then I would say we are going to see a completely new wave of challenges with two things.",
@@ -23906,7 +23825,7 @@
       ]
     },
     {
-      "unit_id": "p0203",
+      "unit_id": "p0178",
       "start": 1212.972,
       "end": 1217.295,
       "text": "I think the first one being miniaturization, so being able to make this stuff run on device.",
@@ -24034,7 +23953,7 @@
       ]
     },
     {
-      "unit_id": "p0204",
+      "unit_id": "p0179",
       "start": 1218.536,
       "end": 1224.359,
       "text": "Maybe most importantly, integration in robots. or anything that is not a smartphone or a computer.",
@@ -24155,7 +24074,7 @@
       ]
     },
     {
-      "unit_id": "p0205",
+      "unit_id": "p0180",
       "start": 1225.019,
       "end": 1228.521,
       "text": "And now the big question, how far are we from her?",
@@ -24241,7 +24160,7 @@
       ]
     },
     {
-      "unit_id": "p0206",
+      "unit_id": "p0181",
       "start": 1229.281,
       "end": 1236.024,
       "text": "Well, sort of close and sort of far, it's the same story with AGI where the goalpost keeps moving.",
@@ -24383,7 +24302,7 @@
       ]
     },
     {
-      "unit_id": "p0207_0",
+      "unit_id": "p0182_0",
       "start": 1236.524,
       "end": 1241.106,
       "text": "With every release, AI becomes superhuman in one dimension",
@@ -24455,7 +24374,7 @@
       ]
     },
     {
-      "unit_id": "p0207_1",
+      "unit_id": "p0182_1",
       "start": 1241.266,
       "end": 1243.547,
       "text": "and super dumb in some other dimension.",
@@ -24513,7 +24432,7 @@
       ]
     },
     {
-      "unit_id": "p0208",
+      "unit_id": "p0183",
       "start": 1244.147,
       "end": 1247.928,
       "text": "It just has a very different intelligence distribution compared to us.",
@@ -24599,7 +24518,7 @@
       ]
     },
     {
-      "unit_id": "p0209",
+      "unit_id": "p0184",
       "start": 1248.909,
       "end": 1251.61,
       "text": "But I wanted to end the video with a different question.",
@@ -24685,7 +24604,7 @@
       ]
     },
     {
-      "unit_id": "p0210",
+      "unit_id": "p0185_0",
       "start": 1252.354,
       "end": 1254.095,
       "text": "Should we pursue her now?",
@@ -24729,7 +24648,7 @@
       ]
     },
     {
-      "unit_id": "p0211_0",
+      "unit_id": "p0185_1",
       "start": 1254.375,
       "end": 1259.316,
       "text": "I'm personally all in favor of better customer support when I call the bank",
@@ -24836,7 +24755,7 @@
       ]
     },
     {
-      "unit_id": "p0211_1",
+      "unit_id": "p0185_2",
       "start": 1259.896,
       "end": 1262.997,
       "text": "and I might be on board with an AI therapist as well",
@@ -24929,7 +24848,7 @@
       ]
     },
     {
-      "unit_id": "p0212",
+      "unit_id": "p0185_3",
       "start": 1263.577,
       "end": 1267.238,
       "text": "but friendship and love is where i clearly draw the line",
@@ -25015,7 +24934,7 @@
       ]
     },
     {
-      "unit_id": "p0213_0",
+      "unit_id": "p0186_0",
       "start": 1267.839,
       "end": 1272.6,
       "text": "ai doesn't love you and even if you're feeling extremely lonely right now",
@@ -25115,7 +25034,7 @@
       ]
     },
     {
-      "unit_id": "p0213_1",
+      "unit_id": "p0186_1",
       "start": 1273.04,
       "end": 1277.762,
       "text": "i promise to you there's someone in flesh and blood among your family or friends",
@@ -25229,7 +25148,7 @@
       ]
     },
     {
-      "unit_id": "p0214",
+      "unit_id": "p0186_2",
       "start": 1278.162,
       "end": 1280.784,
       "text": "who really does That's it for me.",
@@ -25287,7 +25206,7 @@
       ]
     },
     {
-      "unit_id": "p0215",
+      "unit_id": "p0187",
       "start": 1281.064,
       "end": 1286.737,
       "text": "If you want to watch the full interview with Mel, it's available to my YouTube and Patreon subscribers.",
@@ -25422,7 +25341,7 @@
       ]
     },
     {
-      "unit_id": "p0216",
+      "unit_id": "p0188",
       "start": 1287.178,
       "end": 1288.921,
       "text": "Thanks for watching and I'll see you next time.",
@@ -25495,14 +25414,14 @@
     }
   ],
   "usage": {
-    "prompt_tokens": 95903,
-    "prompt_cache_hit_tokens": 91136,
-    "prompt_cache_miss_tokens": 4767,
-    "completion_tokens": 1852,
-    "total_tokens": 97755,
-    "calls": 50
+    "prompt_tokens": 120419,
+    "prompt_cache_hit_tokens": 115328,
+    "prompt_cache_miss_tokens": 5091,
+    "completion_tokens": 2140,
+    "total_tokens": 122559,
+    "calls": 62
   },
-  "duration_s": 20.378,
+  "duration_s": 27.07,
   "error": null,
   "skipped": false
 }

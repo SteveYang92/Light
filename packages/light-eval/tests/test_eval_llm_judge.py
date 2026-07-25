@@ -186,6 +186,169 @@ def test_scores_are_clamped_to_rubric_range() -> None:
     assert by_dim["split_necessity"].score == 1.0
 
 
+# ── Post-filter ─────────────────────────────────────────────────────────────
+
+
+def test_score5_issues_are_cleared() -> None:
+    """A clean score must carry no issues — the parser enforces the contract."""
+    verdict = _verdict(
+        {
+            "boundary_quality": (5, "clean", [_issue("p0000", "listed despite full marks")]),
+            "split_necessity": (5, "ok", []),
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("plan", {}), _fixture(), _plan_output()))
+    assert by_dim["boundary_quality"].issues == []
+    assert by_dim["boundary_quality"].evidence == []
+
+
+def test_out_of_batch_unit_id_is_dropped() -> None:
+    """Issues referencing ids outside the judged batch are hallucinations."""
+    verdict = _verdict(
+        {
+            "boundary_quality": (3, "mixed", [_issue("p9999", "ghost unit"), _issue("p0001", "real issue")]),
+            "split_necessity": (5, "ok", []),
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("plan", {}), _fixture(), _plan_output()))
+    assert by_dim["boundary_quality"].issues == [_issue("p0001", "real issue")]
+    assert by_dim["boundary_quality"].evidence == ["p0001"]
+
+
+def test_translate_issues_accept_cue_and_unit_ids() -> None:
+    verdict = _verdict(
+        {
+            "faithfulness": (4, "minor", [_issue("zh_0000", "cue-level slip"), _issue("p0001", "unit-level slip")]),
+            "naturalness": (5, "ok", []),
+            "unit_integrity": (5, "ok", []),
+            "terminology": (5, "ok", []),
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("translate"), _fixture(), _translate_output()))
+    assert by_dim["faithfulness"].issues == [
+        _issue("zh_0000", "cue-level slip"),
+        _issue("p0001", "unit-level slip"),
+    ]
+
+
+def test_infeasible_merge_suggestion_is_dropped() -> None:
+    """Merging p0000+p0001 would run 12s — over the 7.0×1.15 soft cap, so the suggestion is noise."""
+    output = StepOutput(
+        case="c",
+        output=[
+            {"unit_id": "p0000", "start": 0.0, "end": 5.0, "text": "a", "speaker": "", "words": []},
+            {"unit_id": "p0001", "start": 5.0, "end": 12.0, "text": "b", "speaker": "", "words": []},
+        ],
+    )
+    verdict = _verdict(
+        {
+            "boundary_quality": (3, "s", [_issue("p0000", "建议合并 p0000 和 p0001，语义更完整")]),
+            "split_necessity": (5, "ok", []),
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("plan", {}), _fixture(), output))
+    assert by_dim["boundary_quality"].issues == []
+    assert by_dim["boundary_quality"].evidence == []
+
+
+def test_feasible_merge_suggestion_is_kept() -> None:
+    """Default plan output merges to 4.0s — within the soft cap, so the issue survives."""
+    verdict = _verdict(
+        {
+            "boundary_quality": (4, "s", [_issue("p0000", "建议合并 p0000 和 p0001")]),
+            "split_necessity": (5, "ok", []),
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("plan", {}), _fixture(), _plan_output()))
+    assert by_dim["boundary_quality"].issues == [_issue("p0000", "建议合并 p0000 和 p0001")]
+
+
+def test_unverifiable_merge_suggestion_is_kept() -> None:
+    """A merge hint naming no second unit cannot be re-checked — kept as-is."""
+    verdict = _verdict(
+        {
+            "boundary_quality": (4, "s", [_issue("p0000", "这两个单元应合并")]),
+            "split_necessity": (5, "ok", []),
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("plan", {}), _fixture(), _plan_output()))
+    assert by_dim["boundary_quality"].issues == [_issue("p0000", "这两个单元应合并")]
+
+
+# ── Prompt rendering ──────────────────────────────────────────────────────────
+
+
+def test_speaker_is_rendered_into_plan_prompt() -> None:
+    fixture = Fixture(
+        segments=[
+            Segment(unit_id="p0000", start=0.0, end=2.0, speaker="A", source_text="source 0", words=[]),
+            Segment(unit_id="p0001", start=2.0, end=4.0, speaker="B", source_text="source 1", words=[]),
+        ]
+    )
+    output = StepOutput(
+        case="c",
+        output=[
+            {"unit_id": "p0000", "start": 0.0, "end": 2.0, "text": "source 0", "speaker": "A", "words": []},
+            {"unit_id": "p0001", "start": 2.0, "end": 4.0, "text": "source 1", "speaker": "B", "words": []},
+        ],
+    )
+    verdict = _verdict({"boundary_quality": (5, "ok", []), "split_necessity": (5, "ok", [])})
+    client = FakeClient([verdict])
+    LLMJudge(client).score(_case("plan", {}), fixture, output)
+    prompt = client.calls[0][0]["content"]
+    assert "[A] source 0" in prompt  # source lines carry the speaker
+    assert "[B] source 1" in prompt  # planned unit lines too
+
+
+def test_plan_prompt_only_shows_source_near_the_batch() -> None:
+    fixture = _fixture(6)  # segments p0000..p0005, 2s each
+    verdict = _verdict({"boundary_quality": (5, "ok", []), "split_necessity": (5, "ok", [])})
+    client = FakeClient([verdict])
+    LLMJudge(client).score(_case("plan", {}), fixture, _plan_output(2))  # batch covers 0-4s
+    prompt = client.calls[0][0]["content"]
+    assert "source 0" in prompt
+    assert "source 5" not in prompt  # far outside the batch window (+1 neighbor buffer)
+
+
+def test_translate_prompt_only_shows_referenced_source_units() -> None:
+    fixture = _fixture(3)
+    output = StepOutput(
+        case="c",
+        output=[{"cue_id": "zh_0000", "unit_id": "p0000", "start": 0.0, "end": 2.0, "text": "译文0"}],
+    )
+    verdict = _verdict(
+        {
+            "faithfulness": (5, "ok", []),
+            "naturalness": (5, "ok", []),
+            "unit_integrity": (5, "ok", []),
+            "terminology": (5, "ok", []),
+        }
+    )
+    client = FakeClient([verdict])
+    LLMJudge(client).score(_case("translate"), fixture, output)
+    prompt = client.calls[0][0]["content"]
+    assert "source 0" in prompt
+    assert "source 1" not in prompt  # unreferenced units stay out of the judge's context
+
+
+def test_translate_prompt_renders_content_summary() -> None:
+    fixture = _fixture()
+    fixture.summary = {"overview": "A talk about evals", "key_topics": ["evals"], "speakers": {"spk1": "host"}}
+    verdict = _verdict(
+        {
+            "faithfulness": (5, "ok", []),
+            "naturalness": (5, "ok", []),
+            "unit_integrity": (5, "ok", []),
+            "terminology": (5, "ok", []),
+        }
+    )
+    client = FakeClient([verdict])
+    LLMJudge(client).score(_case("translate"), fixture, _translate_output())
+    prompt = client.calls[0][0]["content"]
+    assert "A talk about evals" in prompt
+    assert "spk1 (host)" in prompt
+
+
 # ── Retry ───────────────────────────────────────────────────────────────────
 
 
@@ -214,7 +377,7 @@ def test_partial_dimensions_keep_valid_ones() -> None:
 # ── Batching ────────────────────────────────────────────────────────────────
 
 
-def test_large_output_is_batched_and_min_score_wins() -> None:
+def test_large_output_is_batched_and_median_score_wins() -> None:
     n = BATCH_SIZE + 10
     batch1 = _verdict({"boundary_quality": (5, "batch1 clean", []), "split_necessity": (5, "batch1 ok", [])})
     batch2 = _verdict(
@@ -228,7 +391,7 @@ def test_large_output_is_batched_and_min_score_wins() -> None:
 
     assert len(client.calls) == 2  # 60 items → 2 batches
     by_dim = _scores_by_dim(scores)
-    assert by_dim["boundary_quality"].score == 2.0  # min across batches (conservative)
+    assert by_dim["boundary_quality"].score == 2.0  # lower median of [5, 2] — conservative on even counts
     assert not by_dim["boundary_quality"].passed
     assert by_dim["boundary_quality"].detail == "batch2 mid-clause cut"  # summary of the worst batch, not joined
     assert by_dim["boundary_quality"].evidence == ["p0055"]
@@ -236,17 +399,33 @@ def test_large_output_is_batched_and_min_score_wins() -> None:
     assert by_dim["split_necessity"].score == 4.0
 
 
+def test_median_aggregation_ignores_one_lenient_batch() -> None:
+    """Three batches scoring [3, 5, 4] merge to the median 4 — min would sink the case to 3."""
+    n = BATCH_SIZE * 2 + 1
+    batch1 = _verdict({"boundary_quality": (3, "batch1 harsh", [_issue("p0001", "mid-clause cut")])})
+    batch2 = _verdict({"boundary_quality": (5, "batch2 clean", [])})
+    batch3 = _verdict({"boundary_quality": (4, "batch3 minor", [])})
+    client = FakeClient([batch1, batch2, batch3])
+    by_dim = _scores_by_dim(LLMJudge(client).score(_case("plan", {}), _fixture(n), _plan_output(n)))
+
+    assert len(client.calls) == 3
+    assert by_dim["boundary_quality"].score == 4.0  # median, not min(3)
+    assert by_dim["boundary_quality"].passed
+    assert by_dim["boundary_quality"].detail == "batch1 harsh"  # worst batch still owns the summary
+    assert by_dim["boundary_quality"].issues == [_issue("p0001", "mid-clause cut")]
+
+
 def test_merge_dedupes_issues_across_batches() -> None:
     n = BATCH_SIZE + 10
     shared = _issue("p0003", "mid-clause cut")
     batch1 = _verdict({"boundary_quality": (3, "batch1 has issues", [shared, _issue("p0001", "orphan verb")])})
-    batch2 = _verdict({"boundary_quality": (4, "batch2 mostly fine", [shared])})  # same issue reported again
+    batch2 = _verdict({"boundary_quality": (4, "batch2 mostly fine", [shared])})  # out-of-batch re-report → filtered
     client = FakeClient([batch1, batch2])
     by_dim = _scores_by_dim(LLMJudge(client).score(_case("plan", {}), _fixture(n), _plan_output(n)))
 
-    assert by_dim["boundary_quality"].score == 3.0
+    assert by_dim["boundary_quality"].score == 3.0  # lower median of [3, 4]
     assert by_dim["boundary_quality"].detail == "batch1 has issues"  # lowest-scoring batch's summary
-    assert by_dim["boundary_quality"].issues == [shared, _issue("p0001", "orphan verb")]  # deduped, order kept
+    assert by_dim["boundary_quality"].issues == [shared, _issue("p0001", "orphan verb")]  # no duplicate
     assert by_dim["boundary_quality"].evidence == ["p0003", "p0001"]
 
 

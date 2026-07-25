@@ -602,7 +602,7 @@
       ]
     },
     {
-      "unit_id": "p0005_0",
+      "unit_id": "p0005",
       "start": 31.954,
       "end": 35.756,
       "text": "And OpenAI are not the only ones trying to bring Her to life.",
@@ -702,7 +702,7 @@
       ]
     },
     {
-      "unit_id": "p0005_1",
+      "unit_id": "p0006",
       "start": 36.397,
       "end": 40.459,
       "text": "Just two months ago, Thinking Machines announced their interaction models.",
@@ -782,14 +782,14 @@
     }
   ],
   "usage": {
-    "prompt_tokens": 3795,
+    "prompt_tokens": 3812,
     "prompt_cache_hit_tokens": 3584,
-    "prompt_cache_miss_tokens": 211,
-    "completion_tokens": 66,
-    "total_tokens": 3861,
-    "calls": 3
+    "prompt_cache_miss_tokens": 228,
+    "completion_tokens": 78,
+    "total_tokens": 3890,
+    "calls": 2
   },
-  "duration_s": 2.975,
+  "duration_s": 3.227,
   "error": null,
   "skipped": false
 }
