@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>light-eval workbench</title>
+<style>
+  :root { --bd: #d0d7de; --fg: #1f2328; --mut: #656d76; --acc: #0969da; --bg: #f6f8fa; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font: 15px/1.6 -apple-system, "Segoe UI", "PingFang SC", sans-serif; color: var(--fg); display: flex; flex-direction: column; overflow: hidden; }
+
+  /* 固定顶栏 */
+  header { position: sticky; top: 0; z-index: 10; background: #fff; padding: 10px 20px; border-bottom: 1px solid var(--bd); display: flex; gap: 16px; align-items: center; flex: none; }
+  header b { font-size: 15px; }
+  nav button { border: 0; background: none; padding: 8px 12px; cursor: pointer; font-size: 14px; color: var(--mut); border-bottom: 2px solid transparent; }
+  nav button.active { color: var(--fg); border-bottom-color: var(--acc); font-weight: 600; }
+
+  main { flex: 1; min-height: 0; padding: 12px 20px; display: flex; flex-direction: column; }
+  section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  section[hidden] { display: none; }
+
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid var(--bd); padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--bg); font-weight: 600; white-space: nowrap; }
+  td.text { max-width: 420px; }
+  button.act { background: var(--acc); color: #fff; border: 0; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 14px; }
+  button.act:disabled { background: #94a3b8; cursor: not-allowed; }
+  button.plain { background: none; border: 1px solid var(--bd); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  select, input[type=text] { padding: 5px 8px; border: 1px solid var(--bd); border-radius: 6px; font-size: 14px; }
+  .bar { display: flex; gap: 10px; align-items: center; margin: 8px 0; flex-wrap: wrap; flex: none; }
+  .muted { color: var(--mut); }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--bd); font-size: 13px; }
+  .msg { padding: 8px 12px; border-radius: 6px; margin: 8px 0; display: none; flex: none; }
+  .msg.ok { display: block; background: #dafbe1; border: 1px solid #2da44e; }
+  .msg.err { display: block; background: #ffebe9; border: 1px solid #cf222e; }
+
+  /* 列表区：独立滚动 + 表头吸顶 */
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; border: 1px solid var(--bd); border-radius: 8px; }
+  .scroll table { border: 0; }
+  .scroll thead th { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--bd); }
+
+  /* 候选行内选段面板 */
+  .picker-row > td { background: var(--bg); }
+  .pk-units { max-height: 45vh; overflow-y: auto; border: 1px solid var(--bd); border-radius: 8px; background: #fff; }
+  .pk-units table { border: 0; }
+  .pk-units thead th { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--bd); }
+  .pk-units tbody tr { cursor: pointer; }
+  .pk-units tbody tr:hover { background: #f0f6ff; }
+  .pk-units tbody tr.pk-in { background: #ddf4ff; }
+  .pk-units tbody tr.pk-edge td:first-child { box-shadow: inset 3px 0 0 var(--acc); font-weight: 600; }
+
+  /* 详情页：左右分栏（左输出 / 右标注），各自独立滚动 */
+  .split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .pane { min-height: 0; display: flex; flex-direction: column; }
+  .pane > .scroll { flex: 1; }
+  #output-wrap tbody tr { cursor: pointer; }
+  #output-wrap tbody tr:hover { background: #ddf4ff; }
+
+  .dim-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
+  .dim-row label { width: 150px; flex: none; }
+  .dim-summary { flex-basis: 100%; font-size: 13px; margin: -2px 0 2px; }
+
+  /* 缺陷记录：扁平列表 + 逐条通过/不通过评审 */
+  .defect-card { padding: 10px 4px; border-bottom: 1px solid var(--bd); }
+  .defect-card:last-child { border-bottom: 0; }
+  .defect-card.ok { background: #f6fef9; }
+  .defect-card.no { background: #fff5f5; }
+  .defect-card.no .unit-snippet, .defect-card.no textarea.issue { opacity: 0.45; }
+  .defect-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .uid-badge { background: var(--bg); border: 1px solid var(--bd); border-radius: 10px; padding: 1px 10px;
+    font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; cursor: pointer; }
+  .uid-badge:hover { border-color: var(--acc); color: var(--acc); }
+  .defect-head input.uid { width: 140px; font-size: 13px; padding: 2px 8px; }
+  .defect-head .head-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .ai-tag { font-size: 13px; color: var(--mut); }
+  .verdict-btn.on-ok { background: #2da44e; border-color: #2da44e; color: #fff; }
+  .verdict-btn.on-no { background: #cf222e; border-color: #cf222e; color: #fff; }
+  .review-progress { font-size: 13px; color: var(--mut); }
+
+  /* 左表 uid 角标：该 unit 的缺陷卡片数，点击反向定位右侧卡片 */
+  .uid-flag { margin-left: 6px; border: 1px solid #d29922; background: #fff8c5; color: #9a6700;
+    border-radius: 8px; padding: 0 6px; font-size: 11px; cursor: pointer; }
+  .uid-flag:hover { border-color: var(--acc); color: var(--acc); }
+  .defect-card.flash { animation: card-flash 1s ease-out; }
+  @keyframes card-flash { 0% { background: #fff8c5; } 100% { background: transparent; } }
+  .defect-card textarea.issue { width: 100%; min-height: 2.4em; resize: vertical; padding: 4px 6px;
+    border: 0; background: transparent; font-size: 14px; font-family: inherit; line-height: 1.5; }
+  .defect-card textarea.issue:focus { outline: 1px solid var(--acc); border-radius: 4px; background: #fff; }
+  .unit-snippet { font-size: 13px; color: var(--mut); border-left: 3px solid var(--bd); padding: 2px 8px;
+    margin: 4px 0; white-space: pre-wrap; word-break: break-word; max-height: 6.5em; overflow-y: auto; }
+  .unit-snippet .sn-label { color: var(--acc); font-weight: 600; margin-right: 4px; }
+
+  /* 定位高亮：1s 淡出 */
+  #output-wrap tr.flash { animation: uid-flash 1s ease-out; }
+  @keyframes uid-flash { 0% { background: #fff8c5; } 100% { background: transparent; } }
+  fieldset { border: 1px solid var(--bd); border-radius: 8px; margin: 10px 0; }
+  legend { font-weight: 600; padding: 0 6px; }
+  #view-detail h3 { margin-bottom: 4px; }
+
+  /* 窄屏回退为上下布局 */
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    main { display: block; }
+    .split { display: block; }
+    .scroll { max-height: 60vh; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <b>light-eval workbench</b>
+  <nav>
+    <button data-tab="candidates" class="active">候选</button>
+    <button data-tab="cases">案例</button>
+    <button data-tab="detail" id="tab-detail" disabled>案例详情</button>
+  </nav>
+</header>
+<main>
+  <div id="msg" class="msg"></div>
+
+  <section id="view-candidates">
+    <div class="bar">
+      <button class="plain" onclick="loadCandidates()">刷新</button>
+      <span class="muted" id="cand-dir"></span>
+      <span style="flex:1"></span>
+      <label>kind
+        <select id="new-kind">
+          <option>control</option><option>edge</option><option>boundary</option>
+        </select>
+      </label>
+      <button class="act" onclick="createCases()">勾选建 case</button>
+    </div>
+    <div class="scroll">
+      <table id="cand-table">
+        <thead><tr><th></th><th>名称</th><th>时长</th><th>可用步骤</th><th>建 case 步骤</th><th>语言对</th><th>规模</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-cases" hidden>
+    <div class="bar">
+      <button class="plain" onclick="loadCases()">刷新</button>
+      <span class="muted" id="suite-dir"></span>
+      <span style="flex:1"></span>
+      <span id="queue-progress" class="muted"></span>
+      <button class="act" id="continue-btn" onclick="continueReview()">继续审核</button>
+    </div>
+    <div class="scroll">
+      <table id="case-table">
+        <thead><tr><th>名称</th><th>step</th><th>kind</th><th>已标注</th><th>已运行</th><th>来源</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-detail" hidden>
+    <div class="bar">
+      <b id="detail-title"></b>
+      <span class="muted" id="detail-meta"></span>
+      <button class="act" id="run-btn" onclick="runCase()">运行 / 重跑</button>
+      <button class="act" id="judge-btn" onclick="runJudge()">AI 预评</button>
+      <span class="muted" id="run-status"></span>
+    </div>
+    <div class="split">
+      <div class="pane">
+        <div class="scroll" id="output-wrap"></div>
+      </div>
+      <div class="pane">
+        <div class="scroll" style="padding: 0 14px;">
+          <details style="margin:8px 0">
+            <summary style="cursor:pointer;font-weight:600">成功标准（评分锚点）</summary>
+            <div id="criteria-box" style="font-size:13px;line-height:1.7"></div>
+          </details>
+          <div class="muted" style="font-size:13px">点击左侧行可回填缺陷 unit_id；点击卡片徽标定位左侧行；点击 ⚠ 角标定位右侧卡片</div>
+          <div id="dim-form"></div>
+          <div class="bar" style="border-top:1px solid var(--bd);padding-top:10px;margin-top:12px">
+            <b>缺陷记录</b>
+            <span class="review-progress" id="review-progress"></span>
+            <span style="flex:1"></span>
+            <button class="plain" onclick="addDefectCard('', '')">+ 添加</button>
+            <button class="plain" onclick="verdictAll(true)">全部通过</button>
+          </div>
+          <div id="defect-list"></div>
+          <div class="dim-row" style="border-top:1px solid var(--bd);padding-top:10px;margin-top:12px">
+            <label>总体判定</label>
+            <select id="overall">
+              <option value="">（未判定）</option>
+              <option value="pass">pass</option>
+              <option value="borderline">borderline</option>
+              <option value="fail">fail</option>
+            </select>
+          </div>
+          <div class="bar">
+            <button class="act" onclick="saveAnnotation(true)">Approve 保存并下一条（⌘/Ctrl+Enter）</button>
+            <button class="plain" onclick="saveAnnotation(false)">仅保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+let candidates = [];
+let cases = [];
+let current = null;   // 当前打开的 case 对象
+let currentItems = new Map();  // unit_id → 输出行（缺陷卡片内联预览用）
+let judgeSuggestion = null;  // 当前 case 本次 AI 预评的原始 JSON（保存标注时透传）
+
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmtDur = (s) => { s = Math.round(s || 0); const m = Math.floor(s / 60), h = Math.floor(m / 60);
+  return h ? `${h}:${String(m % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}` : `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+
+function showMsg(text, ok) {
+  const el = $("#msg");
+  el.textContent = text;
+  el.className = "msg " + (ok ? "ok" : "err");
+  if (ok) setTimeout(() => { el.className = "msg"; }, 4000);
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch (e) { /* keep statusText */ }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+// ── Tabs ────────────────────────────────────────────────────────────────────
+document.querySelectorAll("nav button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.disabled) return;
+    document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b === btn));
+    ["candidates", "cases", "detail"].forEach((t) => { $("#view-" + t).hidden = t !== btn.dataset.tab; });
+    if (btn.dataset.tab === "candidates") loadCandidates();
+    if (btn.dataset.tab === "cases") loadCases();
+  });
+});
+
+// ── Candidates ──────────────────────────────────────────────────────────────
+async function loadCandidates() {
+  closePicker();
+  const data = await api("/api/candidates");
+  candidates = data.candidates;
+  $("#cand-dir").textContent = `output 目录：${data.output_dir}（${candidates.length} 个候选）`;
+  const tbody = $("#cand-table tbody");
+  tbody.innerHTML = "";
+  candidates.forEach((c, i) => {
+    const tr = document.createElement("tr");
+    tr.dataset.row = i;
+    const stepOpts = c.steps.map((s) => `<option>${s}</option>`).join("");
+    tr.innerHTML = `
+      <td><input type="checkbox" data-idx="${i}"></td>
+      <td>${esc(c.name)}</td>
+      <td>${fmtDur(c.duration_s)}</td>
+      <td>${c.steps.map((s) => `<span class="tag">${s}</span>`).join(" ")}</td>
+      <td><select data-step-for="${i}">${stepOpts}</select></td>
+      <td>${esc(c.lang_pair)}</td>
+      <td class="muted">${c.n_words} 词 / ${c.n_units} unit</td>
+      <td><button class="plain" onclick="togglePicker(${i})">选段</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function createCases() {
+  const kind = $("#new-kind").value;
+  const boxes = [...document.querySelectorAll("#cand-table input[type=checkbox]:checked")];
+  if (!boxes.length) { showMsg("先勾选至少一个候选", false); return; }
+  let okCount = 0;
+  for (const box of boxes) {
+    const c = candidates[Number(box.dataset.idx)];
+    const step = document.querySelector(`select[data-step-for="${box.dataset.idx}"]`).value;
+    try {
+      await api("/api/cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidate: c.name, step, kind }),
+      });
+      okCount++;
+      box.checked = false;
+    } catch (e) {
+      showMsg(`建 case 失败（${c.name}/${step}）：${e.message}`, false);
+    }
+  }
+  if (okCount) showMsg(`已创建 ${okCount} 个 case`, true);
+}
+
+// ── 选段建 case（同一候选可反复建多段）───────────────────────────────────────
+let picker = null;  // {idx, units, startId, endId}
+
+function closePicker() {
+  document.querySelector(".picker-row")?.remove();
+  picker = null;
+}
+
+async function togglePicker(i) {
+  if (picker && picker.idx === i) { closePicker(); return; }
+  closePicker();
+  const c = candidates[i];
+  const panel = document.createElement("tr");
+  panel.className = "picker-row";
+  const stepOpts = c.steps.map((s) => `<option>${s}</option>`).join("");
+  panel.innerHTML = `<td colspan="8">
+    <div class="bar" style="margin-top:4px">
+      <b>选段建 case — ${esc(c.name)}</b>
+      <label>step <select id="pk-step">${stepOpts}</select></label>
+      <label>kind <select id="pk-kind"><option>control</option><option>edge</option><option>boundary</option></select></label>
+      <span id="pk-sel" class="muted"></span>
+      <span style="flex:1"></span>
+      <button class="act" id="pk-create" disabled onclick="createRangeCase()">建 case</button>
+      <button class="plain" onclick="closePicker()">收起</button>
+    </div>
+    <div class="pk-units" id="pk-units"><p class="muted" style="padding:10px">加载中…</p></div>
+  </td>`;
+  document.querySelector(`#cand-table tbody tr[data-row="${i}"]`).after(panel);
+  picker = { idx: i, units: [], startId: null, endId: null };
+  $("#pk-step").value = document.querySelector(`select[data-step-for="${i}"]`).value;
+  $("#pk-step").addEventListener("change", loadPickerUnits);
+  updatePickerSel();
+  await loadPickerUnits();
+}
+
+async function loadPickerUnits() {
+  const c = candidates[picker.idx];
+  picker.startId = picker.endId = null;
+  updatePickerSel();
+  try {
+    const step = $("#pk-step").value;
+    const data = await api(`/api/candidates/${encodeURIComponent(c.name)}/units?step=${step}`);
+    picker.units = data.units;
+    const rows = picker.units.map((u, k) => {
+      const range = `${Number(u.start).toFixed(2)} – ${Number(u.end).toFixed(2)}`;
+      const dur = `${(Number(u.end) - Number(u.start)).toFixed(1)}s`;
+      return `<tr data-uid="${esc(u.unit_id)}" data-k="${k}"><td>${esc(u.unit_id)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(u.text)}</td></tr>`;
+    }).join("");
+    $("#pk-units").innerHTML = `<table><thead><tr><th>unit_id</th><th>起止</th><th>时长</th><th>文本</th></tr></thead><tbody>${rows}</tbody></table>`;
+    $("#pk-units tbody").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr[data-uid]");
+      if (tr) pickUnit(tr.dataset.uid);
+    });
+  } catch (e) {
+    $("#pk-units").innerHTML = `<p class="muted" style="padding:10px">加载失败：${esc(e.message)}</p>`;
+  }
+}
+
+// 首点起点、再点终点（起止可交换，自动取序）；已选全后再点重新选起点
+function pickUnit(uid) {
+  if (!picker.startId || picker.endId) { picker.startId = uid; picker.endId = null; }
+  else picker.endId = uid;
+  paintPickerSelection();
+  updatePickerSel();
+}
+
+function pickerBounds() {  // [lo, hi] inclusive indexes into picker.units; null 未选全
+  if (!picker.startId || !picker.endId) return null;
+  const ids = picker.units.map((u) => String(u.unit_id));
+  const i = ids.indexOf(picker.startId), j = ids.indexOf(picker.endId);
+  if (i < 0 || j < 0) return null;
+  return i <= j ? [i, j] : [j, i];
+}
+
+function paintPickerSelection() {
+  const bounds = pickerBounds();
+  let lo = -1, hi = -1;
+  if (bounds) [lo, hi] = bounds;
+  else if (picker.startId) lo = hi = picker.units.findIndex((u) => String(u.unit_id) === picker.startId);
+  document.querySelectorAll("#pk-units tbody tr").forEach((tr) => {
+    const k = Number(tr.dataset.k);
+    tr.classList.toggle("pk-in", lo >= 0 && k >= lo && k <= hi);
+    tr.classList.toggle("pk-edge", k === lo || k === hi);
+  });
+}
+
+function updatePickerSel() {
+  const bounds = pickerBounds();
+  if (bounds) {
+    const [i, j] = bounds;
+    $("#pk-sel").textContent = `已选 ${picker.units[i].unit_id} → ${picker.units[j].unit_id}（${j - i + 1} 个 unit）`;
+  } else if (picker.startId) {
+    $("#pk-sel").textContent = `起点 ${picker.startId}，再点击终点行`;
+  } else {
+    $("#pk-sel").textContent = "点击两行选定区间（先起点后终点）";
+  }
+  $("#pk-create").disabled = !bounds;
+}
+
+async function createRangeCase() {
+  const bounds = pickerBounds();
+  if (!bounds) return;
+  const [i, j] = bounds;
+  const c = candidates[picker.idx];
+  try {
+    const res = await api("/api/cases", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        candidate: c.name,
+        step: $("#pk-step").value,
+        kind: $("#pk-kind").value,
+        start_unit: picker.units[i].unit_id,
+        end_unit: picker.units[j].unit_id,
+      }),
+    });
+    showMsg(`已创建 case：${res.case.id}（可继续选下一段）`, true);
+    picker.startId = picker.endId = null;
+    paintPickerSelection();
+    updatePickerSel();
+  } catch (e) {
+    showMsg(`建 case 失败：${e.message}`, false);
+  }
+}
+
+// ── Cases ───────────────────────────────────────────────────────────────────
+async function loadCases() {
+  const data = await api("/api/cases");
+  cases = data.cases;
+  const reviewed = cases.filter((c) => c.annotated).length;
+  $("#suite-dir").textContent = `suite 目录：${data.suite_dir}（${cases.length} 个 case）`;
+  $("#queue-progress").textContent = `已审核 ${reviewed}/${cases.length}`;
+  $("#continue-btn").disabled = !cases.length || reviewed >= cases.length;
+  const tbody = $("#case-table tbody");
+  tbody.innerHTML = "";
+  cases.forEach((c, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${esc(c.name)}</td>
+      <td><span class="tag">${c.step}</span></td>
+      <td>${c.kind}</td>
+      <td>${c.annotated ? (c.has_judge_suggestion ? "🤖✅" : "✅") : "—"}</td>
+      <td>${c.has_output ? "✅" : "—"}</td>
+      <td class="muted">${esc(c.source)}</td>
+      <td><button class="plain" onclick="openCase(${i})">打开</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// 队列入口：打开案例列表中第一个未审核 case
+function continueReview() {
+  const i = cases.findIndex((c) => !c.annotated);
+  if (i < 0) { showMsg("全部审核完成", true); return; }
+  openCase(i);
+}
+
+// ── Detail ──────────────────────────────────────────────────────────────────
+function updateDetailMeta() {
+  const idx = cases.indexOf(current);
+  const pos = idx >= 0 ? `第 ${idx + 1}/${cases.length} 条` : "未入列";
+  const status = current.annotated ? "已标注" : "未标注";
+  $("#detail-meta").textContent = `${pos} · ${status} · kind=${current.kind} · source=${current.source}`;
+}
+
+function openCase(i) {
+  current = cases[i];
+  judgeSuggestion = null;
+  $("#tab-detail").disabled = false;
+  $("#tab-detail").click();
+  $("#detail-title").textContent = `${current.step} / ${current.name}`;
+  updateDetailMeta();
+  $("#run-btn").disabled = false;
+  $("#run-status").textContent = "";
+  renderCriteria();
+  buildDimForm();
+  loadOutput();
+  loadAnnotation();
+}
+
+async function runCase() {
+  if (!current) return;
+  $("#run-btn").disabled = true;
+  $("#run-status").textContent = "运行中…（translate 可能较慢）";
+  try {
+    const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/run`, { method: "POST" });
+    renderOutput(data);
+    $("#run-status").textContent = data.error ? `出错：${data.error}` : `完成，${data.items.length} 条，${data.duration_s}s`;
+    current.has_output = true;
+  } catch (e) {
+    $("#run-status").textContent = `无法运行：${e.message}`;
+    showMsg(e.message, false);
+  } finally {
+    $("#run-btn").disabled = false;
+  }
+}
+
+// ── AI 预评（LLM judge 预填，人工复核后保存）─────────────────────────────────
+async function runJudge() {
+  if (!current) return;
+  const btn = $("#judge-btn");
+  btn.disabled = true;
+  btn.textContent = "预评中…";
+  try {
+    const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/judge`, { method: "POST" });
+    judgeSuggestion = data;  // 保存标注时原样透传
+    Object.entries(data.dimensions || {}).forEach(([dim, info]) => {
+      const sel = document.querySelector(`#dim-form select[data-dim="${dim}"]`);
+      if (sel) sel.value = String(info.score);
+      const summary = document.querySelector(`.dim-summary[data-summary-for="${dim}"]`);
+      if (summary) { summary.textContent = info.summary || ""; summary.hidden = !info.summary; }
+      // issues 逐条生成缺陷卡片（AI 来源，带 ✓/✗ 逐条审核；按 uid+problem 查重——同一 unit 可被多维度各报一条）
+      (info.issues || []).forEach((issue) => {
+        const uid = String(issue.unit_id || "");
+        const problem = issue.problem || "";
+        if (!findDefectCardBy(uid, problem)) addDefectCard(uid, problem, "ai", dim);
+      });
+    });
+    if (data.suggested_overall) $("#overall").value = data.suggested_overall;
+    showMsg("AI 预评已回填，请人工复核后保存", true);
+  } catch (e) {
+    showMsg(`预评失败：${e.message}`, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "AI 预评";
+  }
+}
+
+async function loadOutput() {
+  try {
+    const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/output`);
+    if (!data.has_output) {
+      $("#output-wrap").innerHTML = '<p class="muted" style="padding:10px">尚未运行 — 点击「运行 / 重跑」生成步骤输出。</p>';
+      return;
+    }
+    renderOutput(data);
+  } catch (e) {
+    $("#output-wrap").innerHTML = `<p class="muted" style="padding:10px">输出加载失败：${esc(e.message)}</p>`;
+  }
+}
+
+function renderOutput(data) {
+  if (data.error) {
+    $("#output-wrap").innerHTML = `<p class="muted" style="padding:10px">运行出错：${esc(data.error)}</p>`;
+    return;
+  }
+  currentItems = new Map((data.items || []).map((it) => [String(it.unit_id), it]));
+  refreshSnippets();
+  const isTranslate = current.step === "translate";
+  const head = isTranslate
+    ? "<tr><th>unit_id</th><th>起止</th><th>时长</th><th>源文</th><th>译文</th></tr>"
+    : "<tr><th>unit_id</th><th>起止</th><th>时长</th><th>文本</th></tr>";
+  const rows = data.items.map((it) => {
+    const start = Number(it.start), end = Number(it.end);
+    const range = `${start.toFixed(2)} – ${end.toFixed(2)}`;
+    const dur = `${(end - start).toFixed(1)}s`;
+    return isTranslate
+      ? `<tr data-uid="${esc(it.unit_id)}"><td>${esc(it.unit_id)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.source_text)}</td><td class="text">${esc(it.text)}</td></tr>`
+      : `<tr data-uid="${esc(it.unit_id)}"><td>${esc(it.unit_id)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.text)}</td></tr>`;
+  }).join("");
+  $("#output-wrap").innerHTML = `<table><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+  // 点击角标 → 反向定位右侧卡片；点击行 → 无该 uid 的缺陷卡片则新建（有空 uid 卡片先填入）
+  $("#output-wrap tbody").addEventListener("click", (e) => {
+    const flag = e.target.closest(".uid-flag");
+    if (flag) { locateDefect(flag.dataset.uid); return; }
+    const tr = e.target.closest("tr[data-uid]");
+    if (!tr) return;
+    const uid = tr.dataset.uid;
+    if (findDefectCard(uid)) return;
+    const emptyCard = [...document.querySelectorAll("#defect-list .defect-card")].find((c) => !cardUid(c));
+    if (emptyCard) setCardUid(emptyCard, uid);
+    else addDefectCard(uid, "");
+  });
+  refreshBadges();
+}
+
+// 定位左侧输出表中的 unit 行并高亮 1s
+function locateUnit(uid) {
+  const tr = document.querySelector(`#output-wrap tr[data-uid="${CSS.escape(uid)}"]`);
+  if (!tr) { showMsg(`左侧输出中找不到 ${uid}`, false); return; }
+  tr.scrollIntoView({ block: "center", behavior: "smooth" });
+  tr.classList.remove("flash");
+  void tr.offsetWidth;  // 重新触发动画
+  tr.classList.add("flash");
+  setTimeout(() => tr.classList.remove("flash"), 1000);
+}
+
+// 反向定位：右侧滚动到该 uid 的第一张缺陷卡片并高亮 1s
+function locateDefect(uid) {
+  const card = findDefectCard(uid);
+  if (!card) return;
+  card.scrollIntoView({ block: "center", behavior: "smooth" });
+  card.classList.remove("flash");
+  void card.offsetWidth;  // 重新触发动画
+  card.classList.add("flash");
+  setTimeout(() => card.classList.remove("flash"), 1000);
+}
+
+// 左表 ⚠n 角标：统计未排除（非「不通过」）卡片的 uid（不落盘），卡片增删/判定/改 uid 后统一调
+function refreshBadges() {
+  const counts = new Map();
+  document.querySelectorAll("#defect-list .defect-card:not(.no)").forEach((c) => {
+    const uid = cardUid(c);
+    if (uid) counts.set(uid, (counts.get(uid) || 0) + 1);
+  });
+  document.querySelectorAll("#output-wrap tr[data-uid]").forEach((tr) => {
+    const cell = tr.querySelector("td");
+    cell.querySelector(".uid-flag")?.remove();
+    const n = counts.get(tr.dataset.uid) || 0;
+    if (!n) return;
+    const flag = document.createElement("button");
+    flag.type = "button";
+    flag.className = "uid-flag";
+    flag.dataset.uid = tr.dataset.uid;
+    flag.textContent = `⚠${n}`;
+    flag.title = `${n} 条缺陷记录，点击定位到右侧卡片`;
+    cell.appendChild(flag);
+  });
+}
+
+// ── Annotation ──────────────────────────────────────────────────────────────
+// 成功标准（与 docs/eval/success_criteria.md 同步）
+const CRITERIA = {
+  plan: {
+    boundary_quality: "约束下语义最优边界：仅当存在满足时长预算且语义更好的边界却未用时扣分（被时长逼出的断点不扣分）",
+    split_necessity: "拆分/合并必要性：不过碎（可合法合并的碎 unit）不过长（有合规拆分点却硬塞多句）；时长违规归规则指标",
+  },
+  translate: {
+    faithfulness: "忠实度：不漏译、不增译、不歪曲原意",
+    naturalness: "口语自然度：像母语者说的话，无翻译腔",
+    unit_integrity: "单元完整性：不串单元、unit_id 对应正确",
+    terminology: "术语一致性：遵循 glossary，前后一致",
+  },
+};
+const ANCHORS = "5=无问题 · 4=轻微不影响观看 · 3=明显问题但可理解 · 2=影响理解 · 1=严重错误";
+
+function renderCriteria() {
+  const dims = CRITERIA[current.step] || {};
+  const rows = Object.entries(dims).map(([d, desc]) => `<div><b>${d}</b>：${desc}</div>`).join("");
+  $("#criteria-box").innerHTML = `${rows}<div class="muted" style="margin-top:4px">${ANCHORS}（≥4 为 passed）</div>`;
+}
+
+function buildDimForm() {
+  const wrap = $("#dim-form");
+  wrap.innerHTML = "";
+  current.annotation_dimensions.forEach((dim) => {
+    const row = document.createElement("div");
+    row.className = "dim-row";
+    row.innerHTML = `<label>${dim}</label><select data-dim="${dim}">
+      <option value="">—</option>${[1, 2, 3, 4, 5].map((v) => `<option value="${v}">${v}</option>`).join("")}
+    </select><div class="dim-summary muted" data-summary-for="${dim}" hidden></div>`;
+    wrap.appendChild(row);
+  });
+}
+
+// ── 缺陷卡片 ─────────────────────────────────────────────────────────────────
+function cardUid(card) {
+  const badge = card.querySelector(".uid-badge");
+  if (badge) return badge.textContent.trim();
+  const input = card.querySelector("input.uid");
+  return input ? input.value.trim() : "";
+}
+
+function findDefectCard(uid) {
+  if (!uid) return null;
+  return [...document.querySelectorAll("#defect-list .defect-card")].find((c) => cardUid(c) === uid) || null;
+}
+
+// 按 (uid, problem) 精确查重——同一 unit 可被多个维度各报一条，独立成卡评审
+function findDefectCardBy(uid, problem) {
+  return [...document.querySelectorAll("#defect-list .defect-card")].find(
+    (c) => cardUid(c) === uid && c.querySelector(".issue").value.trim() === (problem || "").trim()
+  ) || null;
+}
+
+// 卡片头部 uid 控件：有 uid → 可点击定位的徽标；空 → 可编辑 input（填好回车/失焦后变徽标）
+function setCardUid(card, uid) {
+  const head = card.querySelector(".defect-head");
+  head.querySelector(".uid-badge, input.uid")?.remove();
+  let el;
+  if (uid) {
+    el = document.createElement("button");
+    el.type = "button";
+    el.className = "uid-badge";
+    el.textContent = uid;
+    el.title = "点击定位到左侧输出行";
+    el.onclick = () => locateUnit(uid);
+  } else {
+    el = document.createElement("input");
+    el.className = "uid";
+    el.placeholder = "unit_id";
+    el.onchange = () => { if (el.value.trim()) setCardUid(card, el.value.trim()); };
+  }
+  head.prepend(el);
+  updateCardSnippet(card);
+  refreshBadges();
+}
+
+function autoGrow(ta) {
+  ta.style.height = "auto";
+  ta.style.height = ta.scrollHeight + "px";
+}
+
+// 缺陷卡片内联预览：unit 的源文/译文（translate）或文本（plan），免去反查左侧
+function unitSnippetHtml(uid) {
+  const it = currentItems.get(uid);
+  if (!it) return '<span class="muted">（输出中未找到该 unit）</span>';
+  if (current && current.step === "translate") {
+    return `<div><span class="sn-label">源</span>${esc(it.source_text)}</div><div><span class="sn-label">译</span>${esc(it.text)}</div>`;
+  }
+  return esc(it.text);
+}
+
+function updateCardSnippet(card) {
+  const sn = card.querySelector(".unit-snippet");
+  if (!sn) return;
+  const uid = cardUid(card);
+  sn.innerHTML = uid ? unitSnippetHtml(uid) : "";
+  sn.hidden = !uid;
+}
+
+function refreshSnippets() {
+  document.querySelectorAll("#defect-list .defect-card").forEach(updateCardSnippet);
+}
+
+// origin: "human"（默认通过态）| "ai"（AI 预评生成，未决态）；dim 为报告该问题的评审维度
+function addDefectCard(unitId, problem, origin = "human", dim = "") {
+  const card = document.createElement("div");
+  card.className = "defect-card";
+  if (origin === "ai") card.dataset.origin = "ai";
+  const head = document.createElement("div");
+  head.className = "defect-head";
+  card.appendChild(head);
+  setCardUid(card, unitId || "");
+  const actions = document.createElement("span");
+  actions.className = "head-actions";
+  if (origin === "ai") {
+    const tag = document.createElement("span");
+    tag.className = "ai-tag";
+    tag.textContent = dim ? `AI · ${dim}` : "AI";
+    actions.appendChild(tag);
+  }
+  const okBtn = document.createElement("button");
+  okBtn.className = "plain verdict-btn";
+  okBtn.textContent = "通过";
+  okBtn.title = "确认是缺陷（保存时收录）";
+  okBtn.onclick = () => setVerdict(card, true);
+  actions.appendChild(okBtn);
+  const noBtn = document.createElement("button");
+  noBtn.className = "plain verdict-btn";
+  noBtn.textContent = "不通过";
+  noBtn.title = "不是缺陷（保存时排除）";
+  noBtn.onclick = () => setVerdict(card, false);
+  actions.appendChild(noBtn);
+  head.appendChild(actions);
+  const sn = document.createElement("div");
+  sn.className = "unit-snippet";
+  sn.hidden = true;
+  card.appendChild(sn);
+  const ta = document.createElement("textarea");
+  ta.className = "issue";
+  ta.rows = 2;
+  ta.placeholder = "问题描述";
+  ta.value = problem || "";
+  ta.addEventListener("input", () => autoGrow(ta));
+  card.appendChild(ta);
+  $("#defect-list").appendChild(card);
+  if (origin !== "ai") card.classList.add("ok");  // 人工添加默认通过
+  updateCardSnippet(card);
+  autoGrow(ta);
+  refreshBadges();
+  updateReviewProgress();
+  return card;
+}
+
+// 逐条评审：通过=绿底收录 / 不通过=红底排除；判定后自动跳下一条未决
+function setVerdict(card, ok) {
+  card.classList.toggle("ok", ok);
+  card.classList.toggle("no", !ok);
+  card.querySelector(".issue").disabled = !ok;
+  const [okBtn, noBtn] = card.querySelectorAll(".verdict-btn");
+  okBtn.classList.toggle("on-ok", ok);
+  noBtn.classList.toggle("on-no", !ok);
+  refreshBadges();
+  updateReviewProgress();
+  const next = [...document.querySelectorAll("#defect-list .defect-card")].find(
+    (c) => !c.classList.contains("ok") && !c.classList.contains("no")
+  );
+  if (next) {
+    next.scrollIntoView({ block: "center", behavior: "smooth" });
+    next.classList.remove("flash");
+    void next.offsetWidth;
+    next.classList.add("flash");
+    setTimeout(() => next.classList.remove("flash"), 1000);
+  }
+}
+
+// 一键把未决卡片全部设为通过
+function verdictAll() {
+  document.querySelectorAll("#defect-list .defect-card:not(.ok):not(.no)").forEach((c) => {
+    c.classList.add("ok");
+    c.querySelector(".issue").disabled = false;
+    const [okBtn, noBtn] = c.querySelectorAll(".verdict-btn");
+    okBtn.classList.add("on-ok");
+    noBtn.classList.remove("on-no");
+  });
+  refreshBadges();
+  updateReviewProgress();
+}
+
+// 评审进度：已判定 i/N（人工添加的通过态也计入）
+function updateReviewProgress() {
+  const cards = [...document.querySelectorAll("#defect-list .defect-card")];
+  const decided = cards.filter((c) => c.classList.contains("ok") || c.classList.contains("no")).length;
+  const el = $("#review-progress");
+  if (!el) return;
+  el.textContent = cards.length ? `已审 ${decided}/${cards.length}` : "";
+}
+
+async function loadAnnotation() {
+  $("#defect-list").innerHTML = "";
+  refreshBadges();
+  updateReviewProgress();
+  $("#overall").value = "";
+  document.querySelectorAll("#dim-form select").forEach((s) => { s.value = ""; });
+  document.querySelectorAll("#dim-form .dim-summary").forEach((el) => { el.textContent = ""; el.hidden = true; });
+  const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/annotation`);
+  Object.entries(data.dimensions || {}).forEach(([dim, v]) => {
+    const sel = document.querySelector(`#dim-form select[data-dim="${dim}"]`);
+    if (sel) sel.value = String(v);
+  });
+  (data.defects || []).forEach((d) => addDefectCard(d.unit_id, d.issue));
+  $("#overall").value = data.overall || "";
+}
+
+async function saveAnnotation(advance) {
+  const dimensions = {};
+  document.querySelectorAll("#dim-form select").forEach((s) => {
+    if (s.value) dimensions[s.dataset.dim] = Number(s.value);
+  });
+  const defects = [...document.querySelectorAll("#defect-list .defect-card:not(.no)")]
+    .map((card) => ({ unit_id: cardUid(card), issue: card.querySelector(".issue").value.trim() }))
+    .filter((d) => d.unit_id || d.issue);
+  const body = { dimensions, defects, overall: $("#overall").value };
+  if (judgeSuggestion) {  // 做过 AI 预评 → 带上原始建议 + 人工复核标记
+    body.judge_suggestion = judgeSuggestion;
+    body.reviewed_by = "human";
+  }
+  try {
+    await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/annotation`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    current.annotated = true;
+    updateDetailMeta();
+    if (!advance) { showMsg("标注已保存", true); return; }
+    // 队列推进：案例列表中当前之后第一个未审核 case；没有则收工回案例 tab
+    const idx = cases.indexOf(current);
+    const next = cases.findIndex((c, j) => j > idx && !c.annotated);
+    if (next >= 0) {
+      showMsg("已保存，跳到下一条未审核 case", true);
+      openCase(next);
+    } else {
+      showMsg("已保存，全部审核完成", true);
+      document.querySelector('nav button[data-tab="cases"]').click();
+    }
+  } catch (e) {
+    showMsg(`保存失败：${e.message}`, false);
+  }
+}
+
+// ⌘/Ctrl+Enter = Approve 保存并下一条（仅详情页生效）
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && current && !$("#view-detail").hidden) {
+    e.preventDefault();
+    saveAnnotation(true);
+  }
+});
+
+loadCandidates();
+</script>
+</body>
+</html>

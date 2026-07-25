@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "units": [
+    {
+      "unit_id": "p0000",
+      "start": 22.386,
+      "end": 26.289,
+      "speaker": "",
+      "text": "Thank you so much for joining me this afternoon in the breakout room.",
+      "word_start": 0,
+      "word_end": 13
+    },
+    {
+      "unit_id": "p0001",
+      "start": 26.869,
+      "end": 31.572,
+      "speaker": "",
+      "text": "The last session today of Code with Claude. I hope you've all had a fantastic day so far.",
+      "word_start": 13,
+      "word_end": 31
+    },
+    {
+      "unit_id": "p0002",
+      "start": 32.173,
+      "end": 37.617,
+      "speaker": "",
+      "text": "My name is Margot Van Laar. I am an applied AI engineer at Anthropic here in London.",
+      "word_start": 31,
+      "word_end": 48
+    },
+    {
+      "unit_id": "p0003",
+      "start": 38.157,
+      "end": 42.06,
+      "speaker": "",
+      "text": "And this afternoon, we're going to be talking about the prompting playbook.",
+      "word_start": 48,
+      "word_end": 60
+    },
+    {
+      "unit_id": "p0004_0",
+      "start": 42.72,
+      "end": 46.283,
+      "speaker": "",
+      "text": "And prompting is arguably one of the first skills,",
+      "word_start": 60,
+      "word_end": 69
+    },
+    {
+      "unit_id": "p0004_1",
+      "start": 46.503,
+      "end": 52.646,
+      "speaker": "",
+      "text": "if not the first skill that we had to learn as engineers when we first started to work with LLMs.",
+      "word_start": 69,
+      "word_end": 89
+    },
+    {
+      "unit_id": "p0005_0",
+      "start": 52.987,
+      "end": 54.067,
+      "speaker": "",
+      "text": "And even now,",
+      "word_start": 89,
+      "word_end": 92
+    },
+    {
+      "unit_id": "p0005_1",
+      "start": 54.127,
+      "end": 60.87,
+      "speaker": "",
+      "text": "it continues to be one of the most critical skills to building effective AI systems.",
+      "word_start": 92,
+      "word_end": 107
+    },
+    {
+      "unit_id": "p0006_0",
+      "start": 61.83,
+      "end": 65.052,
+      "speaker": "",
+      "text": "So today we're going to discuss some best practices",
+      "word_start": 107,
+      "word_end": 116
+    },
+    {
+      "unit_id": "p0006_1",
+      "start": 66.332,
+      "end": 71.875,
+      "speaker": "",
+      "text": "in the context of two practical scenarios that you're probably encountering at work.",
+      "word_start": 116,
+      "word_end": 129
+    },
+    {
+      "unit_id": "p0007",
+      "start": 72.355,
+      "end": 78.818,
+      "speaker": "",
+      "text": "The first is where you have an existing prompt in production that you've been maintaining for some time.",
+      "word_start": 129,
+      "word_end": 147
+    },
+    {
+      "unit_id": "p0008_0",
+      "start": 80.41,
+      "end": 84.932,
+      "speaker": "",
+      "text": "And possibly you're migrating it to a new model or making a change to the architecture,",
+      "word_start": 147,
+      "word_end": 163
+    },
+    {
+      "unit_id": "p0008_1",
+      "start": 84.952,
+      "end": 87.573,
+      "speaker": "",
+      "text": "and for some reason, it's no longer working as well.",
+      "word_start": 163,
+      "word_end": 173
+    },
+    {
+      "unit_id": "p0009_0",
+      "start": 88.214,
+      "end": 93.076,
+      "speaker": "",
+      "text": "The second scenario is where we're building an entirely new agentic use case from the ground up,",
+      "word_start": 173,
+      "word_end": 190
+    },
+    {
+      "unit_id": "p0009_1",
+      "start": 93.196,
+      "end": 95.617,
+      "speaker": "",
+      "text": "and we need to build the prompt from zero to one.",
+      "word_start": 190,
+      "word_end": 201
+    },
+    {
+      "unit_id": "p0010",
+      "start": 98.762,
+      "end": 104.726,
+      "speaker": "",
+      "text": "In order to illustrate these best practices, I don't just want to give you a list of do's and don'ts.",
+      "word_start": 201,
+      "word_end": 221
+    },
+    {
+      "unit_id": "p0011_0",
+      "start": 105.046,
+      "end": 110.53,
+      "speaker": "",
+      "text": "I want to walk through a practical example that's been inspired by real prompts",
+      "word_start": 221,
+      "word_end": 235
+    },
+    {
+      "unit_id": "p0011_1",
+      "start": 110.63,
+      "end": 115.314,
+      "speaker": "",
+      "text": "that I've seen some of our customers work with who are building on Claude.",
+      "word_start": 235,
+      "word_end": 249
+    }
+  ]
+}

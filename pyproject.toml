@@ -11,6 +11,7 @@ dependencies = [
     "light-qc",
     "light-regression",
     "light-backend",
+    "light-eval",
     "torch>=2.8.0",
     "torchaudio>=2.8.0",
     "whisperx>=3.8.5",
@@ -30,6 +31,7 @@ members = [
     "packages/light-regression",
     "packages/light-backend",
     "packages/light-tts",
+    "packages/light-eval",
 ]
 
 [tool.uv.sources]
@@ -45,6 +47,7 @@ light-qc = { workspace = true }
 light-regression = { workspace = true }
 light-backend = { workspace = true }
 light-tts = { workspace = true }
+light-eval = { workspace = true }
 
 [dependency-groups]
 dev = [

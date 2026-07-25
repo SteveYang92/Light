@@ -1,0 +1,20 @@
+{
+  "dimensions": {
+    "boundary_quality": {
+      "score": 4.0,
+      "summary": "边界选择整体合理，但p0000_0和p0000_1的分割点打断了完整句子结构，且存在更优的预算内分割方案。",
+      "issues": [
+        {
+          "unit_id": "p0000_0",
+          "problem": "在“2013”后断开，将“? It's about Theodore”分割到下一单元，破坏了句子的自然连贯性；可考虑在“Theodore”后分割（如0.43-5.15与5.45-9.15），既符合时长预算，又保持语义完整。"
+        }
+      ]
+    },
+    "split_necessity": {
+      "score": 5.0,
+      "summary": "所有分割和合并都是必要的，没有过度碎片化或过度合并的问题。",
+      "issues": []
+    }
+  },
+  "suggested_overall": "pass"
+}

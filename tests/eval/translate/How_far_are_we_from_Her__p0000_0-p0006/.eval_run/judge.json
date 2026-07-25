@@ -1,0 +1,25 @@
+{
+  "dimensions": {
+    "faithfulness": {
+      "score": 5.0,
+      "summary": "所有字幕都准确传达了源单元的含义，没有遗漏或添加信息。",
+      "issues": []
+    },
+    "naturalness": {
+      "score": 5.0,
+      "summary": "译文读起来自然流畅，符合中文口语表达习惯。",
+      "issues": []
+    },
+    "unit_integrity": {
+      "score": 5.0,
+      "summary": "每个字幕都正确对应其声明的源单元，没有泄漏或错配。",
+      "issues": []
+    },
+    "terminology": {
+      "score": 5.0,
+      "summary": "所有术语均按词汇表正确翻译，且前后一致。",
+      "issues": []
+    }
+  },
+  "suggested_overall": "pass"
+}

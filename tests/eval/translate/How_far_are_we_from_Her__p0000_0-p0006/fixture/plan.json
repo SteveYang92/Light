@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "units": [
+    {
+      "unit_id": "p0000_0",
+      "start": 0.426,
+      "end": 3.529,
+      "speaker": "",
+      "text": "Do you remember the movie Her from 2013",
+      "word_start": 0,
+      "word_end": 8
+    },
+    {
+      "unit_id": "p0000_1",
+      "start": 4.009,
+      "end": 9.153,
+      "speaker": "",
+      "text": "? It's about Theodore , an introvert who falls in love with his AI assistant Samantha",
+      "word_start": 8,
+      "word_end": 22
+    },
+    {
+      "unit_id": "p0001",
+      "start": 10.615,
+      "end": 13.537,
+      "speaker": "",
+      "text": "Where'd you get that name from? I gave it to myself , actually.",
+      "word_start": 22,
+      "word_end": 34
+    },
+    {
+      "unit_id": "p0002",
+      "start": 13.917,
+      "end": 16.599,
+      "speaker": "",
+      "text": "Fast forward 13 years to July 2026.",
+      "word_start": 34,
+      "word_end": 41
+    },
+    {
+      "unit_id": "p0003_0",
+      "start": 17.28,
+      "end": 19.902,
+      "speaker": "",
+      "text": "openai releases gpt live",
+      "word_start": 41,
+      "word_end": 45
+    },
+    {
+      "unit_id": "p0003_1",
+      "start": 19.902,
+      "end": 24.226,
+      "speaker": "",
+      "text": ", promising a meaningful upgrade to their ChatGPT voice assistant.",
+      "word_start": 45,
+      "word_end": 54
+    },
+    {
+      "unit_id": "p0004",
+      "start": 24.95,
+      "end": 25.63,
+      "speaker": "",
+      "text": "What do you think?",
+      "word_start": 54,
+      "word_end": 58
+    },
+    {
+      "unit_id": "p0005",
+      "start": 25.871,
+      "end": 28.152,
+      "speaker": "",
+      "text": "If you go up, it's going to get kind of baggy.",
+      "word_start": 58,
+      "word_end": 69
+    },
+    {
+      "unit_id": "p0006",
+      "start": 28.292,
+      "end": 31.494,
+      "speaker": "",
+      "text": "Although baggy is very popular now, don't you think?",
+      "word_start": 69,
+      "word_end": 78
+    }
+  ]
+}

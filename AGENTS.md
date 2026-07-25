@@ -24,6 +24,7 @@ packages/
 │   └── merge/           分段输出合并（原 merge_outputs.py 拆分；同名文件为薄 re-export 壳）
 ├── light-qc/            独立 QC 引擎（规则 + LLM）
 ├── light-regression/    回归测试工具（固定黄金基线 + rebaseline）
+├── light-eval/          字幕自改进评估框架（步骤级 eval suite + LLM judge + 人工标注工作台）
 ├── light-tts/           字幕配音（官方 IndexTTS2 / Qwen3-TTS）
 ├── light-backend/       FastAPI Web 后端（routers/ + services/）
 └── light-frontend/      React + Vite SPA（pages/ + components/）
@@ -44,6 +45,7 @@ vendor/
 | light-qc | 端到端 QC | `uv run light-qc -i <本地 output 里的 .srt> --transcript <本地 output 里的 transcript.json> -f json` |
 | light-frontend | 类型检查 + 构建 | `npm --prefix packages/light-frontend run build` |
 | light-backend | Lint + 后端测试 | `uv run ruff check packages/light-backend/ && uv run pytest packages/light-backend/tests/ -v` |
+| light-eval | 单测 + eval 套件冒烟 | `uv run pytest packages/light-eval/tests/ -v && uv run light-eval run tests/eval/` |
 | 任何 Python 改动 | Lint + Format + 单测 | `uv run ruff check . && uv run ruff format --check . && uv run pytest packages/ -v` |
 
 > **重要**：上表是"按改动类型"叠加的，不是二选一。例如改 light-cli，既要跑"任何 Python 改动"那行，也要跑"light-cli"那行。验收前**全部**必须通过，缺一项不算完成。
@@ -236,6 +238,7 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 - 回归测试快照 `tests/regression/snapshots/` **进 git 共享**，是固定黄金基线，**禁止删除**；质量改进后用 `rebaseline` 推进，不要手动删快照
 - stage 字符串是 SSE/前端外部契约（`reporting/events.py` 运行级 + `steps/progress.py` 步骤级），**禁止改名**；新增 stage 需同步 `reporting/labels.py` 的中文标签
 - 新 QC 规则必须零误报才提交
+- 各包测试目录同名为 `tests/`（pytest 会解析为同名包），**测试文件 basename 必须全仓唯一**，否则整仓收集时同名文件互相遮蔽丢测试
 - light-qc 独立端到端检查仅改 light-qc 时需要；改 light-cli 由回归内置覆盖
 - resume 见上文「断点续跑」；改 step 注册/hydrate 后跑 `packages/light-cli/tests/test_run_state.py`
 - 修改涉及 CLI 参数、行为、输出格式等外部可见变更时，须同步更新 `README.md` 对应章节

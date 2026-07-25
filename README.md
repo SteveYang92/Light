@@ -86,6 +86,7 @@ packages/
 | `light-cli` | 音频 → ASR → 矫正 → 断句 → 翻译 → 字幕 → 导出 | light-models, light-core, light-llm, light-text, light-asr, light-asr-polish, light-subtitle |
 | `light-qc` | 解析字幕文件 → 规则引擎 → LLM QC → 报告 | light-models, light-text |
 | `light-regression` | 固定音频 → 完整管线 + QC → 逐次对比 → Dashboard | light-models, light-qc |
+| `light-eval` | 步骤级 eval suite → 规则指标 + LLM judge → 校准/报告 + 人工标注工作台 | light-models, light-text, light-core, light-llm, light-subtitle |
 | `light-backend` | FastAPI + SQLite → yt-dlp 下载 → 管线调度 → SSE → 视频流 | light-models, light-cli |
 | `light-frontend` | React + Video.js → 视频库 → URL 提交 → 进度面板 → 播放 | — |
 
@@ -389,6 +390,26 @@ uv run light-regression diff tests/regression/cases/yt_kYkIdXwW2AE/case.yaml 202
 完整参数见 `uv run light-regression --help`。
 
 ASR 自动缓存 transcript.json（按音频内容哈希），后续运行跳过 ASR，从 ~90s 降至 <1s。
+
+### light-eval（字幕自改进评估框架）
+
+面向**步骤级**质量评估与独立调优：对 plan / translate 等关键步骤跑 eval suite，输出规则指标（确定性硬门槛）+ LLM judge 维度分（软门槛），并支持人工标注校准。成功标准见 `docs/eval/success_criteria.md`，标注规范见 `docs/eval/annotation_guide.md`。
+
+```bash
+# 从真实 run 挖掘 eval 候选
+uv run light-eval harvest output/
+
+# 人工工作台：浏览器里选 case、跑步骤、做标注（http://127.0.0.1:8788）
+uv run light-eval serve
+
+# 跑 eval 套件（规则指标 + LLM judge）
+uv run light-eval run tests/eval/ -f html -o output/eval_report.html
+
+# judge 校准：对比 LLM judge 与人工标注（±1 一致率 ≥80% 为可信）
+uv run light-eval calibrate tests/eval/
+```
+
+eval case 存 `tests/eval/<step>/<case>/`（case.yaml + fixture/ + annotation.yaml），进 git 共享。
 
 ### light-backend（Web 服务）
 

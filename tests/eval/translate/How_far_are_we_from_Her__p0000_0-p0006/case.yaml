@@ -1,0 +1,9 @@
+kind: control
+name: How_far_are_we_from_Her__p0000_0-p0006
+params:
+  target_lang: zh
+range:
+  end_unit: p0006
+  start_unit: p0000_0
+source: output/How_far_are_we_from_Her
+step: translate

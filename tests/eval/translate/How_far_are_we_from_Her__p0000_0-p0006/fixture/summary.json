@@ -1,0 +1,21 @@
+{
+  "title": "The Evolution of Voice Assistants: From Cascades to Full-Duplex AI",
+  "domain": "AI research and technology explainer",
+  "overview": "This video explores the technological evolution of voice AI assistants, from traditional cascade systems to modern full-duplex models. It compares OpenAI's GPT-4o and GPT Live with the open-source Moshi model from Kyutai, explaining how architectural choices like end-to-end processing and concurrent audio streams enable more natural, human-like conversations. The video also discusses practical trade-offs between cascade and end-to-end approaches, and the future challenges of miniaturization and robot integration.",
+  "key_topics": [
+    "Cascade vs. end-to-end voice assistant architectures",
+    "Full-duplex vs. half-duplex communication in AI",
+    "Audio tokenization and semantic/acoustic decomposition",
+    "Inner monologue and its role in speech-to-speech models",
+    "Tool calling and asynchronous background processing",
+    "Post-training challenges for natural conversation metrics",
+    "Comparison of OpenAI GPT Live, GPT-4o, and Kyutai's Moshi"
+  ],
+  "speakers": {
+    "SPEAKER_00": "Narrator/Host (explaining concepts and interviewing)",
+    "SPEAKER_01": "Neil Zeghidour (founder of Kyutai, expert in audio AI)",
+    "SPEAKER_02": "Mira Murati (former CTO of OpenAI, founder of Thinking Machines, quoted from interview)",
+    "SPEAKER_03": "Samantha (AI assistant from the movie Her, quoted in clips)",
+    "SPEAKER_04": "Theodore (character from the movie Her, quoted in clips)"
+  }
+}

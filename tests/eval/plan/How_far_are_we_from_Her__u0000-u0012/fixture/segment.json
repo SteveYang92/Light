@@ -1,0 +1,884 @@
+{
+  "total_words": 101,
+  "total_units": 13,
+  "words": [
+    {
+      "text": " Do",
+      "start": 0.426,
+      "end": 0.506,
+      "confidence": 0.976,
+      "speaker": null
+    },
+    {
+      "text": " you",
+      "start": 0.546,
+      "end": 0.646,
+      "confidence": 0.695,
+      "speaker": null
+    },
+    {
+      "text": " remember",
+      "start": 0.666,
+      "end": 1.127,
+      "confidence": 0.86,
+      "speaker": null
+    },
+    {
+      "text": " the",
+      "start": 1.247,
+      "end": 1.327,
+      "confidence": 0.834,
+      "speaker": null
+    },
+    {
+      "text": " movie",
+      "start": 1.367,
+      "end": 1.667,
+      "confidence": 0.819,
+      "speaker": null
+    },
+    {
+      "text": " Her",
+      "start": 1.787,
+      "end": 2.167,
+      "confidence": 0.689,
+      "speaker": null
+    },
+    {
+      "text": " from",
+      "start": 2.268,
+      "end": 2.468,
+      "confidence": 0.928,
+      "speaker": null
+    },
+    {
+      "text": " 2013",
+      "start": 2.488,
+      "end": 3.529,
+      "confidence": 0.886,
+      "speaker": null
+    },
+    {
+      "text": " ? It's",
+      "start": 4.009,
+      "end": 4.129,
+      "confidence": 0.87,
+      "speaker": null
+    },
+    {
+      "text": " about",
+      "start": 4.169,
+      "end": 4.409,
+      "confidence": 0.907,
+      "speaker": null
+    },
+    {
+      "text": " Theodore",
+      "start": 4.569,
+      "end": 5.15,
+      "confidence": 0.844,
+      "speaker": null
+    },
+    {
+      "text": " , an",
+      "start": 5.45,
+      "end": 5.55,
+      "confidence": 0.674,
+      "speaker": null
+    },
+    {
+      "text": " introvert",
+      "start": 5.67,
+      "end": 6.131,
+      "confidence": 0.78,
+      "speaker": null
+    },
+    {
+      "text": " who",
+      "start": 6.211,
+      "end": 6.331,
+      "confidence": 0.889,
+      "speaker": null
+    },
+    {
+      "text": " falls",
+      "start": 6.391,
+      "end": 6.671,
+      "confidence": 0.84,
+      "speaker": null
+    },
+    {
+      "text": " in",
+      "start": 6.731,
+      "end": 6.791,
+      "confidence": 0.906,
+      "speaker": null
+    },
+    {
+      "text": " love",
+      "start": 6.851,
+      "end": 7.052,
+      "confidence": 0.936,
+      "speaker": null
+    },
+    {
+      "text": " with",
+      "start": 7.092,
+      "end": 7.212,
+      "confidence": 0.89,
+      "speaker": null
+    },
+    {
+      "text": " his",
+      "start": 7.272,
+      "end": 7.432,
+      "confidence": 0.783,
+      "speaker": null
+    },
+    {
+      "text": " AI",
+      "start": 7.552,
+      "end": 7.772,
+      "confidence": 0.944,
+      "speaker": null
+    },
+    {
+      "text": " assistant",
+      "start": 7.812,
+      "end": 8.393,
+      "confidence": 0.785,
+      "speaker": null
+    },
+    {
+      "text": " Samantha",
+      "start": 8.653,
+      "end": 9.153,
+      "confidence": 0.905,
+      "speaker": null
+    },
+    {
+      "text": " Where'd",
+      "start": 10.615,
+      "end": 10.955,
+      "confidence": 0.534,
+      "speaker": null
+    },
+    {
+      "text": " you",
+      "start": 10.975,
+      "end": 11.035,
+      "confidence": 0.023,
+      "speaker": null
+    },
+    {
+      "text": " get",
+      "start": 11.055,
+      "end": 11.195,
+      "confidence": 0.552,
+      "speaker": null
+    },
+    {
+      "text": " that",
+      "start": 11.215,
+      "end": 11.375,
+      "confidence": 0.295,
+      "speaker": null
+    },
+    {
+      "text": " name",
+      "start": 11.395,
+      "end": 11.515,
+      "confidence": 0.268,
+      "speaker": null
+    },
+    {
+      "text": " from?",
+      "start": 11.535,
+      "end": 11.615,
+      "confidence": 0.001,
+      "speaker": null
+    },
+    {
+      "text": " I",
+      "start": 12.256,
+      "end": 12.316,
+      "confidence": 0.804,
+      "speaker": null
+    },
+    {
+      "text": " gave",
+      "start": 12.336,
+      "end": 12.516,
+      "confidence": 0.787,
+      "speaker": null
+    },
+    {
+      "text": " it",
+      "start": 12.536,
+      "end": 12.596,
+      "confidence": 0.548,
+      "speaker": null
+    },
+    {
+      "text": " to",
+      "start": 12.616,
+      "end": 12.656,
+      "confidence": 0.603,
+      "speaker": null
+    },
+    {
+      "text": " myself",
+      "start": 12.696,
+      "end": 13.077,
+      "confidence": 0.923,
+      "speaker": null
+    },
+    {
+      "text": " , actually.",
+      "start": 13.197,
+      "end": 13.537,
+      "confidence": 0.827,
+      "speaker": null
+    },
+    {
+      "text": " Fast",
+      "start": 13.917,
+      "end": 14.157,
+      "confidence": 0.925,
+      "speaker": null
+    },
+    {
+      "text": " forward",
+      "start": 14.177,
+      "end": 14.478,
+      "confidence": 0.928,
+      "speaker": null
+    },
+    {
+      "text": " 13",
+      "start": 14.498,
+      "end": 15.078,
+      "confidence": 0.64,
+      "speaker": null
+    },
+    {
+      "text": " years",
+      "start": 15.118,
+      "end": 15.439,
+      "confidence": 0.748,
+      "speaker": null
+    },
+    {
+      "text": " to",
+      "start": 15.519,
+      "end": 15.619,
+      "confidence": 0.998,
+      "speaker": null
+    },
+    {
+      "text": " July",
+      "start": 15.659,
+      "end": 15.939,
+      "confidence": 0.871,
+      "speaker": null
+    },
+    {
+      "text": " 2026.",
+      "start": 15.959,
+      "end": 16.599,
+      "confidence": 0.59,
+      "speaker": null
+    },
+    {
+      "text": " openai",
+      "start": 17.28,
+      "end": 17.861615384615384,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " releases",
+      "start": 17.861615384615384,
+      "end": 18.462538461538465,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " gpt",
+      "start": 18.462538461538465,
+      "end": 19.150461538461542,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " live",
+      "start": 19.150461538461542,
+      "end": 19.902307692307694,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " , promising",
+      "start": 19.902307692307694,
+      "end": 20.638384615384616,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " a",
+      "start": 20.638384615384616,
+      "end": 21.041923076923077,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " meaningful",
+      "start": 21.041923076923077,
+      "end": 21.72092307692308,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " upgrade",
+      "start": 21.72092307692308,
+      "end": 22.047076923076922,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " to",
+      "start": 22.047076923076922,
+      "end": 22.276307692307693,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " their",
+      "start": 22.276307692307693,
+      "end": 22.65246153846154,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " ChatGPT",
+      "start": 22.65246153846154,
+      "end": 23.13423076923077,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " voice",
+      "start": 23.13423076923077,
+      "end": 23.592692307692307,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " assistant.",
+      "start": 23.592692307692307,
+      "end": 24.226,
+      "confidence": 0.7763571428571429,
+      "speaker": null
+    },
+    {
+      "text": " What",
+      "start": 24.95,
+      "end": 25.07,
+      "confidence": 0.856,
+      "speaker": null
+    },
+    {
+      "text": " do",
+      "start": 25.09,
+      "end": 25.15,
+      "confidence": 0.902,
+      "speaker": null
+    },
+    {
+      "text": " you",
+      "start": 25.17,
+      "end": 25.29,
+      "confidence": 0.923,
+      "speaker": null
+    },
+    {
+      "text": " think?",
+      "start": 25.33,
+      "end": 25.63,
+      "confidence": 0.904,
+      "speaker": null
+    },
+    {
+      "text": " If",
+      "start": 25.871,
+      "end": 25.911,
+      "confidence": 0.124,
+      "speaker": null
+    },
+    {
+      "text": " you",
+      "start": 25.931,
+      "end": 25.991,
+      "confidence": 0.0,
+      "speaker": null
+    },
+    {
+      "text": " go",
+      "start": 26.131,
+      "end": 26.311,
+      "confidence": 0.993,
+      "speaker": null
+    },
+    {
+      "text": " up,",
+      "start": 26.431,
+      "end": 26.551,
+      "confidence": 0.876,
+      "speaker": null
+    },
+    {
+      "text": " it's",
+      "start": 26.611,
+      "end": 26.731,
+      "confidence": 0.828,
+      "speaker": null
+    },
+    {
+      "text": " going",
+      "start": 26.811,
+      "end": 27.071,
+      "confidence": 0.517,
+      "speaker": null
+    },
+    {
+      "text": " to",
+      "start": 27.111,
+      "end": 27.191,
+      "confidence": 0.295,
+      "speaker": null
+    },
+    {
+      "text": " get",
+      "start": 27.291,
+      "end": 27.371,
+      "confidence": 0.076,
+      "speaker": null
+    },
+    {
+      "text": " kind",
+      "start": 27.491,
+      "end": 27.672,
+      "confidence": 0.493,
+      "speaker": null
+    },
+    {
+      "text": " of",
+      "start": 27.692,
+      "end": 27.752,
+      "confidence": 0.708,
+      "speaker": null
+    },
+    {
+      "text": " baggy.",
+      "start": 27.772,
+      "end": 28.152,
+      "confidence": 0.885,
+      "speaker": null
+    },
+    {
+      "text": " Although",
+      "start": 28.292,
+      "end": 28.572,
+      "confidence": 0.926,
+      "speaker": null
+    },
+    {
+      "text": " baggy",
+      "start": 28.612,
+      "end": 29.032,
+      "confidence": 0.768,
+      "speaker": null
+    },
+    {
+      "text": " is",
+      "start": 29.092,
+      "end": 29.192,
+      "confidence": 0.714,
+      "speaker": null
+    },
+    {
+      "text": " very",
+      "start": 29.252,
+      "end": 29.513,
+      "confidence": 0.797,
+      "speaker": null
+    },
+    {
+      "text": " popular",
+      "start": 29.593,
+      "end": 30.213,
+      "confidence": 0.92,
+      "speaker": null
+    },
+    {
+      "text": " now,",
+      "start": 30.293,
+      "end": 30.493,
+      "confidence": 0.992,
+      "speaker": null
+    },
+    {
+      "text": " don't",
+      "start": 30.573,
+      "end": 30.853,
+      "confidence": 0.589,
+      "speaker": null
+    },
+    {
+      "text": " you",
+      "start": 30.873,
+      "end": 31.013,
+      "confidence": 0.758,
+      "speaker": null
+    },
+    {
+      "text": " think?",
+      "start": 31.034,
+      "end": 31.494,
+      "confidence": 0.641,
+      "speaker": null
+    },
+    {
+      "text": " And",
+      "start": 31.954,
+      "end": 32.094,
+      "confidence": 0.76,
+      "speaker": null
+    },
+    {
+      "text": " OpenAI",
+      "start": 32.294,
+      "end": 32.795,
+      "confidence": 0.68,
+      "speaker": null
+    },
+    {
+      "text": " are",
+      "start": 32.875,
+      "end": 32.975,
+      "confidence": 0.851,
+      "speaker": null
+    },
+    {
+      "text": " not",
+      "start": 33.075,
+      "end": 33.275,
+      "confidence": 0.93,
+      "speaker": null
+    },
+    {
+      "text": " the",
+      "start": 33.315,
+      "end": 33.415,
+      "confidence": 0.975,
+      "speaker": null
+    },
+    {
+      "text": " only",
+      "start": 33.475,
+      "end": 33.655,
+      "confidence": 0.901,
+      "speaker": null
+    },
+    {
+      "text": " ones",
+      "start": 33.775,
+      "end": 33.955,
+      "confidence": 0.672,
+      "speaker": null
+    },
+    {
+      "text": " trying",
+      "start": 34.035,
+      "end": 34.315,
+      "confidence": 0.81,
+      "speaker": null
+    },
+    {
+      "text": " to",
+      "start": 34.375,
+      "end": 34.495,
+      "confidence": 0.832,
+      "speaker": null
+    },
+    {
+      "text": " bring",
+      "start": 34.596,
+      "end": 34.836,
+      "confidence": 0.807,
+      "speaker": null
+    },
+    {
+      "text": " Her",
+      "start": 34.936,
+      "end": 35.176,
+      "confidence": 0.726,
+      "speaker": null
+    },
+    {
+      "text": " to",
+      "start": 35.256,
+      "end": 35.396,
+      "confidence": 0.766,
+      "speaker": null
+    },
+    {
+      "text": " life.",
+      "start": 35.476,
+      "end": 35.756,
+      "confidence": 0.9,
+      "speaker": null
+    },
+    {
+      "text": " Just",
+      "start": 36.397,
+      "end": 36.577,
+      "confidence": 0.827,
+      "speaker": null
+    },
+    {
+      "text": " two",
+      "start": 36.657,
+      "end": 36.897,
+      "confidence": 0.818,
+      "speaker": null
+    },
+    {
+      "text": " months",
+      "start": 36.957,
+      "end": 37.177,
+      "confidence": 0.767,
+      "speaker": null
+    },
+    {
+      "text": " ago,",
+      "start": 37.237,
+      "end": 37.497,
+      "confidence": 0.799,
+      "speaker": null
+    },
+    {
+      "text": " Thinking",
+      "start": 37.677,
+      "end": 37.977,
+      "confidence": 0.923,
+      "speaker": null
+    },
+    {
+      "text": " Machines",
+      "start": 38.038,
+      "end": 38.498,
+      "confidence": 0.776,
+      "speaker": null
+    },
+    {
+      "text": " announced",
+      "start": 38.598,
+      "end": 38.998,
+      "confidence": 0.839,
+      "speaker": null
+    },
+    {
+      "text": " their",
+      "start": 39.038,
+      "end": 39.238,
+      "confidence": 0.858,
+      "speaker": null
+    },
+    {
+      "text": " interaction",
+      "start": 39.318,
+      "end": 39.979,
+      "confidence": 0.926,
+      "speaker": null
+    },
+    {
+      "text": " models.",
+      "start": 40.019,
+      "end": 40.459,
+      "confidence": 0.875,
+      "speaker": null
+    }
+  ],
+  "units": [
+    {
+      "unit_id": "u0000",
+      "start": 0.426,
+      "end": 5.15,
+      "duration": 4.724,
+      "speaker": "",
+      "word_count": 11,
+      "source_text": "Do you remember the movie Her from 2013 ? It's about Theodore",
+      "word_range": {
+        "from": " Do",
+        "to": " Theodore"
+      }
+    },
+    {
+      "unit_id": "u0001",
+      "start": 5.45,
+      "end": 9.153,
+      "duration": 3.703,
+      "speaker": "",
+      "word_count": 11,
+      "source_text": ", an introvert who falls in love with his AI assistant Samantha",
+      "word_range": {
+        "from": " , an",
+        "to": " Samantha"
+      }
+    },
+    {
+      "unit_id": "u0002",
+      "start": 10.615,
+      "end": 11.615,
+      "duration": 1.0,
+      "speaker": "",
+      "word_count": 6,
+      "source_text": "Where'd you get that name from?",
+      "word_range": {
+        "from": " Where'd",
+        "to": " from?"
+      }
+    },
+    {
+      "unit_id": "u0003",
+      "start": 12.256,
+      "end": 13.537,
+      "duration": 1.281,
+      "speaker": "",
+      "word_count": 6,
+      "source_text": "I gave it to myself , actually.",
+      "word_range": {
+        "from": " I",
+        "to": " , actually."
+      }
+    },
+    {
+      "unit_id": "u0004",
+      "start": 13.917,
+      "end": 16.599,
+      "duration": 2.682,
+      "speaker": "",
+      "word_count": 7,
+      "source_text": "Fast forward 13 years to July 2026.",
+      "word_range": {
+        "from": " Fast",
+        "to": " 2026."
+      }
+    },
+    {
+      "unit_id": "u0005",
+      "start": 17.28,
+      "end": 22.65246153846154,
+      "duration": 5.372,
+      "speaker": "",
+      "word_count": 10,
+      "source_text": "openai releases gpt live , promising a meaningful upgrade to their",
+      "word_range": {
+        "from": " openai",
+        "to": " their"
+      }
+    },
+    {
+      "unit_id": "u0006",
+      "start": 22.65246153846154,
+      "end": 24.226,
+      "duration": 1.574,
+      "speaker": "",
+      "word_count": 3,
+      "source_text": "ChatGPT voice assistant.",
+      "word_range": {
+        "from": " ChatGPT",
+        "to": " assistant."
+      }
+    },
+    {
+      "unit_id": "u0007",
+      "start": 24.95,
+      "end": 25.63,
+      "duration": 0.68,
+      "speaker": "",
+      "word_count": 4,
+      "source_text": "What do you think?",
+      "word_range": {
+        "from": " What",
+        "to": " think?"
+      }
+    },
+    {
+      "unit_id": "u0008",
+      "start": 25.871,
+      "end": 28.152,
+      "duration": 2.281,
+      "speaker": "",
+      "word_count": 11,
+      "source_text": "If you go up, it's going to get kind of baggy.",
+      "word_range": {
+        "from": " If",
+        "to": " baggy."
+      }
+    },
+    {
+      "unit_id": "u0009",
+      "start": 28.292,
+      "end": 31.494,
+      "duration": 3.202,
+      "speaker": "",
+      "word_count": 9,
+      "source_text": "Although baggy is very popular now, don't you think?",
+      "word_range": {
+        "from": " Although",
+        "to": " think?"
+      }
+    },
+    {
+      "unit_id": "u0010",
+      "start": 31.954,
+      "end": 35.756,
+      "duration": 3.802,
+      "speaker": "",
+      "word_count": 13,
+      "source_text": "And OpenAI are not the only ones trying to bring Her to life.",
+      "word_range": {
+        "from": " And",
+        "to": " life."
+      }
+    },
+    {
+      "unit_id": "u0011",
+      "start": 36.397,
+      "end": 37.497,
+      "duration": 1.1,
+      "speaker": "",
+      "word_count": 4,
+      "source_text": "Just two months ago,",
+      "word_range": {
+        "from": " Just",
+        "to": " ago,"
+      }
+    },
+    {
+      "unit_id": "u0012",
+      "start": 37.677,
+      "end": 40.459,
+      "duration": 2.782,
+      "speaker": "",
+      "word_count": 6,
+      "source_text": "Thinking Machines announced their interaction models.",
+      "word_range": {
+        "from": " Thinking",
+        "to": " models."
+      }
+    }
+  ]
+}
