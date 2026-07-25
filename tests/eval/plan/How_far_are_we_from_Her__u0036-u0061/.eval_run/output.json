@@ -120,8 +120,8 @@
     {
       "unit_id": "p0002",
       "start": 119.091,
-      "end": 125.314,
-      "text": "Hey, am I whispering right now? It does sound like you're speaking more quietly than normal.",
+      "end": 120.591,
+      "text": "Hey, am I whispering right now?",
       "speaker": "",
       "words": [
         {
@@ -165,7 +165,16 @@
           "end": 120.591,
           "confidence": 0.926,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0003_0",
+      "start": 122.332,
+      "end": 125.314,
+      "text": "It does sound like you're speaking more quietly than normal.",
+      "speaker": "",
+      "words": [
         {
           "text": " It",
           "start": 122.332,
@@ -239,7 +248,7 @@
       ]
     },
     {
-      "unit_id": "p0003",
+      "unit_id": "p0003_1",
       "start": 125.834,
       "end": 131.097,
       "text": "Yes, I don't actually measure your volume precisely, but your voice comes across as a whisper.",
@@ -1145,8 +1154,8 @@
     {
       "unit_id": "p0011",
       "start": 174.568,
-      "end": 178.21,
-      "text": "When did you give it to yourself? Well, right when you asked me if I had a name.",
+      "end": 175.789,
+      "text": "When did you give it to yourself?",
       "speaker": "",
       "words": [
         {
@@ -1197,7 +1206,16 @@
           "end": 175.789,
           "confidence": 0.668,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0012",
+      "start": 176.449,
+      "end": 178.21,
+      "text": "Well, right when you asked me if I had a name.",
+      "speaker": "",
+      "words": [
         {
           "text": " Well,",
           "start": 176.449,
@@ -1278,7 +1296,7 @@
       ]
     },
     {
-      "unit_id": "p0012",
+      "unit_id": "p0013",
       "start": 178.691,
       "end": 185.075,
       "text": "Every 30 milliseconds or so, it makes a binary decision. Is the user speaking or are they silent?",
@@ -1413,7 +1431,7 @@
       ]
     },
     {
-      "unit_id": "p0013",
+      "unit_id": "p0014",
       "start": 186.536,
       "end": 190.719,
       "text": "After long enough silence, it concludes the speaker is done talking.",
@@ -1499,7 +1517,7 @@
       ]
     },
     {
-      "unit_id": "p0014_0",
+      "unit_id": "p0015_0",
       "start": 192.34,
       "end": 198.443,
       "text": "Then every identified speech portion is passed on to an automatic speech recognition model,",
@@ -1606,7 +1624,7 @@
       ]
     },
     {
-      "unit_id": "p0014_1",
+      "unit_id": "p0015_1",
       "start": 198.604,
       "end": 201.165,
       "text": "or ASR, which transcribes it.",
@@ -1650,10 +1668,10 @@
       ]
     },
     {
-      "unit_id": "p0015_0",
+      "unit_id": "p0016_0",
       "start": 201.925,
-      "end": 203.666,
-      "text": "Next, a pure language model,",
+      "end": 205.747,
+      "text": "Next, a pure language model, like GPT 5.5,",
       "speaker": "",
       "words": [
         {
@@ -1690,16 +1708,7 @@
           "end": 203.666,
           "confidence": 0.832,
           "speaker": null
-        }
-      ]
-    },
-    {
-      "unit_id": "p0015_1",
-      "start": 203.906,
-      "end": 210.088,
-      "text": "like GPT 5.5, reads the user input in text form and produces a text response.",
-      "speaker": "",
-      "words": [
+        },
         {
           "text": " like",
           "start": 203.906,
@@ -1720,7 +1729,16 @@
           "end": 205.747,
           "confidence": 0.891,
           "speaker": null
-        },
+        }
+      ]
+    },
+    {
+      "unit_id": "p0016_1",
+      "start": 206.307,
+      "end": 210.088,
+      "text": "reads the user input in text form and produces a text response.",
+      "speaker": "",
+      "words": [
         {
           "text": " reads",
           "start": 206.307,
@@ -1809,14 +1827,14 @@
     }
   ],
   "usage": {
-    "prompt_tokens": 6823,
-    "prompt_cache_hit_tokens": 2560,
-    "prompt_cache_miss_tokens": 4263,
-    "completion_tokens": 131,
-    "total_tokens": 6954,
-    "calls": 5
+    "prompt_tokens": 8241,
+    "prompt_cache_hit_tokens": 7808,
+    "prompt_cache_miss_tokens": 433,
+    "completion_tokens": 144,
+    "total_tokens": 8385,
+    "calls": 6
   },
-  "duration_s": 2.949,
+  "duration_s": 3.142,
   "error": null,
   "skipped": false
 }

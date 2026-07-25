@@ -6,7 +6,7 @@
       "start": 0.426,
       "end": 3.529,
       "speaker": "",
-      "text": "Do you remember the movie Her from 2013",
+      "text": "Do you remember the movie Her from 2013?",
       "word_start": 0,
       "word_end": 8
     },
@@ -15,7 +15,7 @@
       "start": 4.009,
       "end": 9.153,
       "speaker": "",
-      "text": "? It's about Theodore , an introvert who falls in love with his AI assistant Samantha",
+      "text": "It's about Theodore , an introvert who falls in love with his AI assistant Samantha",
       "word_start": 8,
       "word_end": 22
     },
@@ -56,7 +56,7 @@
       "word_end": 78
     },
     {
-      "unit_id": "p0005",
+      "unit_id": "p0005_0",
       "start": 31.954,
       "end": 35.756,
       "speaker": "",
@@ -65,7 +65,7 @@
       "word_end": 91
     },
     {
-      "unit_id": "p0006",
+      "unit_id": "p0005_1",
       "start": 36.397,
       "end": 40.459,
       "speaker": "",

@@ -16,7 +16,7 @@
 | 维度 | 判定 | passed |
 |---|---|---|
 | `word_coverage` | 输入全部词被 unit 覆盖 | 覆盖率 = 100% |
-| `duration_violations` | unit 时长超出 [min_duration, max_duration] 的数量 | = 0 |
+| `duration_violations` | unit 时长超出 [min_duration, max_duration×1.15] 软上限的数量（split 校验器按设计容忍轻微超时，语义优先） | = 0 |
 | `dangling_tails` | unit 以功能词结尾（dangling tail）的数量 | = 0 |
 | `empty_units` | 空文本 unit 数 | = 0 |
 

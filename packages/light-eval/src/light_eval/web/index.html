@@ -786,14 +786,15 @@ function setVerdict(card, ok) {
   }
 }
 
-// 一键把未决卡片全部设为通过
-function verdictAll() {
+// 一键把未决卡片全部设为通过/不通过（ok=true 通过；ok=false 不通过）
+function verdictAll(ok) {
   document.querySelectorAll("#defect-list .defect-card:not(.ok):not(.no)").forEach((c) => {
-    c.classList.add("ok");
-    c.querySelector(".issue").disabled = false;
+    c.classList.toggle("ok", ok);
+    c.classList.toggle("no", !ok);
+    c.querySelector(".issue").disabled = !ok;
     const [okBtn, noBtn] = c.querySelectorAll(".verdict-btn");
-    okBtn.classList.add("on-ok");
-    noBtn.classList.remove("on-no");
+    okBtn.classList.toggle("on-ok", ok);
+    noBtn.classList.toggle("on-no", !ok);
   });
   refreshBadges();
   updateReviewProgress();
@@ -829,7 +830,7 @@ async function saveAnnotation(advance) {
   document.querySelectorAll("#dim-form select").forEach((s) => {
     if (s.value) dimensions[s.dataset.dim] = Number(s.value);
   });
-  const defects = [...document.querySelectorAll("#defect-list .defect-card:not(.no)")]
+  const defects = [...document.querySelectorAll("#defect-list .defect-card.ok")]
     .map((card) => ({ unit_id: cardUid(card), issue: card.querySelector(".issue").value.trim() }))
     .filter((d) => d.unit_id || d.issue);
   const body = { dimensions, defects, overall: $("#overall").value };

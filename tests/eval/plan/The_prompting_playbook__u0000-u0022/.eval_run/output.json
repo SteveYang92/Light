@@ -1908,14 +1908,14 @@
     }
   ],
   "usage": {
-    "prompt_tokens": 11171,
-    "prompt_cache_hit_tokens": 10496,
-    "prompt_cache_miss_tokens": 675,
-    "completion_tokens": 157,
-    "total_tokens": 11328,
+    "prompt_tokens": 9791,
+    "prompt_cache_hit_tokens": 9216,
+    "prompt_cache_miss_tokens": 575,
+    "completion_tokens": 140,
+    "total_tokens": 9931,
     "calls": 7
   },
-  "duration_s": 3.563,
+  "duration_s": 3.38,
   "error": null,
   "skipped": false
 }

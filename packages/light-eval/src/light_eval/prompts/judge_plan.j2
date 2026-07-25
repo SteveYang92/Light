@@ -12,11 +12,11 @@ Score every dimension on a 1-5 scale:
 </scoring_scale>
 
 <step_constraints>
-The plan step operates under hard constraints — judge its choices *within* this feasible space, not against an ideal unconstrained standard:
-- Audio duration per unit must stay within {{ min_duration }}–{{ max_duration }} seconds whenever a reasonable boundary exists.
+The plan step operates under duration constraints — judge its choices *within* this feasible space, not against an ideal unconstrained standard:
+- Audio duration per unit should stay within {{ min_duration }}–{{ max_duration }} seconds; the split validator deliberately tolerates parts up to {{ max_duration }}×1.15 — a small overflow beats an unnatural mid-phrase cut. Parts within that soft cap are acceptable by design, NOT defects.
 - A unit should stay under roughly 48 target-language characters (two display lines); one more cue beats one unreadably dense cue.
 - A single source fragment that exceeds the duration budget on its own is intentionally kept as one cue — a later step splits it at the word level. This is NOT a defect.
-Consequence: a mid-clause boundary can be the *correct* choice when every cleaner alternative would violate the duration budget. Duration violations themselves are checked by deterministic metrics — do NOT penalize them again here.
+Consequence: a mid-clause boundary can be the *correct* choice when every cleaner alternative would violate the duration budget. When you suggest merging two units, only do so if the merged duration stays within the soft cap — compute it from the timestamps before reporting.
 </step_constraints>
 
 <dimensions>

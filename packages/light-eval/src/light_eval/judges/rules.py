@@ -3,7 +3,8 @@
 plan dimensions:
 - ``word_coverage``: output unit words must cover 100% of input words.
 - ``duration_violations``: units shorter than ``min_duration`` or longer
-  than ``max_duration`` (case params, else ``PlanConfig`` defaults).
+  than the *soft* cap ``max_duration * 1.15`` — the plan split validator
+  tolerates slight overflow by design (semantic-first).
 - ``dangling_tails``: units ending on a function word (reuses
   :func:`light_subtitle.plan.boundary.dangling_tail`).
 - ``empty_units``: units with blank text.
@@ -12,7 +13,9 @@ translate dimensions:
 - ``unit_coverage``: share of input units covered by output cues
   (``merged_from`` chains count, via ``covered_unit_ids``).
 - ``empty_translations``: cues with blank text.
-- ``target_lang_ratio``: CJK character share of cue text (zh only).
+- ``target_lang_ratio``: CJK character share of cue text (zh only; pass
+  threshold defaults to 0.6, overridable via
+  ``params.target_lang_ratio_threshold``).
 - ``source_fidelity``: per-cue consistency with the input units — known
   unit ids, chain order, and timing window (via ``covered_time_window``).
 """
@@ -33,7 +36,7 @@ from ..loader import Fixture
 from ..models import DimensionScore, EvalCase, StepOutput
 
 _TIME_TOLERANCE_S = 0.05
-_DEFAULT_MIN_TARGET_LANG_RATIO = 0.9
+_DEFAULT_TARGET_LANG_RATIO_THRESHOLD = 0.6
 
 
 # ── Entry point ─────────────────────────────────────────────────────────────
@@ -91,19 +94,27 @@ def _word_coverage(fixture: Fixture, units: list[dict]) -> DimensionScore:
 
 
 def _duration_violations(case: EvalCase, units: list[dict]) -> DimensionScore:
-    """Count units outside [min_duration, max_duration] (0 to pass)."""
+    """Count units outside [min_duration, soft_max] (0 to pass).
+
+    The plan step's own contract tolerates slight overflow: the split
+    validator accepts parts up to ``max_duration * 1.15`` — a small overflow
+    beats an unnatural mid-phrase cut (see plan_split_system.j2).  The rule
+    therefore flags only violations of that *soft* cap; anything between
+    strict and soft max is intentional, not a defect.
+    """
     min_dur = float(case.params.get("min_duration", PlanConfig.min_duration))
     max_dur = float(case.params.get("max_duration", PlanConfig.max_duration))
+    soft_max = max_dur * 1.15
     violations = []
     for unit in units:
         dur = unit["end"] - unit["start"]
-        if dur < min_dur or dur > max_dur:
+        if dur < min_dur or dur > soft_max:
             violations.append(f"{unit['unit_id']} ({dur:.2f}s)")
     return DimensionScore(
         dimension="duration_violations",
         score=float(len(violations)),
         passed=not violations,
-        detail=f"{len(violations)} unit(s) outside [{min_dur}, {max_dur}]s",
+        detail=f"{len(violations)} unit(s) outside [{min_dur}, {soft_max:.2f}]s (soft cap = max*1.15)",
         evidence=violations,
     )
 
@@ -186,7 +197,13 @@ def _empty_translations(cues) -> DimensionScore:
 
 
 def _target_lang_ratio(case: EvalCase, cues) -> DimensionScore:
-    """CJK share of cue text for ``target_lang=zh`` (threshold to pass)."""
+    """CJK share of cue text for ``target_lang=zh`` (threshold to pass).
+
+    Term-dense content legitimately keeps Latin names/terms ("OpenAI 发布了
+    GPT Live"), so the default threshold is 0.6 rather than a near-total CJK
+    share — the metric targets wholesale untranslated output, not terminology.
+    Override per case via ``params.target_lang_ratio_threshold``.
+    """
     target_lang = str(case.params.get("target_lang", "zh"))
     if target_lang != "zh":
         return DimensionScore(
@@ -198,7 +215,7 @@ def _target_lang_ratio(case: EvalCase, cues) -> DimensionScore:
     chars = [ch for cue in cues for ch in cue.text if not ch.isspace()]
     cjk = sum(1 for ch in chars if is_cjk(ch))
     ratio = cjk / len(chars) if chars else 0.0
-    threshold = float(case.params.get("min_target_lang_ratio", _DEFAULT_MIN_TARGET_LANG_RATIO))
+    threshold = float(case.params.get("target_lang_ratio_threshold", _DEFAULT_TARGET_LANG_RATIO_THRESHOLD))
     return DimensionScore(
         dimension="target_lang_ratio",
         score=ratio,

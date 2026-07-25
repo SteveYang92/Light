@@ -5,7 +5,7 @@
       "unit_id": "p0000_0",
       "start": 0.426,
       "end": 3.529,
-      "text": "Do you remember the movie Her from 2013",
+      "text": "Do you remember the movie Her from 2013?",
       "speaker": "",
       "words": [
         {
@@ -70,7 +70,7 @@
       "unit_id": "p0000_1",
       "start": 4.009,
       "end": 9.153,
-      "text": "? It's about Theodore , an introvert who falls in love with his AI assistant Samantha",
+      "text": "It's about Theodore , an introvert who falls in love with his AI assistant Samantha",
       "speaker": "",
       "words": [
         {
@@ -602,7 +602,7 @@
       ]
     },
     {
-      "unit_id": "p0005",
+      "unit_id": "p0005_0",
       "start": 31.954,
       "end": 35.756,
       "text": "And OpenAI are not the only ones trying to bring Her to life.",
@@ -702,7 +702,7 @@
       ]
     },
     {
-      "unit_id": "p0006",
+      "unit_id": "p0005_1",
       "start": 36.397,
       "end": 40.459,
       "text": "Just two months ago, Thinking Machines announced their interaction models.",
@@ -782,14 +782,14 @@
     }
   ],
   "usage": {
-    "prompt_tokens": 2466,
-    "prompt_cache_hit_tokens": 2304,
-    "prompt_cache_miss_tokens": 162,
-    "completion_tokens": 55,
-    "total_tokens": 2521,
-    "calls": 2
+    "prompt_tokens": 3795,
+    "prompt_cache_hit_tokens": 3584,
+    "prompt_cache_miss_tokens": 211,
+    "completion_tokens": 66,
+    "total_tokens": 3861,
+    "calls": 3
   },
-  "duration_s": 1.844,
+  "duration_s": 2.975,
   "error": null,
   "skipped": false
 }

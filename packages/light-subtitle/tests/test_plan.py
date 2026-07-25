@@ -206,7 +206,7 @@ def test_plan_groups_none_without_llm() -> None:
 def test_run_materializes_units_and_writes_plan_json(tmp_path: Path) -> None:
     segs = _fragments()
     with patch("light_subtitle.plan.planner.plan_groups", return_value=([[0, 1], [2]], None)):
-        units, _ = plan_module.run(segs, _config(), tmp_path)
+        units, _ = plan_module.run(segs, _config(min_duration=0.1), tmp_path)
 
     assert [u.unit_id for u in units] == ["p0000", "p0001"]
     assert units[0].source_text == "Well, the agents are working."
@@ -224,7 +224,7 @@ def test_run_materializes_units_and_writes_plan_json(tmp_path: Path) -> None:
 
 def test_run_falls_back_when_llm_unavailable(tmp_path: Path) -> None:
     # No LLM client → planner returns None → deterministic merge fallback.
-    units, usage = plan_module.run(_fragments(), _config(), tmp_path)
+    units, usage = plan_module.run(_fragments(), _config(min_duration=0.1), tmp_path)
     assert usage is None
     assert [u.unit_id for u in units] == ["p0000", "p0001"]
     assert units[0].source_text == "Well, the agents are working."
@@ -264,3 +264,138 @@ def test_run_empty_segments(tmp_path: Path) -> None:
 
 def test_load_plan_units_missing_returns_none(tmp_path: Path) -> None:
     assert plan_module.load_plan_units(tmp_path) is None
+
+
+# ── soft-cap contract ────────────────────────────
+
+
+def test_run_keeps_soft_capped_split_parts(tmp_path: Path) -> None:
+    """Design contract: split parts within the validator's soft cap (max*1.15)
+    stand as-is — a small duration overflow beats an unnatural re-split."""
+    words = [_word(f"w{i}", float(i), float(i) + 0.9) for i in range(12)]
+    segs = [_seg("u0001", "first half", words[:6]), _seg("u0002", "second half", words[6:])]
+    with (
+        patch("light_subtitle.plan.planner.plan_groups", return_value=([[0, 1]], None)),
+        patch("light_subtitle.plan.planner.split_span", return_value=([(0, 6), (6, 12)], None)),
+    ):
+        units, _ = plan_module.run(segs, _config(max_duration=7.0, min_duration=0.1), tmp_path, llm=MagicMock())
+
+    assert [u.unit_id for u in units] == ["p0000_0", "p0000_1"]
+
+
+# ── leading punctuation return ────────────────────────────
+
+
+def test_leading_punctuation_returned_across_glued_token(tmp_path: Path) -> None:
+    """ASR glues "? " onto the next word (" ? It's"); the split boundary lands
+    before that token, so the "?" must be returned to the previous unit's text."""
+    words = [
+        _word("Do", 0.0, 0.2),
+        _word("you", 0.2, 0.4),
+        _word("remember", 0.4, 0.8),
+        _word("2013", 0.8, 1.2),
+        _word(" ? It's", 1.2, 1.6),
+        _word("about", 1.6, 1.9),
+        _word("Theodore", 1.9, 2.4),
+    ]
+    segs = [_seg("u0001", "question then statement", words)]
+    with (
+        patch("light_subtitle.plan.planner.plan_groups", return_value=([[0]], None)),
+        patch("light_subtitle.plan.planner.split_span", return_value=([(0, 4), (4, 7)], None)),
+    ):
+        units, _ = plan_module.run(segs, _config(max_duration=2.0, min_duration=0.1), tmp_path, llm=MagicMock())
+
+    assert [u.unit_id for u in units] == ["p0000_0", "p0000_1"]
+    assert units[0].source_text == "Do you remember 2013?"
+    assert units[1].source_text == "It's about Theodore"
+    # word timelines untouched: the glued token stays in the second unit
+    assert units[1].words[0].text == " ? It's"
+
+    data = json.loads((tmp_path / "plan.json").read_text(encoding="utf-8"))
+    assert data["units"][0]["text"] == "Do you remember 2013?"
+    assert data["units"][1]["text"] == "It's about Theodore"
+
+
+def test_leading_punctuation_returned_across_groups(tmp_path: Path) -> None:
+    """Same rebalance applies when two groups (not word-level splits) are involved."""
+    segs = [
+        _seg("u0001", "Really now", [_word("Really", 0.0, 0.5), _word("now", 0.5, 1.0)]),
+        _seg("u0002", "! I know", [_word("! I", 1.2, 1.5), _word("know", 1.5, 1.9)]),
+    ]
+    with patch("light_subtitle.plan.planner.plan_groups", return_value=([[0], [1]], None)):
+        units, _ = plan_module.run(segs, _config(min_duration=0.1), tmp_path)
+
+    assert units[0].source_text == "Really now!"
+    assert units[1].source_text == "I know"
+
+
+def test_leading_punctuation_noop_cases(tmp_path: Path) -> None:
+    # First unit keeps its leading punctuation; units without a punctuation
+    # prefix are untouched; a punctuation-only unit is never emptied.
+    segs = [
+        _seg("u0001", "? Hello there", [_word("? Hello", 0.0, 0.5), _word("there", 0.5, 1.0)]),
+        _seg("u0002", "world", [_word("world", 1.2, 1.7)]),
+        _seg("u0003", "...", [_word("...", 1.9, 2.2)]),
+    ]
+    with patch("light_subtitle.plan.planner.plan_groups", return_value=([[0], [1], [2]], None)):
+        units, _ = plan_module.run(segs, _config(min_duration=0.1), tmp_path)
+
+    assert [u.source_text for u in units] == ["? Hello there", "world", "..."]
+
+
+def test_leading_punctuation_not_stacked_on_closed_sentence(tmp_path: Path) -> None:
+    """If the previous unit already ends with sentence punctuation, leave the
+    leading prefix where it is rather than stacking ("Wow.?" reads worse)."""
+    segs = [
+        _seg("u0001", "Wow.", [_word("Wow.", 0.0, 0.5)]),
+        _seg("u0002", "? Really", [_word("? Really", 0.8, 1.3)]),
+    ]
+    with patch("light_subtitle.plan.planner.plan_groups", return_value=([[0], [1]], None)):
+        units, _ = plan_module.run(segs, _config(min_duration=0.1), tmp_path)
+
+    assert units[0].source_text == "Wow."
+    assert units[1].source_text == "? Really"
+
+
+# ── flash-unit folding ────────────────────────────
+
+
+def test_run_folds_flash_unit_into_shorter_neighbour(tmp_path: Path) -> None:
+    """A 0.7s "What do you think?" between two long units must be folded into
+    the neighbour giving the shorter merged cue — LLM guardrails are advisory,
+    the fold is the deterministic backstop for QC's MinDuration rule."""
+    words = (
+        [_word(f"w{i}", float(i), float(i) + 0.9) for i in range(4)]  # 3.9s
+        + [_word("think?", 4.0, 4.7)]  # 0.7s flash
+        + [_word(f"w{i}", 4.7 + (i - 5), 4.7 + (i - 5) + 0.9) for i in range(5, 12)]  # 7.6s
+    )
+    segs = [_seg("u0001", "some longer sentence here", words)]
+    with (
+        patch("light_subtitle.plan.planner.plan_groups", return_value=([[0]], None)),
+        patch("light_subtitle.plan.planner.split_span", return_value=([(0, 4), (4, 5), (5, 12)], None)),
+    ):
+        units, _ = plan_module.run(segs, _config(max_duration=8.0, min_duration=0.8), tmp_path, llm=MagicMock())
+
+    assert [u.unit_id for u in units] == ["p0000_0", "p0000_2"]
+    merged = units[0]
+    assert merged.end - merged.start >= 0.8
+    assert "think?" in merged.source_text
+    data = json.loads((tmp_path / "plan.json").read_text(encoding="utf-8"))
+    assert [u["unit_id"] for u in data["units"]] == ["p0000_0", "p0000_2"]
+    assert data["units"][0]["text"] == merged.source_text
+
+
+def test_run_folds_leading_flash_unit_forward(tmp_path: Path) -> None:
+    """A flash first unit (no previous neighbour) folds into the next unit."""
+    words = [_word("Hi.", 0.0, 0.5)] + [
+        _word(f"w{i}", 0.5 + (i - 1) * 1.4, 0.5 + (i - 1) * 1.4 + 0.9) for i in range(1, 7)
+    ]
+    segs = [_seg("u0001", "greeting then sentence", words)]
+    with (
+        patch("light_subtitle.plan.planner.plan_groups", return_value=([[0]], None)),
+        patch("light_subtitle.plan.planner.split_span", return_value=([(0, 1), (1, 7)], None)),
+    ):
+        units, _ = plan_module.run(segs, _config(max_duration=8.0, min_duration=0.8), tmp_path, llm=MagicMock())
+
+    assert [u.unit_id for u in units] == ["p0000_1"]
+    assert "Hi." in units[0].source_text

@@ -24,7 +24,7 @@
       "unit_id": "p0001",
       "start": 10.615,
       "end": 13.537,
-      "text": "——这名字谁给你起的？其实是我自己取的。",
+      "text": "这名字谁给你起的？其实是我自己取的。",
       "lang": "zh",
       "speaker": ""
     },
@@ -51,7 +51,7 @@
       "unit_id": "p0003_1",
       "start": 19.902,
       "end": 24.226,
-      "text": "，号称要给ChatGPT语音助手来一次重大升级。",
+      "text": "，承诺给ChatGPT语音助手带来重大升级。",
       "lang": "zh",
       "speaker": ""
     },
@@ -69,7 +69,7 @@
       "unit_id": "p0005",
       "start": 25.871,
       "end": 28.152,
-      "text": "往上穿的话，会显得有点松垮。",
+      "text": "往上穿的话，会有点松松垮垮的。",
       "lang": "zh",
       "speaker": ""
     },
@@ -78,36 +78,36 @@
       "unit_id": "p0006",
       "start": 28.292,
       "end": 31.494,
-      "text": "不过松垮现在很流行，你不觉得吗？",
+      "text": "不过现在宽松款很流行，你不觉得吗？",
       "lang": "zh",
       "speaker": ""
     }
   ],
   "usage": {
-    "prompt_tokens": 4090,
-    "completion_tokens": 315,
-    "total_tokens": 4405,
-    "prompt_cache_hit_tokens": 2944,
-    "prompt_cache_miss_tokens": 1146,
+    "prompt_tokens": 4088,
+    "completion_tokens": 314,
+    "total_tokens": 4402,
+    "prompt_cache_hit_tokens": 3712,
+    "prompt_cache_miss_tokens": 376,
     "calls": 1,
     "breakdown": {
       "translate.translate": {
         "prompt_tokens": 3006,
-        "prompt_cache_hit_tokens": 2304,
-        "prompt_cache_miss_tokens": 702,
-        "completion_tokens": 256,
-        "total_tokens": 3262
+        "prompt_cache_hit_tokens": 2944,
+        "prompt_cache_miss_tokens": 62,
+        "completion_tokens": 255,
+        "total_tokens": 3261
       },
       "translate.align_check": {
-        "prompt_tokens": 1084,
-        "prompt_cache_hit_tokens": 640,
-        "prompt_cache_miss_tokens": 444,
+        "prompt_tokens": 1082,
+        "prompt_cache_hit_tokens": 768,
+        "prompt_cache_miss_tokens": 314,
         "completion_tokens": 59,
-        "total_tokens": 1143
+        "total_tokens": 1141
       }
     }
   },
-  "duration_s": 3.021,
+  "duration_s": 3.687,
   "error": null,
   "skipped": false
 }

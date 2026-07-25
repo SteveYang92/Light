@@ -168,3 +168,21 @@ def test_judges_return_nothing_for_skipped_or_errored() -> None:
 def test_judge_for_step() -> None:
     assert isinstance(judge_for_step("plan"), PlanRulesJudge)
     assert isinstance(judge_for_step("translate"), TranslateRulesJudge)
+
+
+def test_target_lang_ratio_term_dense_passes_at_default() -> None:
+    """Term-dense but legitimate zh ("OpenAI 发布了 GPT Live") passes the 0.6
+    default — the metric targets wholesale untranslated output, not terminology."""
+    text = "OpenAI今天正式发布了GPT Live，官方承诺将给ChatGPT语音助手带来一次真正意义上的重大升级体验"  # ~64% CJK
+    output = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, text)])
+    score = _scores_by_dim(TranslateRulesJudge().score(_tx_case(), _tx_fixture(), output))["target_lang_ratio"]
+    assert score.passed
+
+
+def test_target_lang_ratio_threshold_overridable() -> None:
+    """case.yaml params.target_lang_ratio_threshold overrides the default."""
+    text = "OpenAI今天正式发布了GPT Live，官方承诺将给ChatGPT语音助手带来一次真正意义上的重大升级体验"
+    output = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, text)])
+    case = _tx_case({"target_lang_ratio_threshold": 0.95})
+    score = _scores_by_dim(TranslateRulesJudge().score(case, _tx_fixture(), output))["target_lang_ratio"]
+    assert not score.passed

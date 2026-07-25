@@ -22,14 +22,23 @@
     {
       "unit_id": "p0002",
       "start": 119.091,
+      "end": 120.591,
+      "speaker": "",
+      "text": "Hey, am I whispering right now?",
+      "word_start": 14,
+      "word_end": 20
+    },
+    {
+      "unit_id": "p0003_0",
+      "start": 122.332,
       "end": 125.314,
       "speaker": "",
-      "text": "Hey, am I whispering right now? It does sound like you're speaking more quietly than normal.",
-      "word_start": 14,
+      "text": "It does sound like you're speaking more quietly than normal.",
+      "word_start": 20,
       "word_end": 30
     },
     {
-      "unit_id": "p0003",
+      "unit_id": "p0003_1",
       "start": 125.834,
       "end": 131.097,
       "speaker": "",
@@ -130,14 +139,23 @@
     {
       "unit_id": "p0011",
       "start": 174.568,
-      "end": 178.21,
+      "end": 175.789,
       "speaker": "",
-      "text": "When did you give it to yourself? Well, right when you asked me if I had a name.",
+      "text": "When did you give it to yourself?",
       "word_start": 145,
-      "word_end": 163
+      "word_end": 152
     },
     {
       "unit_id": "p0012",
+      "start": 176.449,
+      "end": 178.21,
+      "speaker": "",
+      "text": "Well, right when you asked me if I had a name.",
+      "word_start": 152,
+      "word_end": 163
+    },
+    {
+      "unit_id": "p0013",
       "start": 178.691,
       "end": 185.075,
       "speaker": "",
@@ -146,7 +164,7 @@
       "word_end": 181
     },
     {
-      "unit_id": "p0013",
+      "unit_id": "p0014",
       "start": 186.536,
       "end": 190.719,
       "speaker": "",
@@ -155,7 +173,7 @@
       "word_end": 192
     },
     {
-      "unit_id": "p0014_0",
+      "unit_id": "p0015_0",
       "start": 192.34,
       "end": 198.443,
       "speaker": "",
@@ -164,7 +182,7 @@
       "word_end": 206
     },
     {
-      "unit_id": "p0014_1",
+      "unit_id": "p0015_1",
       "start": 198.604,
       "end": 201.165,
       "speaker": "",
@@ -173,21 +191,21 @@
       "word_end": 211
     },
     {
-      "unit_id": "p0015_0",
+      "unit_id": "p0016_0",
       "start": 201.925,
-      "end": 203.666,
+      "end": 205.747,
       "speaker": "",
-      "text": "Next, a pure language model,",
+      "text": "Next, a pure language model, like GPT 5.5,",
       "word_start": 211,
-      "word_end": 216
+      "word_end": 219
     },
     {
-      "unit_id": "p0015_1",
-      "start": 203.906,
+      "unit_id": "p0016_1",
+      "start": 206.307,
       "end": 210.088,
       "speaker": "",
-      "text": "like GPT 5.5, reads the user input in text form and produces a text response.",
-      "word_start": 216,
+      "text": "reads the user input in text form and produces a text response.",
+      "word_start": 219,
       "word_end": 231
     }
   ]

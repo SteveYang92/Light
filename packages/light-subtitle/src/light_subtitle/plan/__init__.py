@@ -37,6 +37,7 @@ from light_llm.client import OpenAIClient
 from light_llm.parallel import run_parallel_with_warmup
 from light_llm.usage.tracker import merge_token_usage
 from light_models import Segment, Word
+from light_text import SENTENCE_ENDS
 
 from .. import artifacts
 from ..config import PlanConfig
@@ -237,7 +238,85 @@ def _materialize(
                     "word_end": info.w_start + re_,
                 }
             )
+    _fold_flash_units(units, meta, config.min_duration)
+    _return_leading_punctuation(units, meta)
     return units, meta
+
+
+def _fold_flash_units(units: list[Segment], meta: list[dict], min_duration: float) -> None:
+    """Fold sub-``min_duration`` units into a neighbour.
+
+    The LLM occasionally emits a flash cue (e.g. a 0.7s "What do you
+    think?") despite the prompt guardrail; QC's MinDuration rule flags these
+    downstream.  Deterministically merge each flash unit into whichever
+    neighbour yields the shorter combined cue, extending words/text/meta.
+    """
+    i = 0
+    while i < len(units):
+        unit = units[i]
+        if unit.end - unit.start >= min_duration or len(units) == 1:
+            i += 1
+            continue
+        # Choose the neighbour giving the shorter merged cue; prefer previous on ties.
+        if i > 0:
+            prev_words = units[i - 1].words + unit.words
+            prev_dur = prev_words[-1].end - prev_words[0].start
+        else:
+            prev_dur = float("inf")
+        if i + 1 < len(units):
+            next_words = unit.words + units[i + 1].words
+            next_dur = next_words[-1].end - next_words[0].start
+        else:
+            next_dur = float("inf")
+        if prev_dur <= next_dur:
+            target, j, merged_words = units[i - 1], i - 1, units[i - 1].words + unit.words
+            meta[j]["word_end"] = meta[i]["word_end"]
+            meta[j]["end"] = meta[i]["end"]
+        else:
+            target, j, merged_words = units[i + 1], i + 1, unit.words + units[i + 1].words
+            meta[j]["word_start"] = meta[i]["word_start"]
+            meta[j]["start"] = meta[i]["start"]
+        target.words = merged_words
+        target.start = merged_words[0].start
+        target.end = merged_words[-1].end
+        target.source_text = _text_from_words(merged_words)
+        meta[j]["text"] = target.source_text
+        del units[i], meta[i]
+        # Re-check from the merge point: the merged cue may now border another flash.
+        i = max(0, j - 1)
+
+
+def _return_leading_punctuation(units: list[Segment], meta: list[dict]) -> None:
+    """Return a unit's leading sentence-ending punctuation to the previous unit's text.
+
+    ASR may glue sentence-final punctuation onto the next word (``" ? It's"``
+    is a single token), so a word-level boundary can leave ``"? "`` at the
+    start of a unit's display text.  The punctuation carries no timing of its
+    own, so only the display text is rebalanced — word timelines, unit ids and
+    word-coverage are untouched.  Guards: the first unit is left alone; a
+    punctuation-only unit is never emptied; punctuation is not stacked onto a
+    previous unit that already ends with sentence punctuation.
+    """
+    for i in range(1, len(units)):
+        text = units[i].source_text
+        stripped = text.lstrip()
+        if not stripped or stripped[0] not in SENTENCE_ENDS:
+            continue
+        # Full leading punctuation run ("...", "?!") attaches to the previous unit.
+        run_len = 0
+        while run_len < len(stripped) and stripped[run_len] in SENTENCE_ENDS:
+            run_len += 1
+        punct = stripped[:run_len]
+        rest = stripped[run_len:].lstrip()
+        if not rest:  # punctuation-only unit — never empty it
+            continue
+        prev_text = units[i - 1].source_text.rstrip()
+        if prev_text and prev_text[-1] in SENTENCE_ENDS:
+            continue
+        units[i - 1].source_text = prev_text + punct
+        units[i].source_text = rest
+        meta[i - 1]["text"] = units[i - 1].source_text
+        meta[i]["text"] = units[i].source_text
 
 
 def _text_from_words(words: list[Word]) -> str:

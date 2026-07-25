@@ -26,6 +26,7 @@ Decide cue boundaries by grouping CONSECUTIVE fragment ids. Every fragment id mu
 ## Boundary quality
 
 - Strongly prefer boundaries right after sentence-ending punctuation (. ! ? …).
+- A complete question ending in "?" reads best as its own cue; prefer closing the cue at the "?" over merging the question with the statement that follows it. But if the question alone would be shorter than {{ min_duration }} s, keep it attached to a neighboring sentence — a flash cue is worse than a merged one.
 - Good secondary boundaries: after clause commas/semicolons, or just before a connective that opens a new clause (because, but, so, when, while, although, if).
 - Avoid ending a cue on a dangling preposition/article/auxiliary ("of", "the", "is", "to") when a clause boundary is nearby.
 - Avoid 1–3 word stub cues. Short exclamations ("AI!", "Wow,", "Right.") must attach to the clause they belong to — never leave them as their own cue unless the audio is genuinely a standalone interjection surrounded by long silence.

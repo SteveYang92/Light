@@ -1,0 +1,165 @@
+{
+  "baseline_run_id": "20260718T154108",
+  "current_run_id": "20260725T223058",
+  "errors_delta": 1,
+  "warnings_delta": -2,
+  "suggestions_delta": 0,
+  "rule_changes": [
+    {
+      "rule": "ExitPointPrecision",
+      "before": 18,
+      "after": 19,
+      "delta": 1
+    },
+    {
+      "rule": "PaddingConflict",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    },
+    {
+      "rule": "OverlappingContent",
+      "before": 3,
+      "after": 2,
+      "delta": -1
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 4,
+      "after": 6,
+      "delta": 2
+    },
+    {
+      "rule": "MaxDuration",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "WordGapAnomaly",
+      "before": 32,
+      "after": 29,
+      "delta": -3
+    },
+    {
+      "rule": "ReadingSpeed",
+      "before": 3,
+      "after": 4,
+      "delta": 1
+    },
+    {
+      "rule": "EntryPointConfidence",
+      "before": 3,
+      "after": 2,
+      "delta": -1
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 66,
+      "time": "00:03:39,883",
+      "detail": "阅读速度 25.0 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 78,
+      "time": "00:04:20,956",
+      "detail": "阅读 padding 1.376s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 77,
+      "time": "00:04:17,090",
+      "detail": "入点偏离首个词语 0.390s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:04:17,480"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 84,
+      "time": "00:04:36,409",
+      "detail": "入点偏离首个词语 0.797s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:04:37,206"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "PaddingConflict",
+      "cue_id": 77,
+      "time": "00:04:20,851",
+      "detail": "说话间隙仅 0.040s，但阅读 padding 有 0.050s，可能冲突",
+      "fix": "压缩阅读 padding 至约 0.050s"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 29,
+      "time": "00:01:28,909",
+      "detail": "入点首个词 ' they're' 置信度 0.33，后续词峰值 0.87（差 0.54）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 28,
+      "time": "00:01:25,842",
+      "detail": "与上一条字幕词汇重叠 40%",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 88,
+      "time": "00:04:46,434",
+      "detail": "字幕时长 6.86s，超过最大 6.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 1,
+      "time": "00:00:01,650",
+      "detail": "词 ' a' 与 ' controversial' 之间间隔 0.400s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 6,
+      "time": "00:00:17,875",
+      "detail": "词 ' language' 与 ' and' 之间间隔 0.400s，远超中位数 0.070s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 12,
+      "time": "00:00:38,313",
+      "detail": "词 ' output' 与 ' Y' 之间间隔 0.420s，远超中位数 0.060s",
+      "fix": "检查此处是否为断句点或漏词"
+    }
+  ],
+  "degraded": true,
+  "reasons": [
+    "Strict rule 'ReadingSpeed' degraded: 3 → 4",
+    "5 new issues introduced"
+  ]
+}
