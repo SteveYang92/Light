@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from light_models import QCIssue, SubtitleCue
+from light_models import SubtitleCue
 
 from ..config import QCConfig
+from ..models import QCIssue
 
 
 class HardRule:

@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING
 
 import jieba
-from light_models import SubtitleCue, is_cjk
-from light_models.punctuation import (
+from light_models import SubtitleCue
+from light_text import is_cjk
+from light_text.punctuation import (
     CJK_ALL_PUNCT,
     CJK_CLAUSE_PUNCT,
     CJK_PARTICLES,
@@ -28,9 +28,6 @@ from .base import (
     BREAK_SENTENCE_END,
     BreakFinder,
 )
-
-if TYPE_CHECKING:
-    from light_subtitle.config import SubtitleConfig
 
 # Suppress jieba's "Building prefix dict..." startup messages on stderr.
 jieba.setLogLevel(logging.WARNING)
@@ -87,15 +84,6 @@ _PAIRED_OPEN_CLOSE: dict[str, str] = {
 
 _AMBIGUOUS_PAIRS = {'"', "'"}
 
-# ── Display punctuation (strip_punct) ──
-
-_FULLWIDTH_SPACE = "\u3000"
-
-_REPLACE_WITH_SPACE = {"，", "、", "；", "："}
-
-_PERIOD = "。"
-_KEEP = {"？", "！", "…"}
-
 # ═══════════════════════════════════════════════════════════════════
 # Text utilities
 # ═══════════════════════════════════════════════════════════════════
@@ -143,6 +131,9 @@ def _forbid_paired_symbols(text: str) -> set[int]:
         if ch in _PAIRED_OPEN_CLOSE:
             stack.append((ch, i))
         elif ch in _AMBIGUOUS_PAIRS:
+            # 歧义直引号（" / '）：配对成功只消栈、不标记禁止区间——防止英文撇号
+            # （it's、rock 'n' roll 等混入中文文本时）被误判为引号对而过度禁止。
+            # 未配对的直引号仍按未闭合处理（末尾栈兜底），与其他括号行为一致。
             if stack and stack[-1][0] == ch:
                 stack.pop()
             else:
@@ -318,8 +309,8 @@ def _make_chinese_cue(original: SubtitleCue, lines: list[str]) -> SubtitleCue:
     )
 
 
-def split_chinese(cue: SubtitleCue, text: str, config: SubtitleConfig) -> list[SubtitleCue]:
-    max_chars = config.max_chars_per_line_zh
+def split_chinese(cue: SubtitleCue, text: str, *, max_chars_per_line: int = 40) -> list[SubtitleCue]:
+    max_chars = max_chars_per_line
     text = _normalize_chinese_text(text.strip())
     if not text:
         return [cue]
@@ -332,50 +323,6 @@ def split_chinese(cue: SubtitleCue, text: str, config: SubtitleConfig) -> list[S
     lines = _chinese_mend_lines(lines, max_chars)
 
     return [_make_chinese_cue(cue, lines)]
-
-
-# ═══════════════════════════════════════════════════════════════════
-# Strip Chinese punctuation (post-formatting → pre-export)
-# ═══════════════════════════════════════════════════════════════════
-
-
-def _append_space(result: list[str]) -> None:
-    if result and result[-1] == _FULLWIDTH_SPACE:
-        return
-    result.append(_FULLWIDTH_SPACE)
-
-
-def _strip_line(line: str) -> str:
-    result: list[str] = []
-    for i, ch in enumerate(line):
-        if ch in _REPLACE_WITH_SPACE:
-            _append_space(result)
-        elif ch == _PERIOD:
-            if i == len(line) - 1:
-                continue
-            _append_space(result)
-            if i + 1 < len(line) and line[i + 1] == _PERIOD:
-                continue
-        elif ch == " ":
-            if result and result[-1] == _FULLWIDTH_SPACE:
-                continue
-            _append_space(result)
-        else:
-            result.append(ch)
-    text = "".join(result).strip()
-    return re.sub(r"\u3000{2,}", "\u3000", text)
-
-
-def strip_chinese_punct(cues: list[SubtitleCue], config: SubtitleConfig | None = None) -> list[SubtitleCue]:
-    for cue in cues:
-        if cue.lang != "zh":
-            continue
-        lines = cue.text.split("\n")
-        stripped = []
-        for line in lines:
-            stripped.append(_strip_line(line))
-        cue.text = "\n".join(stripped)
-    return cues
 
 
 # ═══════════════════════════════════════════════════════════════════

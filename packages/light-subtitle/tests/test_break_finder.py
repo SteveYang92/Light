@@ -105,12 +105,17 @@ class TestChineseBreakFinder:
     def test_forbidden_inside_book_title_marks(self):
         """Cannot split inside 《》 paired symbols."""
         finder = ChineseBreakFinder("像《我的世界》这样的东西")
-        # 《 at index 1, 》 at index 6.
-        # Positions 1–5 should be forbidden (inside the pair).
-        for pos in range(1, 6):
+        # 《 at index 1, 》 at index 6. is_forbidden(pos) means "split between
+        # text[pos-1] and text[pos]" (left line = text[:pos]), so the forbidden
+        # split points of a pair [open, close] are open+1 .. close: splitting at
+        # close would start the right line with the closing mark. Positions 1
+        # (right line starts with 《) and 7 (left line ends with 》) are legal.
+        # (Updated 2026-07: old assertions were off by one — they treated pos as
+        # a character index "inside" the pair rather than a split point.)
+        for pos in range(2, 7):
             assert finder.is_forbidden(pos), f"Position {pos} should be forbidden"
-        # Position 6 is after }, should be allowed.
-        assert not finder.is_forbidden(6)
+        assert not finder.is_forbidden(1)
+        assert not finder.is_forbidden(7)
 
     def test_book_title_marks_kept_together_by_find(self):
         """find() avoids splitting 《》 pairs."""
@@ -126,53 +131,62 @@ class TestChineseBreakFinder:
         """Cannot split inside （） fullwidth parentheses."""
         finder = ChineseBreakFinder("他来自中国（上海）附近")
         # （ at index 5, ） at index 8.
-        # Positions 5-7 should be forbidden.
-        assert finder.is_forbidden(5)
+        # Split positions 6-8 are forbidden (8 would start a line with ）).
         assert finder.is_forbidden(6)
         assert finder.is_forbidden(7)
-        # Position 8 is after ）, should NOT be forbidden.
-        assert not finder.is_forbidden(8)
+        assert finder.is_forbidden(8)
+        # Position 5 breaks before （ and position 9 breaks after ） — both fine.
+        assert not finder.is_forbidden(5)
+        assert not finder.is_forbidden(9)
 
     def test_forbidden_inside_curly_quotes(self):
         """Cannot split inside curly double quotes \u201c\u201d."""
         finder = ChineseBreakFinder("他说\u201c你好\u201d就走了")
         # \u201c at index 2, \u201d at index 5.
-        # Positions 2-4 should be forbidden.
-        assert finder.is_forbidden(2)
+        # Split positions 3-5 are forbidden (5 would start a line with \u201d).
         assert finder.is_forbidden(3)
         assert finder.is_forbidden(4)
-        # Position 5 (after \u201d) should NOT be forbidden.
-        assert not finder.is_forbidden(5)
+        assert finder.is_forbidden(5)
+        # Position 2 breaks before \u201c and position 6 breaks after \u201d — both fine.
+        assert not finder.is_forbidden(2)
+        assert not finder.is_forbidden(6)
 
     def test_forbidden_inside_ambiguous_quotes(self):
-        """Cannot split inside ambiguous straight double quotes ""."""
+        """Ambiguous straight quotes (") do NOT forbid interior positions after pairing.
+
+        Unlike 《》/（）, straight quotes pair-pop without marking a forbidden range:
+        apostrophes in mixed English text (it's, rock 'n' roll) would otherwise
+        mis-pair and over-forbid. Only jieba token protection applies inside.
+        """
         finder = ChineseBreakFinder('他说"你好"就走了')
-        # Straight " at index 2 (open), " at index 5 (close).
-        # Positions 2-4 should be forbidden.
-        assert finder.is_forbidden(2)
-        assert finder.is_forbidden(3)
+        # " at index 2 (open), " at index 5 (close). No pair-based forbidding:
+        assert not finder.is_forbidden(2)
+        assert not finder.is_forbidden(3)
+        # pos 4 is inside the jieba token 你好 — protected by word rules, not pairing.
         assert finder.is_forbidden(4)
-        # Position 5 is the closing quote, should NOT be forbidden.
         assert not finder.is_forbidden(5)
 
     def test_unclosed_pair_forbids_to_end(self):
-        """An unclosed 《 forbids all positions from it to end-of-text."""
+        """An unclosed 《 forbids all split positions after it to end-of-text."""
         finder = ChineseBreakFinder("像《我的世界这样的东西")
-        # 《 at 1, no matching 》.
-        # All positions from 1 to end should be forbidden.
+        # 《 at 1, no matching 》. Splitting at pos=1 (right line starts with 《)
+        # is fine; everything after the unclosed open mark is forbidden.
         n = len(finder.text)
-        for pos in range(1, n):
+        assert not finder.is_forbidden(1)
+        for pos in range(2, n):
             assert finder.is_forbidden(pos), f"Position {pos} should be forbidden (unclosed 《)"
 
     def test_nested_pairs(self):
         """Nested pairs like 《A「B」C》 are handled correctly."""
         finder = ChineseBreakFinder("《A「B」C》")
         # 《 at 0, 「 at 2, 」 at 4, 》 at 6.
-        # All positions inside outer pair (0-5) should be forbidden.
-        for pos in range(0, 6):
+        # Split positions 1-6 are forbidden: pos 1 would end the left line with
+        # 《, pos 6 would start the right line with 》.
+        for pos in range(1, 7):
             assert finder.is_forbidden(pos), f"Position {pos} should be forbidden"
-        # Position 6 (after 》) should be allowed.
-        assert not finder.is_forbidden(6)
+        # Position 0 (before 《) and position 7 (after 》) are legal splits.
+        assert not finder.is_forbidden(0)
+        assert not finder.is_forbidden(7)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -262,6 +276,11 @@ class TestBestSplitPosition:
         assert text[pos - 1] == " "
 
     def test_short_text(self):
-        """Short text returns midpoint."""
-        pos = best_split_position("ab")
-        assert pos >= 0
+        """Text without any break point returns -1 (no good split)."""
+        # "ab" has no punctuation or space; the function signals "no break
+        # point" with -1 rather than falling back to the midpoint.
+        # (Updated 2026-07: the old assertion expected a midpoint fallback
+        # that best_split_position never had — it returns -1 since the
+        # initial commit.)
+        assert best_split_position("ab") == -1
+        assert best_split_position("a") == -1

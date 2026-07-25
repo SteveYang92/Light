@@ -1,5 +1,6 @@
 from light_models import Segment, SubtitleCue, Word, covered_source_text
-from light_subtitle.pipeline.translate.evaluate import evaluate_translations
+from light_subtitle.config import TranslateConfig
+from light_subtitle.translate.evaluate import evaluate_translations
 
 
 def test_evaluate_uses_covered_source_for_merged_cue(monkeypatch):
@@ -36,23 +37,20 @@ def test_evaluate_uses_covered_source_for_merged_cue(monkeypatch):
 
     captured: list[str] = []
 
-    def fake_evaluate_batch(pairs, config, batch_num):
+    # Signature mirrors the real _evaluate_batch (5 params); only pairs is used.
+    def fake_evaluate_batch(pairs, config, batch_num, system_prompt, client):
         captured.extend(src for _, src in pairs)
         return [], {}
 
     monkeypatch.setattr(
-        "light_subtitle.pipeline.translate.evaluate._evaluate_batch",
+        "light_subtitle.translate.evaluate._evaluate_batch",
         fake_evaluate_batch,
     )
 
-    from light_subtitle.config import SubtitleConfig
-
-    config = SubtitleConfig(
-        input_path="x",
-        evaluate_enabled=True,
-        llm_api_key="test-key",
-    )
-    scores, _usage = evaluate_translations(cues, segments, config)
+    config = TranslateConfig(evaluate_enabled=True)
+    # evaluate_translations now requires an explicit llm client; the batch
+    # function is patched out, so a dummy object is enough to pass the gate.
+    scores, _usage = evaluate_translations(cues, segments, config, llm=object())
     assert captured == ["First second"]
 
 

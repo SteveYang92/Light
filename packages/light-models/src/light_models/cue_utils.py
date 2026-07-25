@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from light_text import is_cjk
+
 from .cue import SubtitleCue
-from .utils import is_cjk
 
 
 def effective_unit_ids(cue: SubtitleCue) -> set[str]:

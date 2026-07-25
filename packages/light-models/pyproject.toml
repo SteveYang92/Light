@@ -4,7 +4,12 @@ version = "0.1.0"
 description = "Shared data contracts for the Light subtitle pipeline"
 license = "MIT"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "light-text",
+]
+
+[tool.uv.sources]
+light-text = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

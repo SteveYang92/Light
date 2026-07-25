@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from light_models import Segment, Word
-from light_subtitle.pipeline.context_prep import (
+from light_subtitle.context_prep import (
     _parse_context_response,
     build_transcript_text,
     merge_glossary,

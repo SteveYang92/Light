@@ -6,15 +6,15 @@ import json
 from unittest.mock import MagicMock, patch
 
 from light_models import Segment, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate import align_check
-from light_subtitle.pipeline.translate.translate import _translate_batch
+from light_subtitle.config import TranslateConfig
+from light_subtitle.translate import align_check
+from light_subtitle.translate.translate import _translate_batch
 
 
-def _config(**kwargs) -> SubtitleConfig:
-    defaults = {"input_path": "dummy.mp4", "target_lang": "zh", "llm_api_key": "test"}
+def _config(**kwargs) -> TranslateConfig:
+    defaults = {"target_lang": "zh"}
     defaults.update(kwargs)
-    return SubtitleConfig(**defaults)
+    return TranslateConfig(**defaults)
 
 
 def _seg(unit_id: str, text: str = "hello") -> Segment:
@@ -200,7 +200,7 @@ class TestTranslateBatchAlignmentRetry:
         ]
 
         with patch(
-            "light_subtitle.pipeline.translate.translate._render_translate_prompt",
+            "light_subtitle.translate.translate._render_translate_prompt",
             return_value="system",
         ):
             cues, _, _ = _translate_batch(client, "system", segments, segments, 0, config)
@@ -219,7 +219,7 @@ class TestTranslateBatchAlignmentRetry:
         ]
 
         with patch(
-            "light_subtitle.pipeline.translate.translate._render_translate_prompt",
+            "light_subtitle.translate.translate._render_translate_prompt",
             return_value="system",
         ):
             cues, _, _ = _translate_batch(client, "system", segments, segments, 0, config)
@@ -241,7 +241,7 @@ class TestTranslateBatchAlignmentRetry:
         ]
 
         with patch(
-            "light_subtitle.pipeline.translate.translate._render_translate_prompt",
+            "light_subtitle.translate.translate._render_translate_prompt",
             return_value="system",
         ):
             cues, _, _ = _translate_batch(client, "system", segments, segments, 0, config)

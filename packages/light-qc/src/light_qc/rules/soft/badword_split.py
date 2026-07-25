@@ -29,9 +29,11 @@ from __future__ import annotations
 
 import re
 
-from light_models import QCIssue, SubtitleCue, seconds_to_srt
+from light_models import SubtitleCue
+from light_text import seconds_to_srt
 
 from ...config import QCConfig
+from ...models import QCIssue
 from ..base import SoftRule, _iter_cues
 from .wordlist import load_into_jieba
 

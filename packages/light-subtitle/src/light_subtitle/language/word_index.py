@@ -9,7 +9,8 @@ Built once per semantic unit via ``UnitWordIndex.from_words()``.
 
 from dataclasses import dataclass
 
-from light_models import SubtitleCue, Word, is_cjk
+from light_models import SubtitleCue, Word
+from light_text import is_cjk
 
 
 @dataclass

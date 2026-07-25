@@ -1,11 +1,12 @@
 import json
 import re
 
-from light_models import QCIssue, SubtitleCue
+from light_models import SubtitleCue
 
 from .config import QCConfig
 from .llm.client import OpenAIClient
 from .llm.prompts import render_prompt
+from .models import QCIssue
 
 CHUNK_SIZE = 50
 

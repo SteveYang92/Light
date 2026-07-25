@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from light_models import SubtitleCue
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.subtitle.layout import prepare
+from light_subtitle.config import LayoutConfig
+from light_subtitle.subtitle.layout import prepare
 
 # ── Helpers ────────────────────────────────────────────
 
@@ -29,11 +29,9 @@ def _cue(
     )
 
 
-def _config(**overrides) -> SubtitleConfig:
-    """Build a SubtitleConfig with defaults suitable for testing."""
+def _config(**overrides) -> LayoutConfig:
+    """Build a LayoutConfig with defaults suitable for testing."""
     defaults = {
-        "input_path": "test.mp4",
-        "output_dir": "./output",
         "max_lines": 2,
         "max_lines_zh": 1,
         "max_chars_per_line_zh": 40,
@@ -41,7 +39,7 @@ def _config(**overrides) -> SubtitleConfig:
         "max_duration": 7.0,
     }
     defaults.update(overrides)
-    return SubtitleConfig(**defaults)
+    return LayoutConfig(**defaults)
 
 
 # ═══════════════════════════════════════════════════════

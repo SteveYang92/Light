@@ -24,9 +24,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from light_models import seconds_to_ass
+from light_core import logger
+from light_text import seconds_to_ass
 
-from .. import logger
 from .config import PLAY_RES_X, PLAY_RES_Y, SubtitleStyleConfig
 
 # ── Text measurement ────────────────────────────────────

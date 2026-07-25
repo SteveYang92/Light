@@ -1,5 +1,5 @@
 from light_models import SubtitleCue
-from light_subtitle.pipeline.export import (
+from light_subtitle.export import (
     export_annotation_vtt,
     export_vtt,
     format_annotation_display,

@@ -1,6 +1,8 @@
-from light_models import QCIssue, SubtitleCue, is_cjk, seconds_to_srt
+from light_models import SubtitleCue
+from light_text import is_cjk, seconds_to_srt
 
 from ...config import QCConfig
+from ...models import QCIssue
 from ..base import HardRule, pair_bilingual
 
 

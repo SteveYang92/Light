@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 from light_models import SubtitleCue
-from light_subtitle.pipeline.export import export_bilingual_ass
+from light_subtitle.export import export_bilingual_ass
 from light_subtitle.style.box import (
     EN_STYLE_NAME,
     ZH_STYLE_NAME,
@@ -187,7 +187,7 @@ def _en_cue(text: str = "hello", start: float = 1.0, end: float = 3.0) -> Subtit
 
 def test_export_bilingual_ass_boxed(tmp_path) -> None:
     out = tmp_path / "bilingual.ass"
-    with patch("light_subtitle.pipeline.export.bilingual._resolved_font", return_value="TestFont"):
+    with patch("light_subtitle.export.bilingual._resolved_font", return_value="TestFont"):
         export_bilingual_ass([_en_cue()], [_zh_cue()], str(out), font="TestFont", measurer=MEASURER)
     text = out.read_text(encoding="utf-8")
     assert "PlayResX: 1920" in text
@@ -198,7 +198,7 @@ def test_export_bilingual_ass_boxed(tmp_path) -> None:
 
 def test_export_bilingual_ass_box_disabled_falls_back_to_plain(tmp_path) -> None:
     out = tmp_path / "bilingual.ass"
-    with patch("light_subtitle.pipeline.export.bilingual._resolved_font", return_value="TestFont"):
+    with patch("light_subtitle.export.bilingual._resolved_font", return_value="TestFont"):
         export_bilingual_ass(
             [_en_cue()],
             [_zh_cue()],
@@ -214,7 +214,7 @@ def test_export_bilingual_ass_box_disabled_falls_back_to_plain(tmp_path) -> None
 def test_export_bilingual_ass_missing_font_file_falls_back(tmp_path) -> None:
     out = tmp_path / "bilingual.ass"
     with (
-        patch("light_subtitle.pipeline.export.bilingual._resolved_font", return_value="TestFont"),
+        patch("light_subtitle.export.bilingual._resolved_font", return_value="TestFont"),
         patch("light_subtitle.style.fonts.resolve_font_file", return_value=None),
     ):
         export_bilingual_ass([_en_cue()], [_zh_cue()], str(out), font="TestFont")

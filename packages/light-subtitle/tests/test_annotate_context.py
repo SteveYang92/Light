@@ -5,8 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.annotate import (
+from light_subtitle.annotate import (
     _filter_annotate_context,
     _filter_glossary,
     _filter_summary,
@@ -91,11 +90,11 @@ class TestLoadDomainContext:
         payload = {"domain": "History", "terminology": [{"term": "foo", "context": "bar"}]}
         (correct_dir / "domain_context.json").write_text(json.dumps(payload), encoding="utf-8")
 
-        loaded = _load_domain_context(tmp_path)
+        loaded = _load_domain_context(correct_dir / "domain_context.json")
         assert loaded == payload
 
     def test_missing_file_returns_none(self, tmp_path: Path):
-        assert _load_domain_context(tmp_path) is None
+        assert _load_domain_context(tmp_path / "transcript_correct" / "domain_context.json") is None
 
 
 class TestAnnotatePromptRendering:
@@ -106,9 +105,7 @@ class TestAnnotatePromptRendering:
             json.dumps({"terminology": [{"term": "RL", "context": "reinforcement learning"}]}),
             encoding="utf-8",
         )
-        config = SubtitleConfig(
-            input_path="test.wav",
-            target_lang="zh",
+        prompt = _render_annotate_system_prompt(
             glossary={"RL": "强化学习", "ASR": "ASR"},
             content_summary={
                 "title": "AI Talk",
@@ -116,8 +113,8 @@ class TestAnnotatePromptRendering:
                 "overview": "Talk about AI scaling",
                 "key_topics": ["scaling"],
             },
+            domain_context_path=correct_dir / "domain_context.json",
         )
-        prompt = _render_annotate_system_prompt(config, tmp_path)
         assert "Information Density Assessment" in prompt
         assert "AI Talk" in prompt
         assert "Talk about AI scaling" in prompt
@@ -126,8 +123,9 @@ class TestAnnotatePromptRendering:
         assert "ASR" not in prompt
 
     def test_system_prompt_excludes_batch_input(self, tmp_path: Path):
-        config = SubtitleConfig(input_path="test.wav", target_lang="zh")
-        prompt = _render_annotate_system_prompt(config, tmp_path)
+        prompt = _render_annotate_system_prompt(
+            domain_context_path=tmp_path / "transcript_correct" / "domain_context.json"
+        )
         assert "## Input Format" in prompt
         assert "## Input\n" not in prompt
         assert "Already Annotated Terms" not in prompt

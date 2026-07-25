@@ -43,10 +43,12 @@ class IndexTTS2MetalEngine(TtsEngine):
         self._config = config
         paths = resolve_metal_paths(config)
         if not paths.bin.is_file():
-            raise FileNotFoundError(f"mtts binary not found: {paths.bin}\n  Run ./scripts/setup_indextts2_metal.sh")
+            raise FileNotFoundError(
+                f"mtts binary not found: {paths.bin}\n  Run ./scripts/setup/setup_indextts2_metal.sh"
+            )
         if not paths.model_bundle.is_dir():
             raise FileNotFoundError(
-                f"MIT2 model bundle not found: {paths.model_bundle}\n  Run ./scripts/setup_indextts2_metal.sh"
+                f"MIT2 model bundle not found: {paths.model_bundle}\n  Run ./scripts/setup/setup_indextts2_metal.sh"
             )
         ensure_metal_server(config, paths)
         self._client = create_metal_client(config)

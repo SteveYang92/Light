@@ -1,0 +1,104 @@
+{
+  "baseline_run_id": "20260718T153742",
+  "current_run_id": "20260725T120418",
+  "errors_delta": -1,
+  "warnings_delta": -1,
+  "suggestions_delta": 3,
+  "rule_changes": [
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "LineImbalance",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "ExitPointPrecision",
+      "before": 4,
+      "after": 8,
+      "delta": 4
+    },
+    {
+      "rule": "MaxLines",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 11,
+      "time": "00:00:34,311",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.018s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 26,
+      "time": "00:01:31,566",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.017s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 34,
+      "time": "00:02:06,812",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 45,
+      "time": "00:02:53,156",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.000s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MaxLines",
+      "cue_id": 51,
+      "time": "00:03:12,146",
+      "detail": "字幕有 2 行，超过最大 1 行限制",
+      "fix": "将字幕压缩为最多 1 行"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 8,
+      "time": "00:00:23,281",
+      "detail": "入点偏离首个词语 0.856s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:00:24,137"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 51,
+      "time": "00:03:12,146",
+      "detail": "双行长度失衡 72% (L1: 32字, L2: 9字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    }
+  ],
+  "degraded": false,
+  "reasons": [
+    "4 new issues introduced"
+  ]
+}

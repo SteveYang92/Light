@@ -5,14 +5,13 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from light_models import SubtitleCue, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.subtitle import pace
-from light_subtitle.pipeline.subtitle.compress import _count_chars, _parse_results, compress_over_cps
+from light_subtitle.config import LayoutConfig
+from light_subtitle.subtitle import pace
+from light_subtitle.subtitle.compress import _count_chars, _parse_results, compress_over_cps
 
 
-def _config(**kwargs) -> SubtitleConfig:
-    kwargs.setdefault("llm_api_key", "k")
-    return SubtitleConfig(input_path="dummy.mp4", target_lang="zh", cps_limit=9, **kwargs)
+def _config(**kwargs) -> LayoutConfig:
+    return LayoutConfig(target_lang="zh", cps_limit=9, **kwargs)
 
 
 def _cue(text: str, start: float, end: float, lang: str = "zh") -> SubtitleCue:
@@ -57,8 +56,7 @@ def test_count_chars_excludes_newlines() -> None:
 def test_compress_applies_verified_texts() -> None:
     cues = [_cue("这是一段需要被压缩的超长中文字幕文本", 0.0, 2.0)]  # 18 chars / 2s = 9+ cps
     client = _FakeClient(['{"results": [{"id": 0, "text": "压缩后的字幕"}]}'])
-    with patch("light_subtitle.pipeline.subtitle.compress.client_from_config", return_value=client):
-        usage = compress_over_cps(cues, [0], _config())
+    usage = compress_over_cps(cues, [0], _config(), llm=client)
     assert cues[0].text == "压缩后的字幕"
     assert usage is not None
     # payload carries max_chars derived from duration × cps limit
@@ -73,16 +71,15 @@ def test_compress_retries_with_feedback_and_keeps_original_on_failure() -> None:
             '{"results": [{"id": 0, "text": "这个压缩结果实在是太长了超标了"}]}',
         ]
     )
-    with patch("light_subtitle.pipeline.subtitle.compress.client_from_config", return_value=client):
-        compress_over_cps(cues, [0], _config())
+    compress_over_cps(cues, [0], _config(), llm=client)
     assert cues[0].text == "原始字幕文本保持不动"  # untouched
     assert "previous_error" in client.calls[1][1]["content"]
 
 
-def test_compress_noop_without_api_key_or_indices() -> None:
+def test_compress_noop_without_llm_or_indices() -> None:
     cues = [_cue("文本", 0.0, 1.0)]
-    assert compress_over_cps(cues, [], _config()) is None
-    assert compress_over_cps(cues, [0], _config(llm_api_key="")) is None
+    assert compress_over_cps(cues, [], _config(), llm=_FakeClient([])) is None
+    assert compress_over_cps(cues, [0], _config()) is None
 
 
 # ── pace integration ──────────────────────────────────────
@@ -95,11 +92,11 @@ def test_pace_compresses_over_cps_translation() -> None:
         _cue("短", 2.105, 3.0),
     ]
 
-    def fake_compress(result, indices, config):
+    def fake_compress(result, indices, config, **_kwargs):
         result[0].text = "压缩后的短字幕"
         return {"total_tokens": 5}
 
-    with patch("light_subtitle.pipeline.subtitle.pace.compress.compress_over_cps", side_effect=fake_compress) as m:
+    with patch("light_subtitle.subtitle.pace.compress.compress_over_cps", side_effect=fake_compress) as m:
         out, usage = pace.correct(cues, _config())
     assert m.called
     assert out[0].text == "压缩后的短字幕"
@@ -108,21 +105,21 @@ def test_pace_compresses_over_cps_translation() -> None:
 
 def test_pace_skips_compression_for_source_lang_cues() -> None:
     cues = [_cue("an english cue that is dense but stays within en cps tolerance", 0.0, 2.0, lang="en")]
-    with patch("light_subtitle.pipeline.subtitle.pace.compress.compress_over_cps") as m:
+    with patch("light_subtitle.subtitle.pace.compress.compress_over_cps") as m:
         pace.correct(cues, _config())
     assert not m.called
 
 
 def test_pace_skips_compression_without_target_lang() -> None:
     cues = [_cue("an english cue that is way too dense for the english cps ceiling here", 0.0, 2.0, lang="en")]
-    config = SubtitleConfig(input_path="dummy.mp4", cps_limit_en=10)
-    with patch("light_subtitle.pipeline.subtitle.pace.compress.compress_over_cps") as m:
+    config = LayoutConfig(cps_limit_en=10)
+    with patch("light_subtitle.subtitle.pace.compress.compress_over_cps") as m:
         pace.correct(cues, config)
     assert not m.called
 
 
 def test_fix_cue_duration_bounded_exemption_for_merged() -> None:
-    from light_subtitle.pipeline.subtitle.pace import _fix_cue_duration
+    from light_subtitle.subtitle.pace import _fix_cue_duration
 
     merged = _cue("合并后的较长字幕", 0.0, 6.6)
     merged.merged_from = ["p2"]

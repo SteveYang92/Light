@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from light_models import Word, is_cjk
-from light_models.punctuation import CLAUSE_PUNCT, SENTENCE_ENDS
+from light_models import Word
+from light_text import is_cjk
+from light_text.punctuation import CLAUSE_PUNCT, SENTENCE_ENDS
 
 # Sentence-ending punctuation character set (excluding abbreviation dots).
 SENTENCE_END = set(SENTENCE_ENDS)

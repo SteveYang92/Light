@@ -2,7 +2,8 @@ import json
 import re
 from pathlib import Path
 
-from light_models import SubtitleCue, srt_to_seconds
+from light_models import SubtitleCue
+from light_text import srt_to_seconds
 
 
 def parse_srt(path: str) -> list[SubtitleCue]:

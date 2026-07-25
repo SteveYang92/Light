@@ -6,7 +6,7 @@ license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "light-models",
-    "light-subtitle",
+    "light-cli",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "pyyaml>=6.0",
@@ -14,7 +14,7 @@ dependencies = [
 
 [tool.uv.sources]
 light-models = { workspace = true }
-light-subtitle = { workspace = true }
+light-cli = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

@@ -1,0 +1,18 @@
+[project]
+name = "light-asr"
+version = "0.1.0"
+description = "ASR capability package — audio extraction, transcription (whisperX / whisper.cpp), alignment, diarization"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "light-models",
+    "light-core",
+]
+
+[tool.uv.sources]
+light-models = { workspace = true }
+light-core = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

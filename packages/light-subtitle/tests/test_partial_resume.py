@@ -3,23 +3,23 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from light_models import Segment, SubtitleCue, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate.checkpoint import (
+from light_subtitle.config import TranslateConfig
+from light_subtitle.translate.checkpoint import (
     _save_partial,
     load_partial,
     segment_graph_fingerprint,
 )
-from light_subtitle.pipeline.translate.translate import (
+from light_subtitle.translate.translate import (
     covered_unit_ids,
     run,
 )
 
 
-def _config(**kwargs) -> SubtitleConfig:
-    return SubtitleConfig(input_path="dummy.mp4", target_lang="zh", llm_api_key="test", **kwargs)
+def _config(**kwargs) -> TranslateConfig:
+    return TranslateConfig(target_lang="zh", **kwargs)
 
 
 def _seg(unit_id: str, *, start: float = 0.0, end: float = 1.0) -> Segment:
@@ -79,8 +79,8 @@ class TestPartialResumeRun:
             segments,
         )
 
-        with patch("light_subtitle.pipeline.translate.translate._translate_batch") as mock_batch:
-            cues, _ = run(segments, _config(), tx_dir=tmp_path)
+        with patch("light_subtitle.translate.translate._translate_batch") as mock_batch:
+            cues, _ = run(segments, _config(), tx_dir=tmp_path, llm=MagicMock())
             mock_batch.assert_not_called()
 
         assert len(cues) == 3
@@ -106,8 +106,8 @@ class TestPartialResumeRun:
         segments = [_seg("u0"), _seg("u1", start=1.0, end=2.0)]
         _save_partial(tmp_path, [_cue("u0", "a"), _cue("u1", "b", start=1.0, end=2.0)], segments)
 
-        with patch("light_subtitle.pipeline.translate.translate._translate_batch") as mock_batch:
-            cues, _ = run(segments, _config(), tx_dir=tmp_path)
+        with patch("light_subtitle.translate.translate._translate_batch") as mock_batch:
+            cues, _ = run(segments, _config(), tx_dir=tmp_path, llm=MagicMock())
             mock_batch.assert_not_called()
 
         assert [c.cue_id for c in cues] == ["zh_0000", "zh_0001"]
@@ -119,9 +119,9 @@ class TestPartialStaleDiscard:
         new_segments = [_seg("u_new")]
         _save_partial(tmp_path, [_cue("u0", "stale")], old_segments)
 
-        with patch("light_subtitle.pipeline.translate.translate._translate_batch") as mock_batch:
+        with patch("light_subtitle.translate.translate._translate_batch") as mock_batch:
             mock_batch.return_value = ([_cue("u_new", "fresh")], {}, {})
-            run(new_segments, _config(), tx_dir=tmp_path)
+            run(new_segments, _config(), tx_dir=tmp_path, llm=MagicMock())
             mock_batch.assert_called_once()
 
         raw = json.loads((tmp_path / "partial.json").read_text(encoding="utf-8"))
@@ -131,8 +131,8 @@ class TestPartialStaleDiscard:
         segments = [_seg("u0"), _seg("u1", start=1.0, end=2.0)]
         _save_partial(tmp_path, [_cue("u0", "a"), _cue("u1", "b", start=1.0, end=2.0)], segments)
 
-        with patch("light_subtitle.pipeline.translate.translate._translate_batch") as mock_batch:
-            cues, _ = run(segments, _config(), tx_dir=tmp_path)
+        with patch("light_subtitle.translate.translate._translate_batch") as mock_batch:
+            cues, _ = run(segments, _config(), tx_dir=tmp_path, llm=MagicMock())
             mock_batch.assert_not_called()
 
         assert len(cues) == 2

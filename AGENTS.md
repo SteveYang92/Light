@@ -6,19 +6,22 @@
 
 ```
 packages/
-├── light-models/        共享数据契约（Word, Segment, SubtitleCue, is_cjk…）
-├── light-subtitle/      ASR → 翻译 → 字幕流水线
+├── light-models/        共享数据契约（Word, Segment, SubtitleCue…）
+├── light-text/          文本工具（标点常量、时间码格式化、is_cjk）
+├── light-core/          运行时原语（logger 模块、ProgressCallback）
+├── light-llm/           LLM 横切层（OpenAIClient / retry / json_extract / parallel / prompts / usage）
+├── light-asr/           独立 ASR 能力包（extract_audio / whisperX / whisper.cpp / align / diarize / checkpoints）
+├── light-asr-polish/    独立 ASR 后处理包（LLM 转录纠正 correct + 标点还原 restore_punct + 共用分段 word_segments）
+├── light-subtitle/      字幕能力包（config 小配置、artifacts 字幕域序列化、language/ 断句分行、style/ 样式字体、segment、cue_builder、export/、plan/、translate/、subtitle/ 布局对时、context_prep、annotate、prompts/ 模板）
+├── light-cli      ASR → 翻译 → 字幕流水线（`light` 多命令 + `light-subtitle` 入口）
 │   ├── orchestrator.py  编排器（PipelineState 统一状态袋）
 │   ├── step_registry.py / step_plan.py / run_state.py / state_hydrate.py  # 声明式步骤注册与 resume
 │   ├── steps/           17 个 step 的 run 实现 + 进度回调（按阶段分模块；stage 常量在 progress.py）
+│   ├── commands/        `light` 独立能力命令（asr/polish/subtitle，薄封装能力包；pipeline 复用 cli.run）
 │   ├── reporting/       通用进度事件层（events/model/reporter + Plain/Rich 渲染器；零依赖）
-│   ├── artifacts.py     artifact 路径常量 + 序列化 + JSON 读写
-│   ├── logger.py        自制日志（echo + 文件；set_console_echo / capture_external_output / log_path）
-│   ├── llm/             LLM 横切层（client+client_from_config / retry / json_extract / parallel / prompts）
-│   ├── pipeline/        各阶段实现（asr/ plan/ translate/ subtitle/ export/ + 矫正/标点/断句等单文件模块）
-│   ├── merge/           分段输出合并（原 merge_outputs.py 拆分；同名文件为薄 re-export 壳）
-│   ├── language/        语言处理（英语/CJK 断句、标点、显示约定、词索引 word_index）
-│   └── style/           字幕样式（字体解析、圆角盒 SubtitleStyleConfig、盒几何/ASS 生成）
+│   ├── artifacts.py     run 级布局 + ASR checkpoint 路径（字幕域序列化在 light_subtitle.artifacts）
+│   ├── llm_client.py    client_from_config 适配（SubtitleConfig → light_llm.OpenAIClient）
+│   └── merge/           分段输出合并（原 merge_outputs.py 拆分；同名文件为薄 re-export 壳）
 ├── light-qc/            独立 QC 引擎（规则 + LLM）
 ├── light-regression/    回归测试工具（固定黄金基线 + rebaseline）
 ├── light-tts/           字幕配音（官方 IndexTTS2 / Qwen3-TTS）
@@ -35,15 +38,15 @@ vendor/
 
 | 改动模块 | 必跑验证 | 命令 |
 |---|---|---|
-| light-subtitle | 回归测试（已内置 QC） | `uv run light-regression run tests/regression/cases/<case>/case.yaml` |
-| light-tts | 单测（mock 引擎，无需 MLX） | `uv run pytest tests/test_light_tts.py -v` |
-| IndexTTS2 setup | submodule + 官方 venv + checkpoints | `./scripts/setup_indextts_official.sh` |
+| light-cli / light-subtitle | 回归测试（已内置 QC） | `uv run light-regression run tests/regression/cases/<case>/case.yaml` |
+| light-tts | 单测（mock 引擎，无需 MLX） | `uv run pytest packages/light-tts/tests/test_light_tts.py -v` |
+| IndexTTS2 setup | submodule + 官方 venv + checkpoints | `./scripts/setup/setup_indextts_official.sh` |
 | light-qc | 端到端 QC | `uv run light-qc -i <本地 output 里的 .srt> --transcript <本地 output 里的 transcript.json> -f json` |
 | light-frontend | 类型检查 + 构建 | `npm --prefix packages/light-frontend run build` |
-| light-backend | Lint + 后端测试 | `uv run ruff check packages/light-backend/ && uv run pytest tests/test_light_backend_playback.py -v` |
-| 任何 Python 改动 | Lint + Format + 单测 | `uv run ruff check . && uv run ruff format --check . && uv run pytest tests/ -v` |
+| light-backend | Lint + 后端测试 | `uv run ruff check packages/light-backend/ && uv run pytest packages/light-backend/tests/ -v` |
+| 任何 Python 改动 | Lint + Format + 单测 | `uv run ruff check . && uv run ruff format --check . && uv run pytest packages/ -v` |
 
-> **重要**：上表是"按改动类型"叠加的，不是二选一。例如改 light-subtitle，既要跑"任何 Python 改动"那行，也要跑"light-subtitle"那行。验收前**全部**必须通过，缺一项不算完成。
+> **重要**：上表是"按改动类型"叠加的，不是二选一。例如改 light-cli，既要跑"任何 Python 改动"那行，也要跑"light-cli"那行。验收前**全部**必须通过，缺一项不算完成。
 
 ## 回归测试
 
@@ -143,6 +146,7 @@ vendor/
 见 `--help`：
 
 ```bash
+uv run light --help            # 多命令入口：pipeline / asr / polish / subtitle
 uv run light-subtitle --help
 uv run light-qc --help
 uv run light-regression --help
@@ -152,7 +156,7 @@ uv run light-regression --help
 
 CLI 支持 `--resume`（读 `pipeline_run.json`）和 `--resume-from STEP`（从指定步骤开始，此前步骤 hydrate 不执行）。Web 后端暂未接入。
 
-改 resume 逻辑：`step_registry.py`（step 定义）→ `step_plan.py`（plan/校验）→ `state_hydrate.py`（灌状态）。验证：`uv run pytest tests/test_run_state.py -v`。
+改 resume 逻辑：`step_registry.py`（step 定义）→ `step_plan.py`（plan/校验）→ `state_hydrate.py`（灌状态）。验证：`uv run pytest packages/light-cli/tests/test_run_state.py -v`。
 
 用户向说明见 README；开发迭代示例：
 
@@ -165,9 +169,9 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 
 ## 工作流
 
-每个工作流已内联该模块的必跑验证。任何 Python 改动另加通用检查：`uv run ruff check . && uv run ruff format --check . && uv run pytest tests/ -v`。
+每个工作流已内联该模块的必跑验证。任何 Python 改动另加通用检查：`uv run ruff check . && uv run ruff format --check . && uv run pytest packages/ -v`。
 
-### light-subtitle 开发工作流
+### light-cli 开发工作流
 
 **目标**：提高字幕管线输出质量
 
@@ -175,7 +179,7 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 2. 制定计划（向用户确认）
 3. 跑回归基线：`uv run light-regression run tests/regression/cases/<smoke case>/case.yaml`（改动落在哪段就选对应 smoke，见「回归测试·Case 速查」）
 4. 进行开发
-5. 单元测试：`uv run pytest tests/ -v`
+5. 单元测试：`uv run pytest packages/ -v`
 6. **回归测试**（与基线对比，命令同第 3 步；小改动用 `--resume-from` 跳过 ASR，见「断点续跑」）。`light-regression run` 内部已子进程调 `light-qc`，**无需再单独跑 QC**
 7. 与基线对比，验证结果（不符合预期 → 返回步骤 4）
 8. 确认代码改进、输出质量达标且需推进基线时，`uv run light-regression rebaseline <case.yaml>`
@@ -189,9 +193,9 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 
 1. 接受具体需求
 2. 制定计划（向用户确认）
-3. 跑当前端到端基线：`uv run light-qc -i <本地 output 里的 .srt> --transcript <本地 output 里的 transcript.json>`（QC 独立端到端检查仅改 light-qc 时需要；改 light-subtitle 由回归内置覆盖）
+3. 跑当前端到端基线：`uv run light-qc -i <本地 output 里的 .srt> --transcript <本地 output 里的 transcript.json>`（QC 独立端到端检查仅改 light-qc 时需要；改 light-cli 由回归内置覆盖）
 4. 进行开发
-5. 单元测试：`uv run pytest tests/test_rules.py -v`
+5. 单元测试：`uv run pytest packages/light-qc/tests/test_rules.py -v`
 6. **端到端 QC**（命令同第 3 步，输入同基线）
 7. 与基线对比，验证结果（不符合预期 → 返回步骤 4）
 8. 完成功能，报告结果，向用户确认是否提交
@@ -215,7 +219,7 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 > **开发提示**：
 > - 前端 Vite 代理自动将 `/api` 转发到后端 `localhost:8787`
 > - 后端绑定 `0.0.0.0`，手机可通过局域网 IP 访问测试
-> - 修改 `light-subtitle` 步骤注册或 orchestrator 后需重启后端
+> - 修改 `light-cli` 步骤注册或 orchestrator 后需重启后端
 > - 导入已有 output 目录用于快速验证（跳过下载和管线）
 
 ## 查看报告
@@ -232,7 +236,7 @@ uv run light-subtitle -i <input> -o output --target-lang zh --resume-from subtit
 - 回归测试快照 `tests/regression/snapshots/` **进 git 共享**，是固定黄金基线，**禁止删除**；质量改进后用 `rebaseline` 推进，不要手动删快照
 - stage 字符串是 SSE/前端外部契约（`reporting/events.py` 运行级 + `steps/progress.py` 步骤级），**禁止改名**；新增 stage 需同步 `reporting/labels.py` 的中文标签
 - 新 QC 规则必须零误报才提交
-- light-qc 独立端到端检查仅改 light-qc 时需要；改 light-subtitle 由回归内置覆盖
-- resume 见上文「断点续跑」；改 step 注册/hydrate 后跑 `tests/test_run_state.py`
+- light-qc 独立端到端检查仅改 light-qc 时需要；改 light-cli 由回归内置覆盖
+- resume 见上文「断点续跑」；改 step 注册/hydrate 后跑 `packages/light-cli/tests/test_run_state.py`
 - 修改涉及 CLI 参数、行为、输出格式等外部可见变更时，须同步更新 `README.md` 对应章节
 - **不要**擅自提交代码，除非用户要求提交再提交

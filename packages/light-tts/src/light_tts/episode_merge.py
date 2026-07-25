@@ -109,7 +109,7 @@ def compute_segment_offsets(
     split_points: list[float],
     overlap: float,
 ) -> list[float]:
-    """Match subtitle merge offsets in ``light_subtitle.merge_outputs``."""
+    """Match subtitle merge offsets in ``light_cli.merge_outputs``."""
     n = len(seg_dirs)
     if len(split_points) != n + 1:
         raise ValueError(f"Expected {n + 1} split points for {n} segments, got {len(split_points)}")

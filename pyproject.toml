@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "light-models",
     "light-subtitle",
+    "light-cli",
     "light-qc",
     "light-regression",
     "light-backend",
@@ -18,7 +19,13 @@ dependencies = [
 [tool.uv.workspace]
 members = [
     "packages/light-models",
+    "packages/light-text",
+    "packages/light-core",
+    "packages/light-llm",
+    "packages/light-asr",
+    "packages/light-asr-polish",
     "packages/light-subtitle",
+    "packages/light-cli",
     "packages/light-qc",
     "packages/light-regression",
     "packages/light-backend",
@@ -27,7 +34,13 @@ members = [
 
 [tool.uv.sources]
 light-models = { workspace = true }
+light-text = { workspace = true }
+light-core = { workspace = true }
+light-llm = { workspace = true }
+light-asr = { workspace = true }
+light-asr-polish = { workspace = true }
 light-subtitle = { workspace = true }
+light-cli = { workspace = true }
 light-qc = { workspace = true }
 light-regression = { workspace = true }
 light-backend = { workspace = true }
@@ -55,6 +68,9 @@ tts-mlx = [
 line-length = 120
 target-version = "py312"
 extend-exclude = ["vendor"]
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "C4"]

@@ -1,8 +1,9 @@
 import time
 
-from light_models import QCIssue, QCReport, SubtitleCue
+from light_models import SubtitleCue
 
 from .config import QCConfig
+from .models import QCIssue, QCReport
 from .rules.registry import RuleEngine
 
 

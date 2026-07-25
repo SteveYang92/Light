@@ -1,0 +1,164 @@
+{
+  "baseline_run_id": "20260718T153742",
+  "current_run_id": "20260725T114919",
+  "errors_delta": 0,
+  "warnings_delta": 2,
+  "suggestions_delta": 5,
+  "rule_changes": [
+    {
+      "rule": "EntryPointConfidence",
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    {
+      "rule": "LineImbalance",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "ExitPointPrecision",
+      "before": 4,
+      "after": 7,
+      "delta": 3
+    },
+    {
+      "rule": "BadWordSplit",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "MaxDuration",
+      "before": 0,
+      "after": 2,
+      "delta": 2
+    },
+    {
+      "rule": "MissingPunctuation",
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    {
+      "rule": "OrphanWords",
+      "before": 0,
+      "after": 1,
+      "delta": 1
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 76,
+      "time": "00:04:49,776",
+      "detail": "阅读 padding 1.558s 过长（超过 1.0s），存在冗余静默",
+      "fix": "将结束时间提前以减少冗余静默"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 7,
+      "time": "00:00:20,396",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.078s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 11,
+      "time": "00:00:34,311",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.018s（不足 0.08s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 8,
+      "time": "00:00:23,359",
+      "detail": "入点偏离首个词语 0.778s，超过 0.50s 警告阈值",
+      "fix": "将入点对齐至 00:00:24,137"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 25,
+      "time": "00:01:23,480",
+      "detail": "入点首个词 ' are' 置信度 0.19，后续词峰值 0.99（差 0.80）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 77,
+      "time": "00:04:55,621",
+      "detail": "尾cue仅4个字符 '比如视觉'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 52,
+      "time": "00:03:12,146",
+      "detail": "字幕时长 6.68s，超过最大 6.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MaxDuration",
+      "cue_id": 74,
+      "time": "00:04:39,750",
+      "detail": "字幕时长 7.22s，超过最大 6.0s",
+      "fix": "将字幕拆分为多条"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "MissingPunctuation",
+      "cue_id": 48,
+      "time": "00:02:57,622",
+      "detail": "中文句尾可能缺少感叹号: '简直如出一辙'",
+      "fix": "如为感叹句，添加 ！"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "error",
+      "category": "柔性策略",
+      "rule": "BadWordSplit",
+      "cue_id": 8,
+      "time": "00:00:23,281 → 00:00:27,017",
+      "detail": "英文词/名被跨cue切断: #8末'…JEPA' → #9首'JEPA…' (合并为'JEPAJEPA')",
+      "fix": "将'JEPAJEPA'保留在同一个cue中"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "LineImbalance",
+      "cue_id": 51,
+      "time": "00:03:12,146",
+      "detail": "双行长度失衡 72% (L1: 32字, L2: 9字)",
+      "fix": "调整断行位置，使两行长度更接近"
+    }
+  ],
+  "degraded": false,
+  "reasons": [
+    "9 new issues introduced"
+  ]
+}

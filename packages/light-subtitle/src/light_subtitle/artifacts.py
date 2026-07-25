@@ -1,9 +1,10 @@
-"""Pipeline artifact paths and (de)serialization.
+"""Subtitle-domain artifact paths and (de)serialization.
 
-Single source of truth for artifact filenames, directory layout, and the
-JSON schemas of words / cues / plan units.  Resume (``state_hydrate``),
-the regression harness, and the web backend all depend on these names
-and byte-level JSON layouts — treat any change here as a format change.
+Single source of truth for the subtitle pipeline's artifact filenames,
+directory layout, and the JSON schemas of words / cues / plan units.
+Resume (``light_cli.state_hydrate``), the regression harness, and the
+web backend all depend on these names and byte-level JSON layouts —
+treat any change here as a format change.
 
 Conventions:
 - Leaf path helpers take the pipeline *output_dir*.
@@ -19,12 +20,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-from light_models import Segment, SubtitleCue, Word
+from light_models import Segment, SubtitleCue, Word, word_from_dict, word_to_dict
 
 # ── Filenames ───────────────────────────────────────────────────────────────
 
-TRANSCRIPT_JSON = "transcript.json"  # write: export step; read: resume, QC, backend
-CUES_JSON = "cues.json"  # write: export; read: TTS, pack tooling (not a player sidecar)
 ANNOTATIONS_JSON = "annotations.json"  # annotations/ — write: annotate step; read: export resume
 SEGMENT_JSON = "segment.json"  # segment/ — write: export step; read: resume
 PLAN_JSON = "plan.json"  # plan/ — write: planner; read: resume, join
@@ -73,14 +72,6 @@ def annotations_dir(output_dir: str | Path) -> Path:
 
 
 # ── Leaf path helpers (take the pipeline output dir) ────────────────────────
-
-
-def transcript_path(output_dir: str | Path) -> Path:
-    return Path(output_dir) / TRANSCRIPT_JSON
-
-
-def cues_path(output_dir: str | Path) -> Path:
-    return Path(output_dir) / CUES_JSON
 
 
 def annotations_path(output_dir: str | Path) -> Path:
@@ -247,34 +238,6 @@ def load_annotations(output_dir: str | Path) -> dict[str, str]:
     return {str(k): str(v) for k, v in data.items() if v}
 
 
-# ── Word (de)serialization ──────────────────────────────────────────────────
-#
-# Single 5-field schema shared by every writer (asr checkpoints, transcript,
-# segment words, debug dumps).  Key order matters for byte-identical output.
-
-
-def word_to_dict(word: Word) -> dict:
-    return {
-        "text": word.text,
-        "start": word.start,
-        "end": word.end,
-        "confidence": word.confidence,
-        "speaker": word.speaker,
-    }
-
-
-def word_from_dict(raw: dict) -> Word:
-    """Build a Word, tolerating missing optional keys and debug-only extras
-    (e.g. the ``changed`` flag in transcript_correct dumps)."""
-    return Word(
-        text=raw["text"],
-        start=raw["start"],
-        end=raw["end"],
-        confidence=raw.get("confidence", 1.0),
-        speaker=raw.get("speaker"),
-    )
-
-
 # ── Cue (de)serialization ───────────────────────────────────────────────────
 
 
@@ -358,11 +321,7 @@ def words_from_unit_chain(unit_ids: list[str], seg_words_map: dict[str, list[dic
     return words
 
 
-# ── transcript.json / segment.json readers (resume side) ────────────────────
-
-
-def read_transcript_words(path: str | Path) -> list[Word]:
-    return [word_from_dict(w) for w in read_json(path).get("words", [])]
+# ── segment.json reader (resume side) ───────────────────────────────────────
 
 
 def read_segment_units(path: str | Path, words: list[Word]) -> list[Segment]:

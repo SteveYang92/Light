@@ -8,10 +8,8 @@ classes live here.  Import from ``language.english``::
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from light_models import SubtitleCue
-from light_models.punctuation import CLAUSE_PUNCT, EN_TRAILING_PUNCT, SENTENCE_ENDS
+from light_text.punctuation import CLAUSE_PUNCT, EN_TRAILING_PUNCT, SENTENCE_ENDS
 
 from .base import (
     BREAK_CLAUSE,
@@ -22,11 +20,6 @@ from .base import (
     BreakFinder,
     is_sentence_end,
 )
-from .word_index import UnitWordIndex, chunk_times
-
-if TYPE_CHECKING:
-    from light_subtitle.config import SubtitleConfig
-
 from .english_words import (
     ADJECTIVE_SUFFIXES,
     ARTICLES,
@@ -39,6 +32,7 @@ from .english_words import (
     PREPOSITIONS,
     SUBJECT_PRONOUNS,
 )
+from .word_index import UnitWordIndex, chunk_times
 
 # ═══════════════════════════════════════════════════════════════════
 # Netflix §4 helpers
@@ -387,15 +381,20 @@ def _build_english_cues(
     return cues
 
 
-def split_english(cue: SubtitleCue, text: str, config: SubtitleConfig) -> list[SubtitleCue]:
+def split_english(
+    cue: SubtitleCue,
+    text: str,
+    *,
+    max_chars_per_line: int = 42,
+    max_lines: int = 2,
+) -> list[SubtitleCue]:
     """Split English text into display-ready cues.
 
     Grammar-aware greedy fill, merge short adjacent lines, then build
-    one or more cues.  When line count exceeds config.max_lines, lines
+    one or more cues.  When line count exceeds *max_lines*, lines
     are chunked into multiple cues with word-aligned timing.
     """
-    max_chars = config.max_chars_per_line_en
-    max_lines = config.max_lines
+    max_chars = max_chars_per_line
     lines: list[str] = []
 
     if "\n" in text:

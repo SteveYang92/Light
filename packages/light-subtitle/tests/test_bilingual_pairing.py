@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 import pytest
 from light_models import Segment, SubtitleCue, Word
-from light_subtitle.pipeline.export import export_bilingual_ass, export_bilingual_vtt
+from light_subtitle.export import export_bilingual_ass, export_bilingual_vtt
 from light_subtitle.style.config import SubtitleStyleConfig
 from light_subtitle.style.fonts import bilingual_ass_en_font_tag
 
@@ -117,7 +117,7 @@ def _vtt_to_seconds(timestamp: str) -> float:
 
 def _vtt_expected_from_ass(ass_text: str) -> str:
     """Map ASS Dialogue text to expected ``bilingual.vtt`` body."""
-    from light_subtitle.pipeline.export import BILINGUAL_VTT_MARKER
+    from light_subtitle.export import BILINGUAL_VTT_MARKER
 
     t = ass_text.replace(bilingual_ass_en_font_tag(), "")
     if "\\N" not in t:
@@ -493,12 +493,10 @@ def test_combined_zh_merge_and_en_fanout(tmp_path: Path) -> None:
 
 def test_layout_conjunction_merge_pairs_full_en_segment(tmp_path: Path) -> None:
     """Regression: ZH conjunction forward-merge must chain merged_from for export."""
-    from light_subtitle.config import SubtitleConfig
-    from light_subtitle.pipeline.subtitle.layout import prepare
+    from light_subtitle.config import LayoutConfig
+    from light_subtitle.subtitle.layout import prepare
 
-    config = SubtitleConfig(
-        input_path="test.mp4",
-        output_dir="./output",
+    config = LayoutConfig(
         max_lines=2,
         max_lines_zh=1,
         max_chars_per_line_zh=40,
@@ -636,7 +634,7 @@ def test_single_style_and_font(tmp_path: Path) -> None:
     en = [SubtitleCue(cue_id="en_0", unit_id="u0", start=1.0, end=2.0, text="hi", lang="en")]
     zh = [SubtitleCue(cue_id="zh_0", unit_id="u0", start=1.0, end=2.0, text="嗨", lang="zh")]
     out = tmp_path / "bilingual.ass"
-    with patch("light_subtitle.pipeline.export.formats.resolve_font", return_value="CustomFont"):
+    with patch("light_subtitle.export.formats.resolve_font", return_value="CustomFont"):
         # box_enabled=False: this asserts the legacy plain style layout.
         export_bilingual_ass(en, zh, str(out), font="CustomFont", style=SubtitleStyleConfig(box_enabled=False))
     text = out.read_text(encoding="utf-8")

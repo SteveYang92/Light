@@ -2,7 +2,9 @@ import json
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
-from light_models import QCReport, SubtitleCue
+from light_models import SubtitleCue
+
+from .models import QCReport
 
 _TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 _HTML_ENV = Environment(

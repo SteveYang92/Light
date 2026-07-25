@@ -1,7 +1,7 @@
-"""Pipeline service — delegates video processing to light-subtitle's shared runner.
+"""Pipeline service — delegates video processing to light-cli's shared runner.
 
 The backend is a thin layer: it receives a URL from the frontend, passes it
-to ``light_subtitle.runner.process_video()`` (which handles download, split,
+to ``light_cli.runner.process_video()`` (which handles download, split,
 ASR, translation, and merge), then scans the output to populate the database
 and generate a thumbnail.
 """
@@ -17,9 +17,9 @@ import threading
 import time
 from pathlib import Path
 
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.reporting import ProgressEvent, RunEvent
-from light_subtitle.runner import process_video
+from light_cli.config import SubtitleConfig
+from light_cli.reporting import ProgressEvent, RunEvent
+from light_cli.runner import process_video
 
 from ..database import insert_chunk, insert_run, update_run, update_video
 
@@ -158,7 +158,7 @@ def _run_pipeline_body(
     output_dir = os.path.join(data_dir, "videos", video_id)
     os.makedirs(output_dir, exist_ok=True)
 
-    # ── 1. Build SubtitleConfig for light-subtitle runner ──
+    # ── 1. Build SubtitleConfig for light-cli runner ──
     sub_config = SubtitleConfig(
         input_path=config.input_path,  # URL
         output_dir=output_dir,
@@ -203,7 +203,7 @@ def _run_pipeline_body(
     # ── 3. Progress callback → SSE events ──
     reporter = _SseReporter(video_id)
 
-    # ── 4. Delegate to light-subtitle runner ──
+    # ── 4. Delegate to light-cli runner ──
     result = process_video(sub_config, progress_callback=reporter)
 
     if not result.success:

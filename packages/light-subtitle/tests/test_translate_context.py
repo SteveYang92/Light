@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from light_models import Segment, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate.translate import (
+from light_subtitle.config import TranslateConfig
+from light_subtitle.translate.translate import (
     _build_payload,
     _render_translate_prompt,
     _translation_context_fields,
@@ -25,8 +25,7 @@ def _segment(unit_id: str, text: str) -> Segment:
 
 class TestTranslationContextInjection:
     def test_payload_omits_glossary_and_summary(self):
-        config = SubtitleConfig(
-            input_path="test.wav",
+        config = TranslateConfig(
             target_lang="zh",
             glossary={"RL": "强化学习"},
             content_summary={"overview": "AI research talk", "key_topics": ["scaling"]},
@@ -39,13 +38,12 @@ class TestTranslationContextInjection:
         assert "units" in payload
 
     def test_context_fields_only_target_lang(self):
-        config = SubtitleConfig(input_path="test.wav", target_lang="zh")
+        config = TranslateConfig(target_lang="zh")
         fields = _translation_context_fields(config)
         assert fields == {"target_lang": "zh"}
 
     def test_prompt_includes_glossary_and_summary(self):
-        config = SubtitleConfig(
-            input_path="test.wav",
+        config = TranslateConfig(
             target_lang="zh",
             glossary={"scaling": "缩放"},
             content_summary={"overview": "Talk about AI scaling"},

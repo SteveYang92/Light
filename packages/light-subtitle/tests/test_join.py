@@ -1,4 +1,4 @@
-"""Tests for the join pass (translate/join.py)."""
+"""Tests for the join pass (light_subtitle.translate.join)."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import json
 from unittest.mock import patch
 
 from light_models import Segment, SubtitleCue, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate.join import (
+from light_subtitle.config import TranslateConfig
+from light_subtitle.translate.join import (
     _apply_merge,
     _apply_shift,
     _find_candidates,
@@ -48,9 +48,8 @@ def _unit(uid: str, words: list[Word]) -> Segment:
     )
 
 
-def _config(max_duration: float = 5.0, **kwargs) -> SubtitleConfig:
-    kwargs.setdefault("llm_api_key", "k")
-    return SubtitleConfig(input_path="d.mp4", target_lang="zh", max_duration=max_duration, cps_limit=9, **kwargs)
+def _config(max_duration: float = 5.0, **kwargs) -> TranslateConfig:
+    return TranslateConfig(target_lang="zh", max_duration=max_duration, cps_limit=9, **kwargs)
 
 
 def _p0002_pair() -> tuple[list[SubtitleCue], list[Segment]]:
@@ -150,7 +149,7 @@ def test_validate_ops_rejects_overlap() -> None:
 def _mock_retranslate(texts_by_id: dict[str, str]):
     """Patch translate_missing used by _retranslate_pair."""
 
-    def fake(segments, missing_ids, config):
+    def fake(segments, missing_ids, config, **_kwargs):
         cues = [
             SubtitleCue(
                 cue_id=f"r_{s.unit_id}",
@@ -170,7 +169,7 @@ def _mock_retranslate(texts_by_id: dict[str, str]):
 
 def _patch_retranslate(prev_text="所以你自然会想", next_text="文本压缩有没有一个"):
     return patch(
-        "light_subtitle.pipeline.translate.translate.translate_missing",
+        "light_subtitle.translate.translate.translate_missing",
         side_effect=_mock_retranslate({"p0002_0": prev_text, "p0002_1b": next_text}),
     )
 
@@ -209,23 +208,58 @@ def test_apply_shift_forward_splits_donor_unit() -> None:
 
 
 def test_apply_shift_backward_splits_prev_unit() -> None:
-    cues, units = _p0002_pair()
+    # Success path for a backward shift. The word left at prev's new tail must
+    # not be a dangling-tail function word — the original fixture ended prev on
+    # "might", which the revert guard (and _validate_shift) now rejects by
+    # design — so this fixture ends prev's kept part on "say" instead.
+    w1 = [
+        _w("so", 0.0, 0.3),
+        _w("you", 0.3, 0.5),
+        _w("might", 0.5, 0.8),
+        _w("say", 0.8, 1.1),
+        _w("naturally", 1.1, 1.4),
+    ]
+    w2 = [
+        _w("wonder,", 1.4, 1.9),
+        _w("is", 1.9, 2.1),
+        _w("there", 2.1, 2.4),
+        _w("some", 2.4, 2.7),
+        _w("limit", 2.7, 3.2),
+    ]
+    cues = [_cue("p0002_0", "所以你可能会说", w1), _cue("p0002_1", "想 文本压缩有没有一个", w2)]
+    units = [_unit("p0002_0", w1), _unit("p0002_1", w2)]
     # move prev's last word ("naturally") to next
     op = {"type": "shift", "boundary": 0, "en_words": -1}
     with patch(
-        "light_subtitle.pipeline.translate.translate.translate_missing",
-        side_effect=_mock_retranslate({"p0002_0a": "所以你", "p0002_0b": "自然会想 文本压缩有没有一个"}),
+        "light_subtitle.translate.translate.translate_missing",
+        side_effect=_mock_retranslate({"p0002_0a": "所以你可能会说", "p0002_0b": "自然会想 文本压缩有没有一个"}),
     ):
         cues, units = _apply_shift(cues, units, op, _config())
 
     prev, nxt = cues
-    assert [w.text for w in prev.words] == ["so", "you", "might"]
+    assert [w.text for w in prev.words] == ["so", "you", "might", "say"]
     assert [w.text for w in nxt.words][:1] == ["naturally"]
-    assert prev.end == 0.8 and nxt.start == 0.8
+    assert prev.end == 1.1 and nxt.start == 1.1
     unit_ids = [u.unit_id for u in units]
     assert unit_ids == ["p0002_0a", "p0002_0b", "p0002_1"]
     assert prev.unit_id == "p0002_0a"
     assert nxt.unit_id == "p0002_0b" and nxt.merged_from == ["p0002_1"]
+
+
+def test_apply_shift_backward_reverts_on_dangling_tail() -> None:
+    # Moving "naturally" to next would leave prev ending on "might" — a
+    # dangling-tail function word — so the shift is intentionally reverted
+    # and the original cues/units are restored (same contract as _validate_shift).
+    cues, units = _p0002_pair()
+    op = {"type": "shift", "boundary": 0, "en_words": -1}
+    out_cues, out_units = _apply_shift(cues, units, op, _config())
+
+    prev, nxt = out_cues
+    assert [w.text for w in prev.words] == ["so", "you", "might", "naturally"]
+    assert [w.text for w in nxt.words][:1] == ["wonder,"]
+    assert prev.text == "所以你自然会" and nxt.text == "想 文本压缩有没有一个"
+    assert [u.unit_id for u in out_units] == ["p0002_0", "p0002_1"]
+    assert prev.unit_id == "p0002_0" and nxt.unit_id == "p0002_1"
 
 
 def test_apply_shift_whole_unit_moves_without_split() -> None:
@@ -238,8 +272,8 @@ def test_apply_shift_whole_unit_moves_without_split() -> None:
     units = [_unit("p1", w1), _unit("p2", w2), _unit("p3", w3)]
     op = {"type": "shift", "boundary": 0, "en_words": 1}
     with patch(
-        "light_subtitle.pipeline.translate.translate.translate_missing",
-        side_effect=lambda segments, missing_ids, config: (
+        "light_subtitle.translate.translate.translate_missing",
+        side_effect=lambda segments, missing_ids, config, **_kwargs: (
             [
                 SubtitleCue(cue_id="r_p1", unit_id="p1", start=0.0, end=0.6, text="真的它", lang="zh"),
                 SubtitleCue(cue_id="r_p3", unit_id="p3", start=0.6, end=1.0, text="有效", lang="zh"),
@@ -270,11 +304,8 @@ def test_join_cues_applies_llm_ops() -> None:
     cues, units = _p0002_pair()
     response = json.dumps({"ops": [{"type": "shift", "boundary": 0, "en_words": 1}]})
     client = _FakeClient([response])
-    with (
-        patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client),
-        _patch_retranslate(),
-    ):
-        result = join_cues(cues, units, _config())
+    with _patch_retranslate():
+        result = join_cues(cues, units, _config(), llm=client)
     assert result.ops_applied == 1
     assert result.cues[0].text == "所以你自然会想"
     assert result.usage is not None
@@ -285,15 +316,14 @@ def test_join_cues_drops_invalid_ops_and_retries() -> None:
     bad = json.dumps({"ops": [{"type": "shift", "boundary": 0, "en_words": 99}]})  # donor emptied → invalid
     good = json.dumps({"ops": [{"type": "merge", "from": 0, "to": 1}]})
     client = _FakeClient([bad, good])
-    with patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client):
-        result = join_cues(cues, units, _config())
+    result = join_cues(cues, units, _config(), llm=client)
     assert "previous_error" in client.calls[1][1]["content"]
     assert result.cues[0].text == "所以你自然会想 文本压缩有没有一个"
 
 
-def test_join_cues_noop_without_api_key() -> None:
+def test_join_cues_noop_without_llm() -> None:
     cues, units = _p0002_pair()
-    result = join_cues(cues, units, _config(llm_api_key=""))
+    result = join_cues(cues, units, _config())
     assert result.ops_applied == 0 and result.usage is None
 
 
@@ -316,8 +346,7 @@ def test_find_candidates_flags_dangling_and_flash() -> None:
 def test_candidates_included_in_payload_for_core_range() -> None:
     cues, units = _p0002_pair()  # cue 0 ends with "会" → candidate
     client = _FakeClient(['{"ops": []}'])
-    with patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client):
-        join_cues(cues, units, _config())
+    join_cues(cues, units, _config(), llm=client)
     payload = json.loads(client.calls[0][1]["content"])
     assert payload["candidates"] and payload["candidates"][0]["boundary"] == 0
 
@@ -330,8 +359,7 @@ def test_join_cues_merges_applied_descending_keeps_indices_stable() -> None:
     units = [_unit(f"p{i}", words[i]) for i in range(6)]
     response = json.dumps({"ops": [{"type": "merge", "from": 0, "to": 1}, {"type": "merge", "from": 3, "to": 4}]})
     client = _FakeClient([response])
-    with patch("light_subtitle.pipeline.translate.join.client_from_config", return_value=client):
-        result = join_cues(cues, units, _config())
+    result = join_cues(cues, units, _config(), llm=client)
     texts = [c.text for c in result.cues]
     assert texts == ["第0条第1条", "第2条", "第3条第4条", "第5条"]
     assert result.cues[0].merged_from == ["p1"]

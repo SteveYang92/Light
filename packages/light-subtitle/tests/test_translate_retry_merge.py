@@ -5,12 +5,12 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from light_models import Segment, SubtitleCue, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate.retry import retry_missing
+from light_subtitle.config import TranslateConfig
+from light_subtitle.translate.retry import retry_missing
 
 
-def _config() -> SubtitleConfig:
-    return SubtitleConfig(input_path="dummy.mp4", target_lang="zh", llm_api_key="test")
+def _config() -> TranslateConfig:
+    return TranslateConfig(target_lang="zh")
 
 
 def _seg(unit_id: str) -> Segment:
@@ -40,7 +40,7 @@ class TestRetryMissingWithMerge:
             SubtitleCue(cue_id="zh_0001", unit_id="u2", start=3.0, end=4.0, text="solo", lang="zh"),
         ]
 
-        with patch("light_subtitle.pipeline.translate.retry.translate_missing") as mock_retry:
+        with patch("light_subtitle.translate.retry.translate_missing") as mock_retry:
             result, _ = retry_missing(cues, segments, _config(), None)
             mock_retry.assert_not_called()
 

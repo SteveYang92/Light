@@ -89,10 +89,10 @@ class Qwen3MlxEngine(TtsEngine):
             raise RuntimeError(
                 "mlx-audio is not installed in the active Python environment.\n"
                 "  MLX TTS uses a separate venv (not `uv run` from the Light workspace):\n"
-                "    ./scripts/setup_mlx_venv.sh\n"
+                "    ./scripts/setup/setup_mlx_venv.sh\n"
                 "    source .venv-mlx/bin/activate\n"
-                "    python scripts/tts_dub.py output/<run> --lang zh --skip-mix\n"
-                "  Or mock without mlx: uv run python scripts/tts_dub.py ... --engine mock\n"
+                "    python scripts/tts/tts_dub.py output/<run> --lang zh --skip-mix\n"
+                "  Or mock without mlx: uv run python scripts/tts/tts_dub.py ... --engine mock\n"
                 "  Or HTTP engine: --engine http with mlx_audio.server running."
             ) from exc
         logger.info("Loading Qwen3-TTS model: %s", model)

@@ -1,0 +1,13 @@
+[project]
+name = "light-core"
+version = "0.1.0"
+description = "Shared runtime primitives — pipeline logging and progress callbacks"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.15",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

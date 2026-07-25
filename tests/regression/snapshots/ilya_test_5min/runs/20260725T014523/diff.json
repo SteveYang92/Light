@@ -1,0 +1,371 @@
+{
+  "baseline_run_id": "20260619T144455",
+  "current_run_id": "20260725T014523",
+  "errors_delta": -11,
+  "warnings_delta": -5,
+  "suggestions_delta": 4,
+  "rule_changes": [
+    {
+      "rule": "TranscriptionCoverage",
+      "before": 7,
+      "after": 6,
+      "delta": -1
+    },
+    {
+      "rule": "ExitPointPrecision",
+      "before": 23,
+      "after": 24,
+      "delta": 1
+    },
+    {
+      "rule": "WordGapAnomaly",
+      "before": 60,
+      "after": 67,
+      "delta": 7
+    },
+    {
+      "rule": "EntryPointAccuracy",
+      "before": 5,
+      "after": 3,
+      "delta": -2
+    },
+    {
+      "rule": "ConsecutiveFragments",
+      "before": 2,
+      "after": 3,
+      "delta": 1
+    },
+    {
+      "rule": "OverlappingContent",
+      "before": 1,
+      "after": 2,
+      "delta": 1
+    },
+    {
+      "rule": "OrphanWords",
+      "before": 7,
+      "after": 1,
+      "delta": -6
+    },
+    {
+      "rule": "SemanticBreaks",
+      "before": 1,
+      "after": 0,
+      "delta": -1
+    },
+    {
+      "rule": "EntryPointConfidence",
+      "before": 7,
+      "after": 6,
+      "delta": -1
+    },
+    {
+      "rule": "MinDuration",
+      "before": 9,
+      "after": 0,
+      "delta": -9
+    },
+    {
+      "rule": "ReadingSpeed",
+      "before": 4,
+      "after": 2,
+      "delta": -2
+    }
+  ],
+  "new_issues": [
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "ConsecutiveFragments",
+      "cue_id": 12,
+      "time": "00:00:29,898",
+      "detail": "连续 10 条 cue 无句末标点，可能 segment 过度切分",
+      "fix": "考虑合并部分片段或检查 segment 的 gap 阈值"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OverlappingContent",
+      "cue_id": 4,
+      "time": "00:00:06,140",
+      "detail": "与上一条字幕词汇重叠 33%",
+      "fix": "检查是否为 segment 过度切分导致的内容重复"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "ExitPointPrecision",
+      "cue_id": 4,
+      "time": "00:00:06,140",
+      "detail": "出点紧贴语音结束，阅读 padding 仅 0.060s（不足 0.12s）",
+      "fix": "将结束时间延后 0.2-0.5s"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 2,
+      "time": "00:00:02,659",
+      "detail": "词 ' is' 与 ' real.' 之间间隔 0.440s，远超中位数 0.080s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 4,
+      "time": "00:00:06,621",
+      "detail": "词 ' what?' 与 ' Like' 之间间隔 0.340s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 5,
+      "time": "00:00:10,402",
+      "detail": "词 ' Like,' 与 ' Isn't' 之间间隔 1.081s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 5,
+      "time": "00:00:11,803",
+      "detail": "词 ' it' 与 ' straight' 之间间隔 0.520s，远超中位数 0.040s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 7,
+      "time": "00:00:14,024",
+      "detail": "词 ' Yeah.' 与 ' Another' 之间间隔 0.840s，远超中位数 0.030s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 7,
+      "time": "00:00:16,645",
+      "detail": "词 ' normal' 与 ' the' 之间间隔 0.320s，远超中位数 0.030s",
+      "fix": "检查此处是否为断句点或漏词"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "WordGapAnomaly",
+      "cue_id": 8,
+      "time": "00:00:20,586",
+      "detail": "词 ' 1%' 与 ' of' 之间间隔 0.461s，远超中位数 0.020s",
+      "fix": "检查此处是否为断句点或漏词"
+    }
+  ],
+  "fixed_issues": [
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 57,
+      "time": "00:02:39,451",
+      "detail": "阅读速度 31.4 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "ReadingSpeed",
+      "cue_id": 58,
+      "time": "00:02:40,956",
+      "detail": "阅读速度 26.4 字符/秒，超过上限",
+      "fix": "压缩文本或将字幕拆分为多条"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 5,
+      "time": "00:00:06,140",
+      "detail": "字幕时长 0.76s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 28,
+      "time": "00:01:12,171",
+      "detail": "字幕时长 0.54s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 30,
+      "time": "00:01:15,020",
+      "detail": "字幕时长 0.77s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 41,
+      "time": "00:01:56,275",
+      "detail": "字幕时长 0.77s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 50,
+      "time": "00:02:29,524",
+      "detail": "字幕时长 0.78s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 52,
+      "time": "00:02:32,668",
+      "detail": "字幕时长 0.59s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 58,
+      "time": "00:02:40,956",
+      "detail": "字幕时长 0.57s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 61,
+      "time": "00:02:45,877",
+      "detail": "字幕时长 0.55s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "error",
+      "category": "硬性规则",
+      "rule": "MinDuration",
+      "cue_id": 63,
+      "time": "00:02:48,156",
+      "detail": "字幕时长 0.65s，低于最小 0.8s",
+      "fix": "适当延长出点时间"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 47,
+      "time": "00:02:19,515",
+      "detail": "入点偏离首个词语 1.053s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:02:20,568"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointAccuracy",
+      "cue_id": 61,
+      "time": "00:02:45,877",
+      "detail": "入点偏离首个词语 0.318s，超过 0.30s 警告阈值",
+      "fix": "将入点对齐至 00:02:46,195"
+    },
+    {
+      "severity": "warning",
+      "category": "硬性规则",
+      "rule": "EntryPointConfidence",
+      "cue_id": 1,
+      "time": "00:00:00,278",
+      "detail": "入点首个词 ' You' 置信度 0.31，后续词峰值 0.90（差 0.59）",
+      "fix": "对齐可能偏早，建议根据音频确认入点"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 8,
+      "time": "00:00:13,824",
+      "detail": "尾cue仅5个字符 'Yeah.'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 18,
+      "time": "00:00:41,623",
+      "detail": "尾cue仅5个字符 'right'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 30,
+      "time": "00:01:15,020",
+      "detail": "尾cue仅5个字符 'Yeah.'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 50,
+      "time": "00:02:29,524",
+      "detail": "尾cue仅5个字符 'Yeah.'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 55,
+      "time": "00:02:35,648",
+      "detail": "尾cue仅5个字符 'Yeah.'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "warning",
+      "category": "柔性策略",
+      "rule": "OrphanWords",
+      "cue_id": 61,
+      "time": "00:02:45,877",
+      "detail": "尾cue仅5个字符 'Yeah.'，可能为上一条字幕的句子后半部分",
+      "fix": "考虑合并到上一条字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "硬性规则",
+      "rule": "TranscriptionCoverage",
+      "cue_id": null,
+      "time": "00:03:06,978",
+      "detail": "转录词 ' and' 未被任何字幕覆盖",
+      "fix": "检查该时间点是否存在漏字幕"
+    },
+    {
+      "severity": "suggestion",
+      "category": "柔性策略",
+      "rule": "SemanticBreaks",
+      "cue_id": 60,
+      "time": "00:02:44,383",
+      "detail": "首行过短(Yeah.)，语义切分可能不自然",
+      "fix": "调整断行位置到语义分界处"
+    }
+  ],
+  "degraded": false,
+  "reasons": [
+    "10 new issues introduced"
+  ]
+}

@@ -13,7 +13,8 @@ from __future__ import annotations
 import json
 from bisect import bisect_left, bisect_right
 
-from light_models import SubtitleCue, Word, seconds_to_srt
+from light_models import SubtitleCue, Word
+from light_text import seconds_to_srt
 
 # ═══════════════════════════════════════════════════════════════════
 # Transcript loading
@@ -169,7 +170,7 @@ def build_coverage_issues(
 
     Returns an empty list when coverage meets *coverage_min*.
     """
-    from light_models import QCIssue
+    from .models import QCIssue
 
     if not uncovered:
         return []

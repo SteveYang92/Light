@@ -1,19 +1,19 @@
-"""Tests for the cue planner (pipeline/plan).
+"""Tests for the cue planner (light_subtitle.plan).
 
-LLM calls are mocked: planner tests patch OpenAIClient.chat, and plan.run
-tests patch planner.plan_groups / split_span directly.
+LLM calls are mocked: planner tests receive a fake client via the ``llm``
+parameter, and plan.run tests patch planner.plan_groups / split_span directly.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from light_models import Segment, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline import plan as plan_module
-from light_subtitle.pipeline.plan import fallback, planner
+from light_subtitle import plan as plan_module
+from light_subtitle.config import PlanConfig
+from light_subtitle.plan import fallback, planner
 
 
 def _word(text: str, start: float, end: float) -> Word:
@@ -31,9 +31,8 @@ def _seg(unit_id: str, text: str, words: list[Word], speaker: str = "") -> Segme
     )
 
 
-def _config(max_duration: float = 7.0, **kwargs) -> SubtitleConfig:
-    kwargs.setdefault("llm_api_key", "")
-    return SubtitleConfig(input_path="dummy.mp4", target_lang="zh", max_duration=max_duration, **kwargs)
+def _config(max_duration: float = 7.0, **kwargs) -> PlanConfig:
+    return PlanConfig(max_duration=max_duration, **kwargs)
 
 
 def _fragments() -> list[Segment]:
@@ -182,8 +181,7 @@ class _FakeClient:
 def test_plan_groups_retries_with_feedback_then_succeeds() -> None:
     segs = _fragments()
     client = _FakeClient(['{"cues": [[0], [2]]}', '{"cues": [[0, 1], [2]]}'])
-    with patch("light_subtitle.pipeline.plan.planner.client_from_config", return_value=client):
-        groups, usage = planner.plan_groups(segs, _config(llm_api_key="k"))
+    groups, usage = planner.plan_groups(segs, _config(), client)
     assert groups == [[0, 1], [2]]
     assert usage is not None
     # second call carries validation feedback
@@ -193,12 +191,11 @@ def test_plan_groups_retries_with_feedback_then_succeeds() -> None:
 def test_plan_groups_returns_none_after_two_invalid_attempts() -> None:
     segs = _fragments()
     client = _FakeClient(['{"cues": [[0]]}', '{"cues": [[0]]}'])
-    with patch("light_subtitle.pipeline.plan.planner.client_from_config", return_value=client):
-        groups, _ = planner.plan_groups(segs, _config(llm_api_key="k"))
+    groups, _ = planner.plan_groups(segs, _config(), client)
     assert groups is None
 
 
-def test_plan_groups_none_without_api_key() -> None:
+def test_plan_groups_none_without_llm() -> None:
     groups, usage = planner.plan_groups(_fragments(), _config())
     assert groups is None and usage is None
 
@@ -208,7 +205,7 @@ def test_plan_groups_none_without_api_key() -> None:
 
 def test_run_materializes_units_and_writes_plan_json(tmp_path: Path) -> None:
     segs = _fragments()
-    with patch("light_subtitle.pipeline.plan.planner.plan_groups", return_value=([[0, 1], [2]], None)):
+    with patch("light_subtitle.plan.planner.plan_groups", return_value=([[0, 1], [2]], None)):
         units, _ = plan_module.run(segs, _config(), tmp_path)
 
     assert [u.unit_id for u in units] == ["p0000", "p0001"]
@@ -226,7 +223,7 @@ def test_run_materializes_units_and_writes_plan_json(tmp_path: Path) -> None:
 
 
 def test_run_falls_back_when_llm_unavailable(tmp_path: Path) -> None:
-    # No API key → planner returns None → deterministic merge fallback.
+    # No LLM client → planner returns None → deterministic merge fallback.
     units, usage = plan_module.run(_fragments(), _config(), tmp_path)
     assert usage is None
     assert [u.unit_id for u in units] == ["p0000", "p0001"]
@@ -237,10 +234,10 @@ def test_run_splits_overlong_group_at_word_level(tmp_path: Path) -> None:
     words = [_word(f"w{i}", float(i), float(i) + 0.9) for i in range(10)]  # ~9.9s span
     segs = [_seg("u0001", "one two", words[:5]), _seg("u0002", "three four", words[5:])]
     with (
-        patch("light_subtitle.pipeline.plan.planner.plan_groups", return_value=([[0, 1]], None)),
-        patch("light_subtitle.pipeline.plan.planner.split_span", return_value=([(0, 5), (5, 10)], None)),
+        patch("light_subtitle.plan.planner.plan_groups", return_value=([[0, 1]], None)),
+        patch("light_subtitle.plan.planner.split_span", return_value=([(0, 5), (5, 10)], None)),
     ):
-        units, _ = plan_module.run(segs, _config(llm_api_key="fake"), tmp_path)
+        units, _ = plan_module.run(segs, _config(), tmp_path, llm=MagicMock())
 
     assert [u.unit_id for u in units] == ["p0000_0", "p0000_1"]
     assert units[0].start == 0.0 and units[0].end == 4.9
@@ -252,10 +249,10 @@ def test_run_overlong_falls_back_to_gap_split(tmp_path: Path) -> None:
     words = [_word(f"w{i}", float(i), float(i) + 0.9) for i in range(10)]
     segs = [_seg("u0001", "one two", words[:5]), _seg("u0002", "three four", words[5:])]
     with (
-        patch("light_subtitle.pipeline.plan.planner.plan_groups", return_value=([[0, 1]], None)),
-        patch("light_subtitle.pipeline.plan.planner.split_span", return_value=(None, None)),
+        patch("light_subtitle.plan.planner.plan_groups", return_value=([[0, 1]], None)),
+        patch("light_subtitle.plan.planner.split_span", return_value=(None, None)),
     ):
-        units, _ = plan_module.run(segs, _config(max_duration=3.0, llm_api_key="fake"), tmp_path)
+        units, _ = plan_module.run(segs, _config(max_duration=3.0), tmp_path, llm=MagicMock())
     assert len(units) >= 3  # 9.9s split into ≤3s parts at silence gaps
 
 

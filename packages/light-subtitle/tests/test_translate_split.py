@@ -6,14 +6,14 @@ import json
 
 import pytest
 from light_models import Segment, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline.translate.chunking import _adjust_chunk_end, _chunk_pending_segments
-from light_subtitle.pipeline.translate.protocol import _is_last_split_part, _parse_split_part, _split_group_part_counts
-from light_subtitle.pipeline.translate.translate import (
+from light_subtitle.config import TranslateConfig
+from light_subtitle.translate.chunking import _adjust_chunk_end, _chunk_pending_segments
+from light_subtitle.translate.protocol import _is_last_split_part, _parse_split_part, _split_group_part_counts
+from light_subtitle.translate.translate import (
     _build_payload,
     _parse_response,
 )
-from light_subtitle.pipeline.translate.translate import (
+from light_subtitle.translate.translate import (
     normalize_punctuation as _normalize_punctuation,
 )
 
@@ -35,8 +35,8 @@ def _seg(unit_id: str, text: str, *, start: float = 0.0, end: float = 5.0) -> Se
     )
 
 
-def _config() -> SubtitleConfig:
-    return SubtitleConfig(input_path="dummy.mp4", target_lang="zh")
+def _config() -> TranslateConfig:
+    return TranslateConfig(target_lang="zh")
 
 
 # ── Split part parsing ───────────────────────────────────────────

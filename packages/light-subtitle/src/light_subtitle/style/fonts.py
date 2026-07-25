@@ -8,7 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .. import logger
+from light_core import logger
 
 # CJK-first chain; Latin fallback at the end.
 DEFAULT_FALLBACKS: tuple[str, ...] = (

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from light_subtitle.config import SubtitleConfig
+from light_cli.config import SubtitleConfig
 
 from ..database import delete_chunks, get_video, list_chunks, list_videos, update_video
 from ..media import media_kind

@@ -1,7 +1,9 @@
-from light_models import QCIssue, SubtitleCue, seconds_to_srt
-from light_models.punctuation import CJK_SENTENCE_ENDS
+from light_models import SubtitleCue
+from light_text import seconds_to_srt
+from light_text.punctuation import CJK_SENTENCE_ENDS
 
 from ...config import QCConfig
+from ...models import QCIssue
 from ..base import HardRule, _iter_cues
 
 

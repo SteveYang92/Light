@@ -1,3 +1,11 @@
+"""Prompt rendering for the LLM QC pass.
+
+The bundled ``qc.j2`` template lives under ``light_qc/prompts/`` and is
+loaded via :mod:`importlib.resources`, keeping the package self-contained
+(same pattern as ``light_asr_polish.prompts`` / ``light_subtitle.prompts``).
+"""
+
+from importlib.resources import files
 from pathlib import Path
 
 from jinja2 import BaseLoader, Environment, FileSystemLoader
@@ -16,9 +24,7 @@ def render(template_path: str, **kwargs) -> str:
 
 
 def render_prompt(name: str, **kwargs) -> str:
-    project_root = Path(__file__).parent.parent.parent.parent.parent.parent
-    prompt_dir = project_root / "prompts"
-    path = prompt_dir / name
-    if path.exists():
-        return render(str(path), **kwargs)
-    return ""
+    """Render a bundled ``.j2`` template from ``light_qc/prompts/``."""
+    template = (files("light_qc") / "prompts" / name).read_text(encoding="utf-8")
+    env = Environment(loader=BaseLoader())
+    return env.from_string(template).render(**kwargs)

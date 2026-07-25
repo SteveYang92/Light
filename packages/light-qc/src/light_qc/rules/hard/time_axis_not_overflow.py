@@ -1,6 +1,8 @@
-from light_models import QCIssue, SubtitleCue, covered_time_window, seconds_to_srt
+from light_models import SubtitleCue, covered_time_window
+from light_text import seconds_to_srt
 
 from ...config import QCConfig
+from ...models import QCIssue
 from ..base import HardRule
 
 

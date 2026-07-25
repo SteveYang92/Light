@@ -54,16 +54,19 @@ uv sync
 ```
 packages/
 ├── light-models/        共享数据契约（Word, Segment, SubtitleCue, is_cjk…）
-├── light-subtitle/      ASR → 翻译 → 字幕流水线
+├── light-text/          文本工具（标点常量、时间码格式化、is_cjk）
+├── light-core/          运行时原语（logger 模块、ProgressCallback）
+├── light-llm/           LLM 横切层（client/retry/json_extract/parallel/prompts/usage）
+├── light-asr/           独立 ASR 能力包（extract_audio/whisperX/whisper.cpp/align/diarize/checkpoints）
+├── light-asr-polish/    独立 ASR 后处理包（LLM 转录纠正 + 标点还原，prompts 包内）
+├── light-subtitle/      字幕能力包（config/artifacts/language/style/segment/export/plan/translate/subtitle/context_prep/annotate/prompts）
+├── light-cli/           ASR → 翻译 → 字幕流水线（`light` 多命令 + `light-subtitle` 入口）
+│   ├── commands/        `light asr/polish/subtitle` 独立能力命令（薄封装能力包）
 │   ├── steps/           17 个 step 的 run 实现 + 进度回调（按阶段分模块）
-│   ├── pipeline/        各阶段实现（asr/ plan/ translate/ subtitle/ export/）
 │   ├── merge/           分段输出合并（merge_outputs.py 为薄 re-export 壳）
 │   ├── artifacts.py     artifact 路径常量与序列化
-│   ├── llm/             LLM 横切层（client/retry/json_extract/parallel/prompts）
 │   ├── step_registry.py 声明式步骤注册表（StepId + StepDefinition 装配）
-│   ├── step_plan.py     运行时 plan 构建与 resume 解析
-│   ├── language/        语言处理（英语/CJK 断句、标点、显示约定）
-│   └── style/           字幕样式（字体解析、圆角盒主题配置、盒几何/ASS 生成）
+│   └── step_plan.py     运行时 plan 构建与 resume 解析
 ├── light-tts/           字幕配音（IndexTTS2 官方 / Metal 加速 / Qwen3-TTS）
 ├── light-qc/            独立 QC 引擎（规则 + LLM）
 ├── light-regression/    回归测试工具
@@ -74,15 +77,48 @@ packages/
 | 包 | 职责 | 依赖 |
 |---|---|---|
 | `light-models` | dataclass / 时间码 / CJK 检测 | 无 |
-| `light-subtitle` | 音频 → ASR → 矫正 → 断句 → 翻译 → 字幕 → 导出 | light-models |
-| `light-qc` | 解析字幕文件 → 规则引擎 → LLM QC → 报告 | light-models |
+| `light-text` | 标点常量 / 时间码格式化 / is_cjk | 无 |
+| `light-core` | logger / ProgressCallback | 无 |
+| `light-llm` | OpenAIClient / retry / json_extract / parallel / prompts / usage | 无（workspace 内） |
+| `light-asr` | 音频提取 / whisperX / whisper.cpp / 对齐 / 分离 / checkpoint | light-models, light-core |
+| `light-asr-polish` | LLM 转录纠正 + 标点还原 | light-models, light-text, light-core, light-llm |
+| `light-subtitle` | 断句 / 分行 / 样式 / 字幕与转录导出 / prompt 模板 | light-models, light-text, light-core, light-llm |
+| `light-cli` | 音频 → ASR → 矫正 → 断句 → 翻译 → 字幕 → 导出 | light-models, light-core, light-llm, light-text, light-asr, light-asr-polish, light-subtitle |
+| `light-qc` | 解析字幕文件 → 规则引擎 → LLM QC → 报告 | light-models, light-text |
 | `light-regression` | 固定音频 → 完整管线 + QC → 逐次对比 → Dashboard | light-models, light-qc |
-| `light-backend` | FastAPI + SQLite → yt-dlp 下载 → 管线调度 → SSE → 视频流 | light-models, light-subtitle |
+| `light-backend` | FastAPI + SQLite → yt-dlp 下载 → 管线调度 → SSE → 视频流 | light-models, light-cli |
 | `light-frontend` | React + Video.js → 视频库 → URL 提交 → 进度面板 → 播放 | — |
 
 `light-qc` 可独立使用，直接对任何字幕文件运行，不依赖流水线。
 
 ## CLI
+
+### light（多命令工具箱）
+
+`light` 是统一入口：`pipeline` 与 `light-subtitle` 完全同参数同行为；`asr` / `polish` / `subtitle` 是独立能力命令，以 `transcript.json`（`light-transcript.v1`）为契约互相衔接——产物命名/格式与管线一致，可直接喂给 `light-qc` 或 Web 后端。
+
+```bash
+# 完整管线（等价 light-subtitle，参数一字不差）
+uv run light pipeline -i input.mp4 --target-lang zh
+
+# 仅 ASR：音频/视频 → transcript.json + asr/ checkpoint
+uv run light asr -i input.mp4 -o output/run --language en --diarize
+
+# 仅转录后处理：transcript.json → LLM 矫正 + 标点还原 → transcript.json
+uv run light polish -i output/run/transcript.json -o output/run
+
+# 仅字幕：transcript.json → 断句 → 规划 →（翻译）→ 布局 → video.*.srt/vtt/ass
+uv run light subtitle -i output/run/transcript.json -o output/run
+uv run light subtitle -i output/run/transcript.json -o output/run --target-lang zh --bilingual
+```
+
+独立接入示例（自带 ASR 结果 → 字幕）：任何符合 `light-transcript.v1` 的 JSON（`words: [{text, start, end, …}]`）都可直接作为输入：
+
+```bash
+uv run light subtitle -i my_transcript.json -o output/my_run --target-lang zh
+```
+
+`--llm-base-url` / `--llm-model` / `--llm-api-key`（env `DEEPSEEK_API_KEY`）为 `polish` / `subtitle` 的公共 LLM 参数。
 
 ### light-subtitle
 
@@ -209,26 +245,26 @@ uv run light-subtitle pack output --encoder libx264 --font "PingFang SC" --video
 
 ```bash
 # 一次性：init submodule + 官方 uv 环境 + checkpoints（见 vendor/INDEX-TTS.md）
-./scripts/setup_indextts_official.sh
-# 可选 v1.5 权重：./scripts/setup_indextts_official.sh --with-v15
+./scripts/setup/setup_indextts_official.sh
+# 可选 v1.5 权重：./scripts/setup/setup_indextts_official.sh --with-v15
 
 # Preview（前 3 分钟，默认 IndexTTS 2.0）
-uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
+uv run python scripts/tts/indextts_dub.py output/<run> --lang zh --skip-mix --preview
 
 # IndexTTS 1.5（24000 Hz，无 emotion 向量）
-uv run python scripts/indextts_dub.py output/<run> --engine indextts15 --lang zh --skip-mix --preview
+uv run python scripts/tts/indextts_dub.py output/<run> --engine indextts15 --lang zh --skip-mix --preview
 
 # 完整长视频（中断后续跑：显式加 --resume）
-uv run python scripts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
-uv run python scripts/indextts_dub.py output/<run> --lang zh --mix duck
+uv run python scripts/tts/indextts_dub.py output/<run> --lang zh --skip-mix --resume
+uv run python scripts/tts/indextts_dub.py output/<run> --lang zh --mix duck
 # 已有 dub.wav，仅混音（不加载 IndexTTS 模型）
-uv run python scripts/indextts_dub.py output/<run> --mix-only --mix duck
+uv run python scripts/tts/indextts_dub.py output/<run> --mix-only --mix duck
 
 # 多段整集（.seg1/ … split_points.json overlap 合并）
-uv run python scripts/indextts_dub_batch.py output/<episode> --prepare-ref
-uv run python scripts/indextts_dub_batch.py output/<episode> --skip-mix --resume
-uv run python scripts/indextts_dub_batch.py output/<episode> --mix-only --mix duck
-uv run python scripts/indextts_dub_batch.py output/<episode> --merge --mix duck
+uv run python scripts/tts/indextts_dub_batch.py output/<episode> --prepare-ref
+uv run python scripts/tts/indextts_dub_batch.py output/<episode> --skip-mix --resume
+uv run python scripts/tts/indextts_dub_batch.py output/<episode> --mix-only --mix duck
+uv run python scripts/tts/indextts_dub_batch.py output/<episode> --merge --mix duck
 
 # 等价 CLI
 uv run light-tts dub output/<run> --engine indextts2 --lang zh --skip-mix --resume
@@ -240,7 +276,7 @@ uv run light-tts dub output/<run> --engine indextts15 --lang zh --skip-mix --pre
 详见 [vendor/INDEX-TTS2-METAL.md](vendor/INDEX-TTS2-METAL.md)。模型与 `mtts` 二进制不进 git，需本地安装：
 
 ```bash
-./scripts/setup_indextts2_metal.sh
+./scripts/setup/setup_indextts2_metal.sh
 
 # 起 server（CFM steps 在启动时设定，改后需重启）
 MIT2_CFM_STEPS=20 vendor/index-tts2-metal/mtts --server \
@@ -249,15 +285,15 @@ MIT2_CFM_STEPS=20 vendor/index-tts2-metal/mtts --server \
   --voice_store vendor/index-tts2-metal/voices
 
 # Dub / preview（换 ref.wav 后删 tts/metal_voices.json 以重 clone）
-uv run python scripts/indextts_dub.py output/<run> \
+uv run python scripts/tts/indextts_dub.py output/<run> \
   --engine indextts2_metal --metal-cfm-steps 20 --lang zh --skip-mix --preview
 
 # 整集 batch
-uv run python scripts/indextts_dub_batch.py output/<episode> \
+uv run python scripts/tts/indextts_dub_batch.py output/<episode> \
   --engine indextts2_metal --metal-cfm-steps 20 --skip-mix --resume
 
 # RTF 对比（官方 vs Metal）
-uv run python scripts/indextts2_rtf_compare.py --run-dir output/<run>/.seg1 --cfm-steps 20
+uv run python scripts/tts/indextts2_rtf_compare.py --run-dir output/<run>/.seg1 --cfm-steps 20
 ```
 
 `cfm_steps` 常用 **12–25**（默认 16）：越大音质越好、越慢。若 server 已在外部运行，须用 `MIT2_CFM_STEPS` 重启 server；`--metal-cfm-steps` 仅在 Light 自动起 server（`metal_manage_server: true`）时生效。
@@ -279,36 +315,36 @@ uv run python scripts/indextts2_rtf_compare.py --run-dir output/<run>/.seg1 --cf
 已有 segment WAV 时仅重排时间轴与字幕（不重跑 TTS）：
 
 ```bash
-uv run python scripts/indextts_dub.py output/<run> --reassemble
-uv run python scripts/indextts_dub.py output/<run> --mix-only --mix duck
+uv run python scripts/tts/indextts_dub.py output/<run> --reassemble
+uv run python scripts/tts/indextts_dub.py output/<run> --mix-only --mix duck
 ```
 
 **Qwen3-TTS（预设音色，需 `--diarize`）** — Apple Silicon / mlx-audio：
 
 ```bash
 # 安装（与 Light torch 栈隔离；mlx-audio 仅 Apple Silicon）
-./scripts/setup_mlx_venv.sh
+./scripts/setup/setup_mlx_venv.sh
 source .venv-mlx/bin/activate
 
 # 字幕（必须 --diarize 才有 speaker 字段）
 uv run light-subtitle -i input.mp4 --diarize --target-lang zh -o output
 
 # Phase 0：前几条 cue 试听
-python scripts/tts_poc.py --cues output/<run> --out output/<run>/tts_poc --max-cues 6
+python scripts/tts/tts_poc.py --cues output/<run> --out output/<run>/tts_poc --max-cues 6
 
 # Phase 1：preview 试听（先验证 Qwen 输出质量，再跑整段）
-python scripts/tts_dub.py output/<run> --lang zh --skip-mix --preview --preview-duration 180
+python scripts/tts/tts_dub.py output/<run> --lang zh --skip-mix --preview --preview-duration 180
 
 # Phase 1：完整 dub.wav（默认按 Qwen-safe 说话人语义块合并，非逐条 display cue）
-python scripts/tts_dub.py output/<run> --lang zh --skip-mix
-python scripts/tts_dub.py output/<run> --lang zh --per-cue --skip-mix   # legacy 逐条 cue
-python scripts/tts_dub.py output/<run> --lang zh --mix duck
+python scripts/tts/tts_dub.py output/<run> --lang zh --skip-mix
+python scripts/tts/tts_dub.py output/<run> --lang zh --per-cue --skip-mix   # legacy 逐条 cue
+python scripts/tts/tts_dub.py output/<run> --lang zh --mix duck
 
 # Mock 测管线（root uv run 即可，无需 mlx）
-uv run python scripts/tts_dub.py output/<run> --lang zh --engine mock --skip-mix
+uv run python scripts/tts/tts_dub.py output/<run> --lang zh --engine mock --skip-mix
 
 # HTTP 引擎（另开终端：mlx_audio.server --port 8000）
-python scripts/tts_dub.py output/<run> --engine http --mlx-url http://127.0.0.1:8000
+python scripts/tts/tts_dub.py output/<run> --engine http --mlx-url http://127.0.0.1:8000
 ```
 
 默认模型：`mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit`（预设音色；Base 版仅用于声音克隆，不支持 Vivian/Uncle_Fu）。说话人映射见 `packages/light-tts/src/light_tts/assets/voices.yaml`。如本机内存不足，可用 `--model mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-6bit` 或临时回退 0.6B。

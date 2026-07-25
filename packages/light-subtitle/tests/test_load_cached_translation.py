@@ -6,9 +6,9 @@ import json
 from pathlib import Path
 
 from light_models import Segment, Word
-from light_subtitle.config import SubtitleConfig
-from light_subtitle.pipeline import subtitle as sub_mod
-from light_subtitle.pipeline.translate import load_cached_translation, save_segment_words
+from light_subtitle import subtitle as sub_mod
+from light_subtitle.config import LayoutConfig, TranslateConfig
+from light_subtitle.translate import load_cached_translation, save_segment_words
 
 
 def test_load_cached_translation_attaches_speakers_from_plan(tmp_path: Path) -> None:
@@ -53,7 +53,7 @@ def test_load_cached_translation_attaches_speakers_from_plan(tmp_path: Path) -> 
         encoding="utf-8",
     )
 
-    cues, _ = load_cached_translation(tx_dir, SubtitleConfig(input_path="dummy.mp4", target_lang="zh"))
+    cues, _ = load_cached_translation(tx_dir, TranslateConfig(target_lang="zh"))
     assert [c.speaker for c in cues] == ["SPEAKER_00", "SPEAKER_01"]
 
 
@@ -88,7 +88,7 @@ def test_load_cached_translation_attaches_words_from_plan_dir(tmp_path: Path) ->
     ]
     (tx_dir / "raw.json").write_text(json.dumps(raw), encoding="utf-8")
 
-    cues, usage = load_cached_translation(tx_dir, SubtitleConfig(input_path="dummy.mp4", target_lang="zh"))
+    cues, usage = load_cached_translation(tx_dir, TranslateConfig(target_lang="zh"))
     assert usage is None
     assert len(cues) == 1
     assert len(cues[0].words) == 2
@@ -123,7 +123,7 @@ def test_load_cached_translation_ignores_stale_translations_segment_words(tmp_pa
         encoding="utf-8",
     )
 
-    cues, _ = load_cached_translation(tx_dir, SubtitleConfig(input_path="dummy.mp4", target_lang="zh"))
+    cues, _ = load_cached_translation(tx_dir, TranslateConfig(target_lang="zh"))
     assert cues[0].words == []
 
 
@@ -170,12 +170,12 @@ def test_load_cached_translation_chains_words_for_merged_from(tmp_path: Path) ->
     ]
     (tx_dir / "raw.json").write_text(json.dumps(raw), encoding="utf-8")
 
-    cues, _ = load_cached_translation(tx_dir, SubtitleConfig(input_path="dummy.mp4", target_lang="zh"))
+    cues, _ = load_cached_translation(tx_dir, TranslateConfig(target_lang="zh"))
     assert len(cues[0].words) == 3
     assert cues[0].words[0].text == "So"
     assert cues[0].words[-1].end == 4.0
 
-    config = SubtitleConfig(input_path="dummy.mp4", output_dir=str(tmp_path), max_duration=6.0)
+    config = LayoutConfig(max_duration=6.0)
     out, _usage = sub_mod.run(cues, config)
     # Head-only words would end ~2s; full chain must reach last word (~4.0) + reading padding.
     assert out[0].end >= 3.95
