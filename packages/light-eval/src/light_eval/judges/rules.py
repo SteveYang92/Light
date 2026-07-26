@@ -24,11 +24,11 @@ from __future__ import annotations
 
 from collections import Counter
 
-from light_models import Word, word_from_dict
+from light_models import word_from_dict
 from light_models.cue_utils import covered_time_window, effective_unit_ids
 from light_subtitle import artifacts
 from light_subtitle.config import PlanConfig
-from light_subtitle.plan.boundary import dangling_tail
+from light_subtitle.plan.boundary import dangling_tail, effective_tail
 from light_subtitle.translate.translate import covered_unit_ids
 from light_text import is_cjk
 
@@ -120,14 +120,18 @@ def _duration_violations(case: EvalCase, units: list[dict]) -> DimensionScore:
 
 
 def _dangling_tails(units: list[dict]) -> DimensionScore:
-    """Count units whose last word is a stranded function word (0 to pass)."""
+    """Count units whose effective tail word is a stranded function word (0 to pass).
+
+    Ghost words (zero-confidence ASR artifacts) are skipped when locating
+    the tail — they carry no real speech (``boundary.effective_tail``).
+    """
     offenders = []
     for unit in units:
-        words = unit.get("words", [])
-        if not words:
+        words = [word_from_dict(w) for w in unit.get("words", [])]
+        tail = effective_tail(words)
+        if tail is None:
             continue
-        last: Word = word_from_dict(words[-1])
-        bad = dangling_tail(last)
+        bad = dangling_tail(tail)
         if bad is not None:
             offenders.append(f'{unit["unit_id"]} (ends on "{bad}")')
     return DimensionScore(

@@ -138,7 +138,7 @@ def calibrate(
     import json
 
     from .calibration import calibrate as run_calibration
-    from .judges.llm import PASS_THRESHOLD, LLMJudge
+    from .judges.llm import LLMJudge, passes
     from .models import DimensionScore, StepOutput
     from .serve import _RUN_OUTPUT
 
@@ -160,9 +160,10 @@ def calibrate(
                 DimensionScore(
                     dimension=dim,
                     score=float(entry.get("score", 0.0)),
-                    passed=float(entry.get("score", 0.0)) >= PASS_THRESHOLD,
+                    passed=passes(entry.get("issues") or []),
                     detail=str(entry.get("reason", "")),
                     evidence=[str(item) for item in entry.get("evidence") or []],
+                    issues=[i for i in entry.get("issues") or [] if isinstance(i, dict)],
                 )
                 for dim, entry in suggestion.items()
                 if isinstance(entry, dict)

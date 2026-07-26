@@ -51,15 +51,16 @@ Context the translator also saw — use it to judge topic, tone, and terminology
 Return ONLY a JSON object — no markdown fences, no prose before or after:
 
 {
-  "faithfulness": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>"}]},
-  "naturalness": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>"}]},
-  "unit_integrity": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>"}]},
-  "terminology": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>"}]}
+  "faithfulness": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]},
+  "naturalness": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]},
+  "unit_integrity": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]},
+  "terminology": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]}
 }
 
 - score: integer 1-5 per the anchors in <scoring_scale>.
 - summary: one-sentence overall verdict for the dimension.
 - issues: one entry per defective unit or cue — each entry names exactly ONE unit/cue and its ONE concrete problem; empty list when the dimension has no issues. MUST be empty when the score is 5.
+- severity: "must_fix" when the defect breaks the viewing experience (missing/added meaning, mistranslation, unit leakage, wrong terminology — a viewer would notice); "minor" when it is a stylistic preference that does not affect understanding. The pass/fail gate counts only must_fix issues, so grade honestly.
 - Only list a unit/cue when you are confident it is a defect. If your own analysis concludes the rendering is acceptable (e.g. deliberate filler removal, idiomatic compression), do NOT list it — not even with a caveat.
 - Report each defective unit/cue under exactly ONE dimension — the most fitting one. Never double-report the same unit/cue for the same underlying problem.
 - language: write summary and issues in Chinese (中文); keep original-language quotes (source text, terms) in the original language.

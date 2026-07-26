@@ -24,8 +24,8 @@ class FakeClient:
         return self._responses.pop(0), {}
 
 
-def _issue(unit_id: str, problem: str) -> dict:
-    return {"unit_id": unit_id, "problem": problem}
+def _issue(unit_id: str, problem: str, severity: str = "must_fix") -> dict:
+    return {"unit_id": unit_id, "problem": problem, "severity": severity}
 
 
 def _verdict(dimensions: dict[str, tuple[int, str, list[dict]]]) -> str:
@@ -110,7 +110,7 @@ def test_translate_dimensions_parsed_and_glossary_rendered() -> None:
         [
             _verdict(
                 {
-                    "faithfulness": (4, "minor compression", [_issue("p0000", "drops a detail")]),
+                    "faithfulness": (4, "minor compression", [_issue("p0000", "drops a detail", "minor")]),
                     "naturalness": (5, "natural", []),
                     "unit_integrity": (5, "aligned", []),
                     "terminology": (2, "glossary term ignored", [_issue("p0001", "glossary term ignored")]),
@@ -122,10 +122,53 @@ def test_translate_dimensions_parsed_and_glossary_rendered() -> None:
 
     by_dim = _scores_by_dim(scores)
     assert set(by_dim) == {"faithfulness", "naturalness", "unit_integrity", "terminology"}
-    assert by_dim["faithfulness"].passed and by_dim["faithfulness"].score == 4.0
-    assert not by_dim["terminology"].passed
+    assert by_dim["faithfulness"].passed and by_dim["faithfulness"].score == 4.0  # minor issue 不否决
+    assert not by_dim["terminology"].passed  # must_fix 一票否决
     prompt = client.calls[0][0]["content"]
     assert "LLM → 大模型" in prompt  # glossary rendered into the rubric
+
+
+def test_severity_defaults_to_must_fix_and_gates() -> None:
+    # 无 severity 字段的 issue 按 must_fix 处理——未分级缺陷必须否决，不能漏过
+    body = json.dumps(
+        {
+            "boundary_quality": {
+                "score": 4,
+                "summary": "ok-ish",
+                "issues": [{"unit_id": "p0000", "problem": "no severity field"}],
+            }
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([body])).score(_case("plan", {}), _fixture(), _plan_output()))
+    assert by_dim["boundary_quality"].issues == [_issue("p0000", "no severity field")]
+    assert not by_dim["boundary_quality"].passed
+
+
+def test_all_minor_issues_pass_the_gate() -> None:
+    verdict = _verdict(
+        {
+            "boundary_quality": (
+                4,
+                "minor only",
+                [_issue("p0000", "nitpick one", "minor"), _issue("p0001", "nitpick two", "minor")],
+            ),
+            "split_necessity": (5, "clean", []),
+        }
+    )
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("plan", {}), _fixture(), _plan_output()))
+    assert by_dim["boundary_quality"].passed
+
+
+def test_suggest_overall_three_states() -> None:
+    from light_eval.judges.llm import suggest_overall
+    from light_eval.models import DimensionScore
+
+    def _score(issues: list[dict]) -> DimensionScore:
+        return DimensionScore(dimension="d", score=4.0, passed=not issues, issues=issues)
+
+    assert suggest_overall([_score([]), _score([])]) == "pass"
+    assert suggest_overall([_score([_issue("p0000", "nit", "minor")])]) == "borderline"
+    assert suggest_overall([_score([_issue("p0000", "nit", "minor")]), _score([_issue("p0001", "bad")])]) == "fail"
 
 
 def test_legacy_reason_and_evidence_schema_still_parses() -> None:
@@ -225,9 +268,9 @@ def test_translate_issues_accept_cue_and_unit_ids() -> None:
         }
     )
     by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("translate"), _fixture(), _translate_output()))
-    assert by_dim["faithfulness"].issues == [
-        _issue("zh_0000", "cue-level slip"),
+    assert by_dim["faithfulness"].issues == [  # unit-sorted: p… < zh…
         _issue("p0001", "unit-level slip"),
+        _issue("zh_0000", "cue-level slip"),
     ]
 
 
@@ -402,7 +445,7 @@ def test_large_output_is_batched_and_median_score_wins() -> None:
 def test_median_aggregation_ignores_one_lenient_batch() -> None:
     """Three batches scoring [3, 5, 4] merge to the median 4 — min would sink the case to 3."""
     n = BATCH_SIZE * 2 + 1
-    batch1 = _verdict({"boundary_quality": (3, "batch1 harsh", [_issue("p0001", "mid-clause cut")])})
+    batch1 = _verdict({"boundary_quality": (3, "batch1 harsh", [_issue("p0001", "mid-clause cut", "minor")])})
     batch2 = _verdict({"boundary_quality": (5, "batch2 clean", [])})
     batch3 = _verdict({"boundary_quality": (4, "batch3 minor", [])})
     client = FakeClient([batch1, batch2, batch3])
@@ -410,9 +453,9 @@ def test_median_aggregation_ignores_one_lenient_batch() -> None:
 
     assert len(client.calls) == 3
     assert by_dim["boundary_quality"].score == 4.0  # median, not min(3)
-    assert by_dim["boundary_quality"].passed
+    assert by_dim["boundary_quality"].passed  # 合并后无 must_fix 缺陷
     assert by_dim["boundary_quality"].detail == "batch1 harsh"  # worst batch still owns the summary
-    assert by_dim["boundary_quality"].issues == [_issue("p0001", "mid-clause cut")]
+    assert by_dim["boundary_quality"].issues == [_issue("p0001", "mid-clause cut", "minor")]
 
 
 def test_merge_dedupes_issues_across_batches() -> None:
@@ -425,8 +468,26 @@ def test_merge_dedupes_issues_across_batches() -> None:
 
     assert by_dim["boundary_quality"].score == 3.0  # lower median of [3, 4]
     assert by_dim["boundary_quality"].detail == "batch1 has issues"  # lowest-scoring batch's summary
-    assert by_dim["boundary_quality"].issues == [shared, _issue("p0001", "orphan verb")]  # no duplicate
-    assert by_dim["boundary_quality"].evidence == ["p0003", "p0001"]
+    assert by_dim["boundary_quality"].issues == [_issue("p0001", "orphan verb"), shared]  # deduped, unit order
+    assert by_dim["boundary_quality"].evidence == ["p0001", "p0003"]
+
+
+def test_issues_are_sorted_by_unit_id() -> None:
+    """The model emits issues in arbitrary order; merged output is unit-sorted."""
+    verdict = _verdict(
+        {
+            "boundary_quality": (
+                3,
+                "scattered",
+                [_issue("p0010", "late"), _issue("p0002", "early"), _issue("p0001", "first")],
+            ),
+            "split_necessity": (5, "ok", []),
+        }
+    )
+    n = 11
+    by_dim = _scores_by_dim(LLMJudge(FakeClient([verdict])).score(_case("plan", {}), _fixture(n), _plan_output(n)))
+    assert [i["unit_id"] for i in by_dim["boundary_quality"].issues] == ["p0001", "p0002", "p0010"]
+    assert by_dim["boundary_quality"].evidence == ["p0001", "p0002", "p0010"]
 
 
 def test_failed_batch_does_not_sink_others() -> None:

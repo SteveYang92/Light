@@ -31,7 +31,7 @@ from pydantic import BaseModel
 
 from . import loader
 from .harvest import create_case, scan_candidate_units, scan_candidates
-from .judges.llm import LLMJudge
+from .judges.llm import LLMJudge, suggest_overall
 from .models import VALID_KINDS, VALID_STEPS, EvalCase, StepOutput
 from .runner import build_llm_client, run_case
 
@@ -61,6 +61,7 @@ class CreateCaseRequest(BaseModel):
 class Defect(BaseModel):
     unit_id: str = ""
     issue: str = ""
+    severity: str = ""  # must_fix | minor；空 = 未分级（读取侧按 minor 兼容处理）
 
 
 class AnnotationRequest(BaseModel):
@@ -175,7 +176,13 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
 
     @app.post("/api/cases/{step}/{name}/judge")
     def judge_case_api(step: str, name: str) -> dict:
-        """LLM pre-judge of the persisted step output; persists to .eval_run/judge.json."""
+        """LLM pre-judge of the persisted step output; persists to .eval_run/judge.json.
+
+        Re-running starts the review from a clean slate: the stale judge.json
+        is deleted up front (a failed run leaves nothing behind), and on
+        success the saved annotation.yaml is deleted too (it is kept when
+        judging fails).
+        """
         case = _resolve_case(step, name)
         out_path = case.case_dir / _RUN_OUTPUT
         if not out_path.is_file():
@@ -185,16 +192,17 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
             raise HTTPException(409, "AI 预评需要 LLM：请设置环境变量 DEEPSEEK_API_KEY 后重启 serve")
         fixture = loader.load_fixture(case)
         step_output = StepOutput.from_dict(json.loads(out_path.read_text(encoding="utf-8")))
+        judge_path = case.case_dir / _RUN_JUDGE
+        judge_path.unlink(missing_ok=True)  # 重跑先删旧评审——失败也不残留过期结果
         scores = LLMJudge(llm).score(case, fixture, step_output)
         if not scores:
             raise HTTPException(409, "步骤输出不可用（出错 / 跳过 / 为空），无法预评")
-        min_score = min(s.score for s in scores)
-        suggested = "pass" if min_score >= 4 else ("borderline" if min_score >= 3 else "fail")
+        # 重跑即重来：评审成功后删除旧标注，本轮从干净状态开始（失败则保留旧标注）
+        (case.case_dir / loader.ANNOTATION_YAML).unlink(missing_ok=True)
         result = {
             "dimensions": {s.dimension: {"score": s.score, "summary": s.detail, "issues": s.issues} for s in scores},
-            "suggested_overall": suggested,
+            "suggested_overall": suggest_overall(scores),
         }
-        judge_path = case.case_dir / _RUN_JUDGE
         judge_path.parent.mkdir(parents=True, exist_ok=True)
         judge_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         return result
@@ -222,7 +230,11 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
             raise HTTPException(422, f"overall must be one of {OVERALL_CHOICES}")
         data: dict[str, Any] = {
             "dimensions": req.dimensions,
-            "defects": [{"unit_id": d.unit_id, "issue": d.issue} for d in req.defects if d.issue or d.unit_id],
+            "defects": [
+                {k: v for k, v in {"unit_id": d.unit_id, "issue": d.issue, "severity": d.severity}.items() if v}
+                for d in req.defects
+                if d.issue or d.unit_id
+            ],
             "overall": req.overall,
         }
         if req.judge_suggestion is not None:

@@ -207,7 +207,7 @@ def _preset_scores(self, case, fixture, output):  # noqa: ARG001 — LLMJudge.sc
             passed=True,
             detail="边界基本合理",
             evidence=["p0000_0"],
-            issues=[{"unit_id": "p0000_0", "problem": "断在从句中间"}],
+            issues=[{"unit_id": "p0000_0", "problem": "断在从句中间", "severity": "minor"}],
         ),
         DimensionScore(dimension="split_necessity", score=3.0, passed=False, detail="存在过碎 unit", evidence=[]),
     ]
@@ -227,12 +227,12 @@ def test_judge_endpoint(client: TestClient, judge_mock: None, tmp_path: Path) ->
     res = client.post("/api/cases/plan/flat_run_p1/judge")
     assert res.status_code == 200
     data = res.json()
-    assert data["suggested_overall"] == "borderline"  # min score 3
+    assert data["suggested_overall"] == "borderline"  # 仅 minor 缺陷
     bq = data["dimensions"]["boundary_quality"]
     assert bq == {
         "score": 4.0,
         "summary": "边界基本合理",
-        "issues": [{"unit_id": "p0000_0", "problem": "断在从句中间"}],
+        "issues": [{"unit_id": "p0000_0", "problem": "断在从句中间", "severity": "minor"}],
     }
     sn = data["dimensions"]["split_necessity"]
     assert sn == {"score": 3.0, "summary": "存在过碎 unit", "issues": []}
@@ -240,6 +240,72 @@ def test_judge_endpoint(client: TestClient, judge_mock: None, tmp_path: Path) ->
     # persisted verbatim to .eval_run/judge.json
     stored = json.loads((tmp_path / "suite" / "plan" / "flat_run_p1" / ".eval_run" / "judge.json").read_text("utf-8"))
     assert stored == data
+
+
+def test_judge_rerun_overwrites_stale_judge_json(client: TestClient, judge_mock: None, tmp_path: Path) -> None:
+    client.post("/api/cases", json={"candidate": "flat_run_p1", "step": "plan", "kind": "control"})
+    client.post("/api/cases/plan/flat_run_p1/run")
+    assert client.post("/api/cases/plan/flat_run_p1/judge").status_code == 200
+    judge_path = tmp_path / "suite" / "plan" / "flat_run_p1" / ".eval_run" / "judge.json"
+    judge_path.write_text('{"stale": true}', encoding="utf-8")
+    res = client.post("/api/cases/plan/flat_run_p1/judge")
+    assert res.status_code == 200
+    assert json.loads(judge_path.read_text("utf-8")) == res.json()  # overwritten, not stale
+
+
+def test_judge_failure_leaves_no_stale_judge_json(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 重跑先删旧评审：judge 失败（输出不可用）时不得残留过期结果
+    monkeypatch.setattr("light_eval.serve.build_llm_client", lambda: object())
+    monkeypatch.setattr(LLMJudge, "score", lambda *a, **k: [])
+    client.post("/api/cases", json={"candidate": "flat_run_p1", "step": "plan", "kind": "control"})
+    client.post("/api/cases/plan/flat_run_p1/run")
+    judge_path = tmp_path / "suite" / "plan" / "flat_run_p1" / ".eval_run" / "judge.json"
+    judge_path.parent.mkdir(parents=True, exist_ok=True)
+    judge_path.write_text('{"stale": true}', encoding="utf-8")
+    res = client.post("/api/cases/plan/flat_run_p1/judge")
+    assert res.status_code == 409
+    assert not judge_path.exists()
+
+
+def _save_annotation(client: TestClient) -> None:
+    res = client.put(
+        "/api/cases/plan/flat_run_p1/annotation",
+        json={
+            "dimensions": {"boundary_quality": 4, "split_necessity": 4},
+            "defects": [{"unit_id": "p0000_0", "issue": "旧缺陷"}],
+            "overall": "pass",
+        },
+    )
+    assert res.status_code == 200
+
+
+def test_judge_rerun_deletes_saved_annotation(client: TestClient, judge_mock: None, tmp_path: Path) -> None:
+    # 重跑预评成功 → 旧标注删除，本轮从干净状态开始
+    client.post("/api/cases", json={"candidate": "flat_run_p1", "step": "plan", "kind": "control"})
+    client.post("/api/cases/plan/flat_run_p1/run")
+    _save_annotation(client)
+    annotation_path = tmp_path / "suite" / "plan" / "flat_run_p1" / "annotation.yaml"
+    assert annotation_path.is_file()
+    res = client.post("/api/cases/plan/flat_run_p1/judge")
+    assert res.status_code == 200
+    assert not annotation_path.exists()
+
+
+def test_judge_failure_keeps_saved_annotation(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 重跑预评失败 → 旧标注保留（不丢人工成果）
+    monkeypatch.setattr("light_eval.serve.build_llm_client", lambda: object())
+    monkeypatch.setattr(LLMJudge, "score", lambda *a, **k: [])
+    client.post("/api/cases", json={"candidate": "flat_run_p1", "step": "plan", "kind": "control"})
+    client.post("/api/cases/plan/flat_run_p1/run")
+    _save_annotation(client)
+    annotation_path = tmp_path / "suite" / "plan" / "flat_run_p1" / "annotation.yaml"
+    res = client.post("/api/cases/plan/flat_run_p1/judge")
+    assert res.status_code == 409
+    assert annotation_path.is_file()
 
 
 def test_judge_without_output_409(client: TestClient, judge_mock: None) -> None:

@@ -54,3 +54,25 @@ def dangling_tail(word: Word) -> str | None:
 def ends_with_clause_punct(word: Word) -> bool:
     """True when *word* carries trailing clause/sentence punctuation."""
     return word.text.strip().endswith(CLAUSE_PUNCT_TAIL)
+
+
+# ── Ghost words (zero-confidence ASR artifacts) ─────────────────────────────
+
+
+def is_ghost(word: Word) -> bool:
+    """Near-zero-confidence, near-zero-duration ASR artifact (e.g. a 0.02s
+    " I" with conf 0.001 glued after a sentence end).  Ghost words ride in
+    the word timeline but carry no real speech — the boundary contract
+    ignores them when judging tails and heads.  The dual threshold keeps
+    real low-confidence words (normal duration) visible."""
+    return word.confidence <= 0.05 and (word.end - word.start) <= 0.05
+
+
+def effective_tail(words: list[Word]) -> Word | None:
+    """Last non-ghost word — the boundary's real tail."""
+    return next((w for w in reversed(words) if not is_ghost(w)), None)
+
+
+def effective_head(words: list[Word]) -> Word | None:
+    """First non-ghost word — the boundary's real head."""
+    return next((w for w in words if not is_ghost(w)), None)

@@ -29,8 +29,15 @@
   button.plain { background: none; border: 1px solid var(--bd); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
   select, input[type=text] { padding: 5px 8px; border: 1px solid var(--bd); border-radius: 6px; font-size: 14px; }
   .bar { display: flex; gap: 10px; align-items: center; margin: 8px 0; flex-wrap: wrap; flex: none; }
+  /* 详情页顶栏：不换行，左侧文案超长时省略号截断，按钮固定靠右不被顶走 */
+  #detail-bar { flex-wrap: nowrap; }
+  #detail-bar b, #detail-bar .muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #detail-bar button { flex: none; }
   .muted { color: var(--mut); }
   .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--bd); font-size: 13px; }
+  .sev-tag { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 12px; border: 1px solid; }
+  .sev-must { background: #ffebe9; color: #cf222e; border-color: #cf222e; }
+  .sev-minor { background: #fff8c5; color: #9a6700; border-color: #d4a72c; }
   .msg { padding: 8px 12px; border-radius: 6px; margin: 8px 0; display: none; flex: none; }
   .msg.ok { display: block; background: #dafbe1; border: 1px solid #2da44e; }
   .msg.err { display: block; background: #ffebe9; border: 1px solid #cf222e; }
@@ -156,12 +163,13 @@
   </section>
 
   <section id="view-detail" hidden>
-    <div class="bar">
+    <div class="bar" id="detail-bar">
       <b id="detail-title"></b>
       <span class="muted" id="detail-meta"></span>
+      <span style="flex:1"></span>
+      <span class="muted" id="run-status"></span>
       <button class="act" id="run-btn" onclick="runCase()">运行 / 重跑</button>
       <button class="act" id="judge-btn" onclick="runJudge()">AI 预评</button>
-      <span class="muted" id="run-status"></span>
     </div>
     <div class="split">
       <div class="pane">
@@ -173,7 +181,7 @@
             <summary style="cursor:pointer;font-weight:600">成功标准（评分锚点）</summary>
             <div id="criteria-box" style="font-size:13px;line-height:1.7"></div>
           </details>
-          <div class="muted" style="font-size:13px">点击左侧行可回填缺陷 unit_id；点击卡片徽标定位左侧行；点击 ⚠ 角标定位右侧卡片</div>
+          <div class="muted" style="font-size:13px">点击左侧行定位高亮（有空 uid 卡片则回填）；点行内 ＋ 为该 unit 建缺陷卡片；卡片 ✕ 可删除；点击卡片徽标定位左侧行；点击 ⚠ 角标定位右侧卡片</div>
           <div id="dim-form"></div>
           <div class="bar" style="border-top:1px solid var(--bd);padding-top:10px;margin-top:12px">
             <b>缺陷记录</b>
@@ -232,13 +240,20 @@ async function api(path, opts) {
 }
 
 // ── Tabs ────────────────────────────────────────────────────────────────────
+// 标签页状态同步进 location.hash，浏览器刷新后可恢复（详情页含具体 case）
+function activateTab(tab) {
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  ["candidates", "cases", "detail"].forEach((t) => { $("#view-" + t).hidden = t !== tab; });
+  if (tab === "candidates") loadCandidates();
+  if (tab === "cases") loadCases();
+  const hash = tab === "detail" && current ? `#detail/${current.step}/${encodeURIComponent(current.name)}` : `#${tab}`;
+  history.replaceState(null, "", hash);
+}
+
 document.querySelectorAll("nav button").forEach((btn) => {
   btn.addEventListener("click", () => {
     if (btn.disabled) return;
-    document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b === btn));
-    ["candidates", "cases", "detail"].forEach((t) => { $("#view-" + t).hidden = t !== btn.dataset.tab; });
-    if (btn.dataset.tab === "candidates") loadCandidates();
-    if (btn.dataset.tab === "cases") loadCases();
+    activateTab(btn.dataset.tab);
   });
 });
 
@@ -454,6 +469,12 @@ function updateDetailMeta() {
   $("#detail-meta").textContent = `${pos} · ${status} · kind=${current.kind} · source=${current.source}`;
 }
 
+function setRunStatus(text) {
+  const el = $("#run-status");
+  el.textContent = text;
+  el.title = text;  // 状态被省略号截断时悬停可见全文
+}
+
 function openCase(i) {
   current = cases[i];
   judgeSuggestion = null;
@@ -462,7 +483,7 @@ function openCase(i) {
   $("#detail-title").textContent = `${current.step} / ${current.name}`;
   updateDetailMeta();
   $("#run-btn").disabled = false;
-  $("#run-status").textContent = "";
+  setRunStatus("");
   renderCriteria();
   buildDimForm();
   loadOutput();
@@ -472,14 +493,14 @@ function openCase(i) {
 async function runCase() {
   if (!current) return;
   $("#run-btn").disabled = true;
-  $("#run-status").textContent = "运行中…（translate 可能较慢）";
+  setRunStatus("运行中…（translate 可能较慢）");
   try {
     const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/run`, { method: "POST" });
     renderOutput(data);
-    $("#run-status").textContent = data.error ? `出错：${data.error}` : `完成，${data.items.length} 条，${data.duration_s}s`;
+    setRunStatus(data.error ? `出错：${data.error}` : `完成，${data.items.length} 条，${data.duration_s}s`);
     current.has_output = true;
   } catch (e) {
-    $("#run-status").textContent = `无法运行：${e.message}`;
+    setRunStatus(`无法运行：${e.message}`);
     showMsg(e.message, false);
   } finally {
     $("#run-btn").disabled = false;
@@ -489,26 +510,40 @@ async function runCase() {
 // ── AI 预评（LLM judge 预填，人工复核后保存）─────────────────────────────────
 async function runJudge() {
   if (!current) return;
+  // 重跑先清掉上一轮未决的 AI 产物，避免与新一批混淆：
+  // 未判定的 AI 缺陷卡片删除（已人工判定 通过/不通过 的保留），预评缓存置空
+  document.querySelectorAll('#defect-list .defect-card[data-origin="ai"]').forEach((c) => {
+    if (!c.classList.contains("ok") && !c.classList.contains("no")) c.remove();
+  });
+  judgeSuggestion = null;
+  refreshBadges();
+  updateReviewProgress();
   const btn = $("#judge-btn");
   btn.disabled = true;
   btn.textContent = "预评中…";
   try {
     const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/judge`, { method: "POST" });
     judgeSuggestion = data;  // 保存标注时原样透传
+    // 后端已删除旧标注：表单同步清空（维度分/缺陷卡片/总体判定），从干净状态复核
+    document.querySelectorAll("#dim-form select").forEach((sel) => { sel.value = ""; });
+    document.querySelectorAll("#defect-list .defect-card").forEach((c) => c.remove());
+    $("#overall").value = "";
+    current.annotated = false;
+    updateDetailMeta();
     Object.entries(data.dimensions || {}).forEach(([dim, info]) => {
       const sel = document.querySelector(`#dim-form select[data-dim="${dim}"]`);
       if (sel) sel.value = String(info.score);
       const summary = document.querySelector(`.dim-summary[data-summary-for="${dim}"]`);
       if (summary) { summary.textContent = info.summary || ""; summary.hidden = !info.summary; }
-      // issues 逐条生成缺陷卡片（AI 来源，带 ✓/✗ 逐条审核；按 uid+problem 查重——同一 unit 可被多维度各报一条）
+      // issues 逐条生成缺陷卡片（AI 来源 + severity 标签，带 ✓/✗ 逐条审核；按 uid+problem 查重——同一 unit 可被多维度各报一条）
       (info.issues || []).forEach((issue) => {
         const uid = String(issue.unit_id || "");
         const problem = issue.problem || "";
-        if (!findDefectCardBy(uid, problem)) addDefectCard(uid, problem, "ai", dim);
+        if (!findDefectCardBy(uid, problem)) addDefectCard(uid, problem, "ai", dim, issue.severity || "");
       });
     });
     if (data.suggested_overall) $("#overall").value = data.suggested_overall;
-    showMsg("AI 预评已回填，请人工复核后保存", true);
+    showMsg("AI 预评已回填（旧标注已清除），请人工复核后保存", true);
   } catch (e) {
     showMsg(`预评失败：${e.message}`, false);
   } finally {
@@ -545,22 +580,30 @@ function renderOutput(data) {
     const start = Number(it.start), end = Number(it.end);
     const range = `${start.toFixed(2)} – ${end.toFixed(2)}`;
     const dur = `${(end - start).toFixed(1)}s`;
+    const uidCell = `${esc(it.unit_id)} <button class="plain add-defect" data-uid="${esc(it.unit_id)}" title="为此 unit 添加缺陷卡片">＋</button>`;
     return isTranslate
-      ? `<tr data-uid="${esc(it.unit_id)}"><td>${esc(it.unit_id)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.source_text)}</td><td class="text">${esc(it.text)}</td></tr>`
-      : `<tr data-uid="${esc(it.unit_id)}"><td>${esc(it.unit_id)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.text)}</td></tr>`;
+      ? `<tr data-uid="${esc(it.unit_id)}"><td>${uidCell}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.source_text)}</td><td class="text">${esc(it.text)}</td></tr>`
+      : `<tr data-uid="${esc(it.unit_id)}"><td>${uidCell}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.text)}</td></tr>`;
   }).join("");
   $("#output-wrap").innerHTML = `<table><thead>${head}</thead><tbody>${rows}</tbody></table>`;
-  // 点击角标 → 反向定位右侧卡片；点击行 → 无该 uid 的缺陷卡片则新建（有空 uid 卡片先填入）
+  // 角标 → 反向定位右侧卡片；＋ → 显式为该 unit 建缺陷卡片；
+  // 点击行 → 仅定位高亮（有空 uid 卡片则回填，不自动建卡）
   $("#output-wrap tbody").addEventListener("click", (e) => {
     const flag = e.target.closest(".uid-flag");
     if (flag) { locateDefect(flag.dataset.uid); return; }
+    const addBtn = e.target.closest(".add-defect");
+    if (addBtn) {
+      const existing = findDefectCard(addBtn.dataset.uid);
+      if (existing) { locateDefect(addBtn.dataset.uid); return; }
+      const card = addDefectCard(addBtn.dataset.uid, "");
+      card.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
     const tr = e.target.closest("tr[data-uid]");
     if (!tr) return;
-    const uid = tr.dataset.uid;
-    if (findDefectCard(uid)) return;
+    locateUnit(tr.dataset.uid);
     const emptyCard = [...document.querySelectorAll("#defect-list .defect-card")].find((c) => !cardUid(c));
-    if (emptyCard) setCardUid(emptyCard, uid);
-    else addDefectCard(uid, "");
+    if (emptyCard) setCardUid(emptyCard, tr.dataset.uid);
   });
   refreshBadges();
 }
@@ -715,10 +758,11 @@ function refreshSnippets() {
 }
 
 // origin: "human"（默认通过态）| "ai"（AI 预评生成，未决态）；dim 为报告该问题的评审维度
-function addDefectCard(unitId, problem, origin = "human", dim = "") {
+function addDefectCard(unitId, problem, origin = "human", dim = "", severity = "") {
   const card = document.createElement("div");
   card.className = "defect-card";
   if (origin === "ai") card.dataset.origin = "ai";
+  if (severity) card.dataset.severity = severity;
   const head = document.createElement("div");
   head.className = "defect-head";
   card.appendChild(head);
@@ -730,6 +774,12 @@ function addDefectCard(unitId, problem, origin = "human", dim = "") {
     tag.className = "ai-tag";
     tag.textContent = dim ? `AI · ${dim}` : "AI";
     actions.appendChild(tag);
+  }
+  if (severity) {
+    const sev = document.createElement("span");
+    sev.className = severity === "must_fix" ? "sev-tag sev-must" : "sev-tag sev-minor";
+    sev.textContent = severity === "must_fix" ? "必改" : "次要";
+    actions.appendChild(sev);
   }
   const okBtn = document.createElement("button");
   okBtn.className = "plain verdict-btn";
@@ -743,6 +793,12 @@ function addDefectCard(unitId, problem, origin = "human", dim = "") {
   noBtn.title = "不是缺陷（保存时排除）";
   noBtn.onclick = () => setVerdict(card, false);
   actions.appendChild(noBtn);
+  const delBtn = document.createElement("button");
+  delBtn.className = "plain";
+  delBtn.textContent = "✕";
+  delBtn.title = "删除此卡片（不进入保存）";
+  delBtn.onclick = () => { card.remove(); refreshBadges(); updateReviewProgress(); };
+  actions.appendChild(delBtn);
   head.appendChild(actions);
   const sn = document.createElement("div");
   sn.className = "unit-snippet";
@@ -774,6 +830,7 @@ function setVerdict(card, ok) {
   noBtn.classList.toggle("on-no", !ok);
   refreshBadges();
   updateReviewProgress();
+  recomputeSuggestedOverall();
   const next = [...document.querySelectorAll("#defect-list .defect-card")].find(
     (c) => !c.classList.contains("ok") && !c.classList.contains("no")
   );
@@ -798,6 +855,17 @@ function verdictAll(ok) {
   });
   refreshBadges();
   updateReviewProgress();
+  recomputeSuggestedOverall();
+}
+
+// 由已收录（通过）缺陷卡派生建议判定：任一必改 → fail；任一收录 → borderline；无 → pass
+// AI 预评回填时用 endpoint 的 suggested_overall；人工判定后这里持续跟踪，select 仍可手改
+function recomputeSuggestedOverall() {
+  const okCards = [...document.querySelectorAll("#defect-list .defect-card.ok")];
+  let suggested = "pass";
+  if (okCards.length) suggested = "borderline";
+  if (okCards.some((c) => c.dataset.severity === "must_fix")) suggested = "fail";
+  $("#overall").value = suggested;
 }
 
 // 评审进度：已判定 i/N（人工添加的通过态也计入）
@@ -821,7 +889,7 @@ async function loadAnnotation() {
     const sel = document.querySelector(`#dim-form select[data-dim="${dim}"]`);
     if (sel) sel.value = String(v);
   });
-  (data.defects || []).forEach((d) => addDefectCard(d.unit_id, d.issue));
+  (data.defects || []).forEach((d) => addDefectCard(d.unit_id, d.issue, "human", "", d.severity || ""));
   $("#overall").value = data.overall || "";
 }
 
@@ -831,7 +899,7 @@ async function saveAnnotation(advance) {
     if (s.value) dimensions[s.dataset.dim] = Number(s.value);
   });
   const defects = [...document.querySelectorAll("#defect-list .defect-card.ok")]
-    .map((card) => ({ unit_id: cardUid(card), issue: card.querySelector(".issue").value.trim() }))
+    .map((card) => ({ unit_id: cardUid(card), issue: card.querySelector(".issue").value.trim(), severity: card.dataset.severity || "" }))
     .filter((d) => d.unit_id || d.issue);
   const body = { dimensions, defects, overall: $("#overall").value };
   if (judgeSuggestion) {  // 做过 AI 预评 → 带上原始建议 + 人工复核标记
@@ -870,7 +938,26 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-loadCandidates();
+// 启动：从 location.hash 恢复标签页；#detail/<step>/<name> 直接 reopen 该 case
+(function restoreView() {
+  const detail = location.hash.match(/^#detail\/([^/]+)\/(.+)$/);
+  if (detail) {
+    const [, step, rawName] = detail;
+    loadCases()
+      .then(() => {
+        const i = cases.findIndex((c) => c.step === step && c.name === decodeURIComponent(rawName));
+        if (i >= 0) {
+          $("#tab-detail").disabled = false;
+          openCase(i);
+        } else {
+          activateTab("cases");  // case 已被删除/改名，退回列表
+        }
+      })
+      .catch(() => activateTab("candidates"));
+    return;
+  }
+  activateTab(location.hash === "#cases" ? "cases" : "candidates");
+})();
 </script>
 </body>
 </html>

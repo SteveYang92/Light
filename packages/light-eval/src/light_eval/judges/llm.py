@@ -1,4 +1,4 @@
-"""LLM judge — rubric-based 1-5 scoring via an OpenAI-compatible chat model.
+"""LLM judge — rubric-based 1-5 scoring plus defect-severity gating.
 
 One judge instance scores one case's step output along the rubric
 dimensions for its step:
@@ -8,6 +8,12 @@ dimensions for its step:
 - ``translate``: ``faithfulness`` (no omission / addition),
   ``naturalness`` (spoken, not translationese), ``unit_integrity`` (cue ↔
   source unit correspondence) and ``terminology`` (glossary consistency).
+
+The pass/fail gate is defect-driven, not score-driven: a dimension passes
+only when it carries **no ``must_fix`` issue** (issues lacking a severity
+count as ``must_fix`` — an unclassifiable defect must gate, never slip
+through).  The 1-5 score survives as information for calibration and
+display only.
 
 Outputs longer than ``batch_size`` items are judged in time-ordered
 batches; the per-dimension score is the *median* across batches (lower
@@ -41,12 +47,34 @@ logger = logging.getLogger(__name__)
 PLAN_DIMENSIONS: tuple[str, ...] = ("boundary_quality", "split_necessity")
 TRANSLATE_DIMENSIONS: tuple[str, ...] = ("faithfulness", "naturalness", "unit_integrity", "terminology")
 
+MUST_FIX = "must_fix"  # breaks the viewing experience — gates pass/fail
+MINOR = "minor"  # stylistic preference — informational only
+_SEVERITIES = (MUST_FIX, MINOR)
+
 BATCH_SIZE = 50  # items per judge call; larger outputs are batched in time order
-PASS_THRESHOLD = 4  # 1-5 rubric score at or above which a dimension passes
 MAX_ATTEMPTS = 2  # initial call + 1 retry on unparseable JSON
 _TEMPERATURE = 0.1  # judging should be near-deterministic
 _SOFT_CAP_RATIO = 1.15  # mirrors plan.planner._SOFT_MAX_RATIO (validator tolerance)
 _MERGE_HINT = re.compile(r"合并|merge", re.IGNORECASE)  # merge suggestions get a feasibility re-check
+
+
+def has_must_fix(issues: list[dict]) -> bool:
+    """True when any issue gates — only an explicit ``minor`` severity exempts."""
+    return any(issue.get("severity") != MINOR for issue in issues)
+
+
+def passes(issues: list[dict]) -> bool:
+    """The defect gate: a dimension passes only when no must_fix issue remains."""
+    return not has_must_fix(issues)
+
+
+def suggest_overall(scores: list[DimensionScore]) -> str:
+    """Derived verdict shared by the workbench: any must_fix → fail; only minor → borderline."""
+    if any(has_must_fix(score.issues) for score in scores):
+        return "fail"
+    if any(score.issues for score in scores):
+        return "borderline"
+    return "pass"
 
 
 # ── Judge ───────────────────────────────────────────────────────────────────
@@ -222,7 +250,7 @@ def _parse_verdicts(content: str, dimensions: tuple[str, ...]) -> dict[str, Dime
         verdicts[dimension] = DimensionScore(
             dimension=dimension,
             score=float(score),
-            passed=score >= PASS_THRESHOLD,
+            passed=passes(issues),
             detail=str(entry.get("summary") or entry.get("reason") or ""),
             evidence=evidence,
             issues=issues,
@@ -231,7 +259,11 @@ def _parse_verdicts(content: str, dimensions: tuple[str, ...]) -> dict[str, Dime
 
 
 def _parse_issues(raw: object) -> list[dict[str, str]]:
-    """Validate the issues array; malformed entries are dropped individually."""
+    """Validate the issues array; malformed entries are dropped individually.
+
+    Severity defaults to ``must_fix`` when missing or unrecognized — an
+    unclassifiable defect must gate, never slip through.
+    """
     if not isinstance(raw, list):
         return []
     issues: list[dict[str, str]] = []
@@ -240,7 +272,14 @@ def _parse_issues(raw: object) -> list[dict[str, str]]:
             continue
         unit_id, problem = item.get("unit_id"), item.get("problem")
         if isinstance(unit_id, str) and isinstance(problem, str):
-            issues.append({"unit_id": unit_id, "problem": problem})
+            severity = item.get("severity")
+            issues.append(
+                {
+                    "unit_id": unit_id,
+                    "problem": problem,
+                    "severity": severity if severity in _SEVERITIES else MUST_FIX,
+                }
+            )
     return issues
 
 
@@ -277,11 +316,11 @@ def _filter_verdicts(
                 logger.info("LLM judge: dropping infeasible merge suggestion on %r (%s)", issue["unit_id"], case.name)
                 continue
             kept.append(issue)
-        if kept != score.issues:  # rebuild so evidence matches the surviving issues
+        if kept != score.issues:  # rebuild so evidence and the gate match the surviving issues
             verdicts[dimension] = DimensionScore(
                 dimension=score.dimension,
                 score=score.score,
-                passed=score.passed,
+                passed=passes(kept),
                 detail=score.detail,
                 evidence=list(dict.fromkeys(issue["unit_id"] for issue in kept)),
                 issues=kept,
@@ -307,6 +346,11 @@ def _mentioned_ids(text: str, batch_by_id: dict[str, dict]) -> list[str]:
         return []
     pattern = re.compile("|".join(re.escape(i) for i in sorted(batch_by_id, key=len, reverse=True)))
     return pattern.findall(text)
+
+
+def _natural_key(text: str) -> tuple:
+    """Digit-aware sort key: ``p2`` < ``p10`` (re.split keeps str/int slots aligned)."""
+    return tuple(int(tok) if tok.isdigit() else tok for tok in re.split(r"(\d+)", text))
 
 
 # ── Batch merging ───────────────────────────────────────────────────────────
@@ -341,11 +385,15 @@ def _merge_batches(per_batch: list[dict[str, DimensionScore]], dimensions: tuple
             for item in score.evidence:
                 if item not in evidence:
                     evidence.append(item)
+        # The model emits issues in arbitrary order; present them in stable
+        # unit order so reports and the workbench list stay scannable.
+        issues.sort(key=lambda i: _natural_key(i["unit_id"]))
+        evidence.sort(key=_natural_key)
         merged.append(
             DimensionScore(
                 dimension=dimension,
                 score=median.score,
-                passed=median.score >= PASS_THRESHOLD,
+                passed=passes(issues),
                 detail=worst.detail,
                 evidence=evidence,
                 issues=issues,

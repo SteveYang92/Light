@@ -85,6 +85,11 @@ def _case_table(result) -> str:
         f"<td>{_PASS_MARK if score.passed else _FAIL_MARK}</td>"
         f"<td>{score.score:.4g}</td>"
         f"<td>{html.escape(score.detail)}"
+        + (
+            f'<div class="evidence">must_fix ×{sum(1 for i in score.issues if i.get("severity") != "minor")}</div>'
+            if any(i.get("severity") != "minor" for i in score.issues)
+            else ""
+        )
         + (f'<div class="evidence">{html.escape("; ".join(score.evidence))}</div>' if score.evidence else "")
         + "</td></tr>"
         for score in result.scores

@@ -56,7 +56,7 @@ class Annotation:
     """
 
     dimensions: dict[str, int] = field(default_factory=dict)  # dimension → 1-5 human score
-    defects: list[dict[str, str]] = field(default_factory=list)  # [{"unit_id": ..., "issue": ...}]
+    defects: list[dict[str, str]] = field(default_factory=list)  # [{"unit_id", "issue", "severity"?}]
     overall: str = ""
     judge_suggestion: dict | None = None  # raw judge endpoint JSON {dimensions, suggested_overall}
     reviewed_by: str = ""
@@ -72,11 +72,15 @@ class Annotation:
 
     @classmethod
     def from_dict(cls, data: dict) -> Annotation:
-        defects = [
-            {"unit_id": str(d.get("unit_id", "")), "issue": str(d.get("issue", ""))}
-            for d in data.get("defects") or []
-            if isinstance(d, dict)
-        ]
+        # severity is optional — old annotations without it load unchanged
+        defects = []
+        for d in data.get("defects") or []:
+            if not isinstance(d, dict):
+                continue
+            defect = {"unit_id": str(d.get("unit_id", "")), "issue": str(d.get("issue", ""))}
+            if d.get("severity"):
+                defect["severity"] = str(d["severity"])
+            defects.append(defect)
         return cls(
             dimensions={str(k): int(v) for k, v in (data.get("dimensions") or {}).items()},
             defects=defects,
@@ -167,11 +171,14 @@ class DimensionScore:
 
     @classmethod
     def from_dict(cls, data: dict) -> DimensionScore:
-        issues = [
-            {"unit_id": str(i.get("unit_id", "")), "problem": str(i.get("problem", ""))}
-            for i in data.get("issues") or []
-            if isinstance(i, dict)
-        ]
+        issues = []
+        for i in data.get("issues") or []:
+            if not isinstance(i, dict):
+                continue
+            issue = {"unit_id": str(i.get("unit_id", "")), "problem": str(i.get("problem", ""))}
+            if i.get("severity"):  # 仅非空时写入——旧文件（无 severity）往返保持一致
+                issue["severity"] = str(i["severity"])
+            issues.append(issue)
         return cls(
             dimension=data["dimension"],
             score=data.get("score", 0.0),
