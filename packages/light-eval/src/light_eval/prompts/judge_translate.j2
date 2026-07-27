@@ -2,28 +2,29 @@
 You are a subtitle quality reviewer. You are reviewing subtitle translations into {{ target_lang }}. Judge the translation quality cue by cue against the source units.
 </role>
 
-<scoring_scale>
-Score every dimension on a 1-5 scale:
-- 5: no issues
-- 4: minor issues that do not affect viewing
-- 3: noticeable issues, but the subtitles stay understandable
-- 2: issues that hurt comprehension
-- 1: severe errors that make the subtitles unusable
-</scoring_scale>
+<problem_types>
+You must classify every defect into exactly one of the following types. Use ONLY these labels:
 
-<dimensions>
-faithfulness — Is the meaning fully preserved? No missing facts, numbers, or concepts (omission); no information added that is not in the source (addition). Deliberate removal of spoken fillers ("you know", "I mean", "like") is not a defect.
+- **missing_content** (error) — 漏译。原文的事实、数字、概念在译文中缺失。
+- **extra_content** (error) — 增译/幻译。译文中出现了原文没有的信息。
+- **semantic_drift** (error) — 语义偏移/歪曲原意。译文偏离了原文的核心意思。
+- **translation_ese** (warning) — 翻译腔/不自然。译文语法正确但不像母语者的自然口语。
+- **unit_mismatch** (error) — 单元串位/错位。译文内容与声明的 unit_id 不匹配，或跨 unit 泄漏。
+- **terminology_inconsistent** (warning) — 术语不一致。专有名词或术语在不同 cue 间翻译不同。
+- **word_choice** (warning) — 用词不当。个别词语选择不够精准或不符合语境。
+- **bad_line_break** (warning) — 断行不当。多行字幕的换行点不符合语义划分。
+</problem_types>
 
-naturalness — Does the target text read like natural spoken language? Penalize stiff translationese and written-text structures that a native speaker would not say aloud.
-
-unit_integrity — Does each cue correspond to its declared source unit(s)? Defects: text from one unit leaking into another cue, cue text that does not match its unit_id, or broken merge chains.
-
-terminology — Are proper nouns and technical terms translated consistently across cues, and do they follow the glossary when one is provided?
-</dimensions>
+<non_defects>
+These are NOT defects — never list them:
+- Deliberate removal of spoken fillers ("you know", "I mean", "like").
+- Idiomatic compression that preserves the core meaning.
+- Source-language terms left untranslated by convention (names, brands).
+</non_defects>
 {% if glossary %}
 
 <glossary>
-Mandatory term translations — deviations are terminology defects:
+Mandatory term translations — deviations are defects:
 {% for src, tgt in glossary.items() %}
 - {{ src }} → {{ tgt }}
 {% endfor %}
@@ -51,17 +52,13 @@ Context the translator also saw — use it to judge topic, tone, and terminology
 Return ONLY a JSON object — no markdown fences, no prose before or after:
 
 {
-  "faithfulness": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]},
-  "naturalness": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]},
-  "unit_integrity": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]},
-  "terminology": {"score": <1-5>, "summary": "<one sentence>", "issues": [{"unit_id": "<id>", "problem": "<one sentence>", "severity": "<must_fix|minor>"}]}
+  "issues": [
+    {"unit_id": "<id>", "problem_type": "<type>", "note": "<one sentence>"}
+  ]
 }
 
-- score: integer 1-5 per the anchors in <scoring_scale>.
-- summary: one-sentence overall verdict for the dimension.
-- issues: one entry per defective unit or cue — each entry names exactly ONE unit/cue and its ONE concrete problem; empty list when the dimension has no issues. MUST be empty when the score is 5.
-- severity: "must_fix" when the defect breaks the viewing experience (missing/added meaning, mistranslation, unit leakage, wrong terminology — a viewer would notice); "minor" when it is a stylistic preference that does not affect understanding. The pass/fail gate counts only must_fix issues, so grade honestly.
-- Only list a unit/cue when you are confident it is a defect. If your own analysis concludes the rendering is acceptable (e.g. deliberate filler removal, idiomatic compression), do NOT list it — not even with a caveat.
-- Report each defective unit/cue under exactly ONE dimension — the most fitting one. Never double-report the same unit/cue for the same underlying problem.
-- language: write summary and issues in Chinese (中文); keep original-language quotes (source text, terms) in the original language.
+- issues: one entry per defective unit/cue — each entry names exactly ONE unit/cue, ONE problem_type, and ONE concise Chinese note explaining what is wrong. Empty list when no defects found.
+- problem_type: MUST be exactly one of the labels in <problem_types> — no variations.
+- Only list a unit/cue when you are confident it is a defect. If your own analysis concludes the rendering is acceptable, do NOT list it.
+- Language: write notes in Chinese (中文); keep original-language quotes in the original language.
 </output_contract>

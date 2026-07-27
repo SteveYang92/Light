@@ -294,37 +294,37 @@ def test_scan_candidate_units_rejects_missing_material(tmp_path: Path) -> None:
         scan_candidate_units(candidate, "translate")
 
 
-# ── create_case with unit range ─────────────────────────────────────────────
+# ── create_case with unit_ids ─────────────────────────────────────────────────
 
 
-def test_create_translate_case_with_range(tmp_path: Path) -> None:
+def test_create_translate_case_with_unit_ids(tmp_path: Path) -> None:
     make_multi_run(tmp_path)
     candidate = scan_candidates(tmp_path)[0]
-    case_dir = create_case(candidate, "translate", "control", tmp_path / "suite", start_unit="p0001", end_unit="p0002")
+    case_dir = create_case(candidate, "translate", "control", tmp_path / "suite", unit_ids=["p0001", "p0002"])
 
     assert case_dir.name == "multi_run__p0001-p0002"
     case_yaml = yaml.safe_load((case_dir / "case.yaml").read_text(encoding="utf-8"))
-    assert case_yaml["range"] == {"start_unit": "p0001", "end_unit": "p0002"}
+    assert case_yaml["range"] == {"unit_ids": ["p0001", "p0002"]}
 
     plan = json.loads((case_dir / "fixture" / "plan.json").read_text(encoding="utf-8"))
-    assert plan["version"] == 1  # schema preserved
+    assert plan["version"] == 1
     assert [u["unit_id"] for u in plan["units"]] == ["p0001", "p0002"]
-    assert (case_dir / "fixture" / "glossary.json").is_file()  # sidecar copied whole
+    assert (case_dir / "fixture" / "glossary.json").is_file()
 
     fixture = loader.load_fixture(loader.load_case(case_dir))
     assert [seg.unit_id for seg in fixture.segments] == ["p0001", "p0002"]
 
 
-def test_create_plan_case_with_range(tmp_path: Path) -> None:
+def test_create_plan_case_with_unit_ids(tmp_path: Path) -> None:
     make_multi_run(tmp_path)
     candidate = scan_candidates(tmp_path)[0]
-    case_dir = create_case(candidate, "plan", "edge", tmp_path / "suite", start_unit="u0000", end_unit="u0001")
+    case_dir = create_case(candidate, "plan", "edge", tmp_path / "suite", unit_ids=["u0000", "u0001"])
 
     segment = json.loads((case_dir / "fixture" / "segment.json").read_text(encoding="utf-8"))
     assert [u["unit_id"] for u in segment["units"]] == ["u0000", "u0001"]
     assert segment["total_units"] == 2
     assert segment["total_words"] == 8
-    assert len(segment["words"]) == 8  # only words covered by u0000-u0001
+    assert len(segment["words"]) == 8
 
     words = json.loads((case_dir / "fixture" / "words.json").read_text(encoding="utf-8"))
     assert len(words) == 8
@@ -334,44 +334,47 @@ def test_create_plan_case_with_range(tmp_path: Path) -> None:
     assert sum(len(seg.words) for seg in fixture.segments) == 8
 
 
-def test_create_plan_case_with_range_flat_run(tmp_path: Path) -> None:
-    """Flat run: segments regenerated, then filtered to the range."""
+def test_create_plan_case_with_unit_ids_flat_run(tmp_path: Path) -> None:
     make_flat_run(tmp_path)
     candidate = scan_candidates(tmp_path)[0]
     units = scan_candidate_units(candidate, "plan")
     assert len(units) >= 1
-    case_dir = create_case(
-        candidate, "plan", "control", tmp_path / "suite", start_unit=units[0]["unit_id"], end_unit=units[0]["unit_id"]
-    )
+    case_dir = create_case(candidate, "plan", "control", tmp_path / "suite", unit_ids=[units[0]["unit_id"]])
     fixture = loader.load_fixture(loader.load_case(case_dir))
     assert [seg.unit_id for seg in fixture.segments] == [units[0]["unit_id"]]
 
 
-def test_create_case_range_names_unique_on_repeat(tmp_path: Path) -> None:
-    """Same range twice → second case gets a numbered suffix (multi-segment harvesting)."""
+def test_create_case_with_non_contiguous_unit_ids(tmp_path: Path) -> None:
     make_multi_run(tmp_path)
     candidate = scan_candidates(tmp_path)[0]
-    first = create_case(candidate, "translate", "control", tmp_path / "suite", start_unit="p0000", end_unit="p0001")
-    second = create_case(candidate, "translate", "control", tmp_path / "suite", start_unit="p0000", end_unit="p0001")
+    case_dir = create_case(candidate, "translate", "control", tmp_path / "suite", unit_ids=["p0000", "p0002"])
+
+    assert case_dir.name == "multi_run__p0000-p0002"
+    plan = json.loads((case_dir / "fixture" / "plan.json").read_text(encoding="utf-8"))
+    assert [u["unit_id"] for u in plan["units"]] == ["p0000", "p0002"]
+
+
+def test_create_case_unit_ids_unique_on_repeat(tmp_path: Path) -> None:
+    make_multi_run(tmp_path)
+    candidate = scan_candidates(tmp_path)[0]
+    first = create_case(candidate, "translate", "control", tmp_path / "suite", unit_ids=["p0000", "p0001"])
+    second = create_case(candidate, "translate", "control", tmp_path / "suite", unit_ids=["p0000", "p0001"])
     assert first.name == "multi_run__p0000-p0001"
     assert second.name == "multi_run__p0000-p0001_2"
 
 
-def test_create_case_rejects_invalid_range(tmp_path: Path) -> None:
+def test_create_case_rejects_invalid_unit_ids(tmp_path: Path) -> None:
     make_multi_run(tmp_path)
     candidate = scan_candidates(tmp_path)[0]
     suite = tmp_path / "suite"
-    with pytest.raises(ValueError, match="unknown start_unit"):
-        create_case(candidate, "translate", "control", suite, start_unit="p9999", end_unit="p0001")
-    with pytest.raises(ValueError, match="comes before"):
-        create_case(candidate, "translate", "control", suite, start_unit="p0002", end_unit="p0000")
-    with pytest.raises(ValueError, match="together"):
-        create_case(candidate, "translate", "control", suite, start_unit="p0000")
-    # failed attempts leave no case dirs behind
+    with pytest.raises(ValueError, match="unknown unit_ids"):
+        create_case(candidate, "translate", "control", suite, unit_ids=["p9999", "p0000"])
+    with pytest.raises(ValueError, match="must not be empty"):
+        create_case(candidate, "translate", "control", suite, unit_ids=[])
     assert not (suite / "translate").exists() or not list((suite / "translate").iterdir())
 
 
-def test_create_case_without_range_keeps_whole_video(tmp_path: Path) -> None:
+def test_create_case_without_unit_ids_keeps_whole_video(tmp_path: Path) -> None:
     make_multi_run(tmp_path)
     candidate = scan_candidates(tmp_path)[0]
     case_dir = create_case(candidate, "translate", "control", tmp_path / "suite")

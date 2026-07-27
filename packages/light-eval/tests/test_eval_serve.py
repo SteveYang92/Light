@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from light_eval import loader
 from light_eval.judges.llm import LLMJudge
-from light_eval.models import DimensionScore
+from light_eval.models import Defect, ProblemTypeStats
 from light_eval.serve import create_app
 
 from .test_eval_harvest import make_flat_run, make_full_run
@@ -24,7 +24,7 @@ def _no_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 def client(tmp_path: Path) -> TestClient:
     make_flat_run(tmp_path / "output")
     make_full_run(tmp_path / "output")
-    app = create_app(suite_dir=tmp_path / "suite", output_dir=tmp_path / "output")
+    app = create_app(suite_dir=tmp_path / "suite", output_dirs=[str(tmp_path / "output")])
     return TestClient(app)
 
 
@@ -56,7 +56,14 @@ def test_create_and_list_case(client: TestClient) -> None:
 
     listed = client.get("/api/cases").json()["cases"]
     assert [c["id"] for c in listed] == ["plan/flat_run_p1"]
-    assert listed[0]["annotation_dimensions"] == ["boundary_quality", "split_necessity"]
+    assert set(listed[0]["problem_types"].keys()) == {
+        "semantic_boundary",
+        "over_fragmentation",
+        "over_long_unit",
+        "dangling_word",
+        "empty_unit",
+        "flash_unit",
+    }
 
 
 def test_create_case_conflict_and_missing(client: TestClient) -> None:
@@ -68,32 +75,38 @@ def test_create_case_conflict_and_missing(client: TestClient) -> None:
     assert client.post("/api/cases", json=bogus_step).status_code == 422
 
 
-# ── Unit scanning + range cases ──────────────────────────────────────────────
+# ── Candidate detail + unit scanning ──────────────────────────────────────
 
 
-def test_candidate_units_endpoint(client: TestClient) -> None:
-    res = client.get("/api/candidates/full_run/units")  # default step: translate when available
+def test_candidate_detail_endpoint(client: TestClient) -> None:
+    res = client.get("/api/candidates/full_run", params={"step": "translate"})
     assert res.status_code == 200
     data = res.json()
     assert data["step"] == "translate"
     assert [u["unit_id"] for u in data["units"]] == ["p0000", "p0001"]
     assert {"unit_id", "start", "end", "text"} <= set(data["units"][0])
 
-    res = client.get("/api/candidates/full_run/units", params={"step": "plan"})
+    res = client.get("/api/candidates/full_run", params={"step": "plan"})
     assert res.status_code == 200
     assert [u["unit_id"] for u in res.json()["units"]] == ["u0000"]
 
-    assert client.get("/api/candidates/nope/units").status_code == 404
-    assert client.get("/api/candidates/flat_run_p1/units", params={"step": "translate"}).status_code == 422
+    assert client.get("/api/candidates/nope").status_code == 404
+    assert client.get("/api/candidates/flat_run_p1", params={"step": "translate"}).status_code == 200
+    assert client.get("/api/candidates/flat_run_p1", params={"step": "translate"}).json()["step"] == "plan"
 
 
-def test_create_case_with_range(client: TestClient, tmp_path: Path) -> None:
+def test_candidate_detail_defaults_to_first_step(client: TestClient) -> None:
+    res = client.get("/api/candidates/full_run")
+    assert res.status_code == 200
+    assert res.json()["step"] in ("plan", "translate")
+
+
+def test_create_case_with_unit_ids(client: TestClient, tmp_path: Path) -> None:
     body = {
         "candidate": "full_run",
         "step": "translate",
         "kind": "control",
-        "start_unit": "p0000",
-        "end_unit": "p0001",
+        "unit_ids": ["p0000", "p0001"],
     }
     res = client.post("/api/cases", json=body)
     assert res.status_code == 201
@@ -104,20 +117,32 @@ def test_create_case_with_range(client: TestClient, tmp_path: Path) -> None:
     )
     assert [u["unit_id"] for u in plan["units"]] == ["p0000", "p0001"]
 
-    # same range again → numbered suffix, same video can yield multiple segment cases
+    # same unit_ids again → numbered suffix
     res = client.post("/api/cases", json=body)
     assert res.status_code == 201
     assert res.json()["case"]["id"] == "translate/full_run__p0000-p0001_2"
 
 
-def test_create_case_invalid_range_422(client: TestClient) -> None:
+def test_create_case_with_custom_name(client: TestClient) -> None:
+    body = {
+        "candidate": "full_run",
+        "step": "translate",
+        "kind": "control",
+        "unit_ids": ["p0000"],
+        "name": "my_custom_case",
+    }
+    res = client.post("/api/cases", json=body)
+    assert res.status_code == 201
+    assert res.json()["case"]["id"] == "translate/my_custom_case"
+    assert res.json()["case"]["name"] == "my_custom_case"
+
+
+def test_create_case_invalid_unit_ids_422(client: TestClient) -> None:
     base = {"candidate": "full_run", "step": "translate", "kind": "control"}
-    unknown = client.post("/api/cases", json={**base, "start_unit": "p9999", "end_unit": "p0000"})
+    unknown = client.post("/api/cases", json={**base, "unit_ids": ["p9999"]})
     assert unknown.status_code == 422
-    reversed_ = client.post("/api/cases", json={**base, "start_unit": "p0001", "end_unit": "p0000"})
-    assert reversed_.status_code == 422
-    half = client.post("/api/cases", json={**base, "start_unit": "p0000"})
-    assert half.status_code == 422
+    empty = client.post("/api/cases", json={**base, "unit_ids": []})
+    assert empty.status_code == 422
 
 
 # ── Run + output ────────────────────────────────────────────────────────────
@@ -164,11 +189,10 @@ def test_annotation_round_trip(client: TestClient, tmp_path: Path) -> None:
     client.post("/api/cases", json={"candidate": "flat_run_p1", "step": "plan", "kind": "control"})
 
     empty = client.get("/api/cases/plan/flat_run_p1/annotation").json()
-    assert empty == {"dimensions": {}, "defects": [], "overall": ""}
+    assert empty == {"defects": [], "overall": ""}
 
     payload = {
-        "dimensions": {"boundary_quality": 4, "split_necessity": 5},
-        "defects": [{"unit_id": "p0000_0", "issue": "切在从句中间"}],
+        "defects": [{"unit_id": "p0000_0", "problem_type": "semantic_boundary", "note": "切在从句中间"}],
         "overall": "pass",
     }
     assert client.put("/api/cases/plan/flat_run_p1/annotation", json=payload).status_code == 200
@@ -178,8 +202,7 @@ def test_annotation_round_trip(client: TestClient, tmp_path: Path) -> None:
     case = loader.load_case(tmp_path / "suite" / "plan" / "flat_run_p1")
     annotation = loader.load_annotation(case)
     assert annotation is not None
-    assert annotation.dimensions == {"boundary_quality": 4, "split_necessity": 5}
-    assert annotation.defects == [{"unit_id": "p0000_0", "issue": "切在从句中间"}]
+    assert annotation.defects == [Defect(unit_id="p0000_0", problem_type="semantic_boundary", note="切在从句中间")]
     assert annotation.overall == "pass"
 
     listed = client.get("/api/cases").json()["cases"]
@@ -188,28 +211,26 @@ def test_annotation_round_trip(client: TestClient, tmp_path: Path) -> None:
 
 def test_annotation_validation(client: TestClient) -> None:
     client.post("/api/cases", json={"candidate": "flat_run_p1", "step": "plan", "kind": "control"})
-    bad_dim = {"dimensions": {"faithfulness": 3}, "defects": [], "overall": ""}  # translate dim on plan case
-    assert client.put("/api/cases/plan/flat_run_p1/annotation", json=bad_dim).status_code == 422
-    bad_value = {"dimensions": {"boundary_quality": 9}, "defects": [], "overall": ""}
-    assert client.put("/api/cases/plan/flat_run_p1/annotation", json=bad_value).status_code == 422
-    bad_overall = {"dimensions": {}, "defects": [], "overall": "maybe"}
+    bad_type = {"defects": [{"unit_id": "p0000", "problem_type": "bogus"}], "overall": ""}
+    assert client.put("/api/cases/plan/flat_run_p1/annotation", json=bad_type).status_code == 422
+    bad_overall = {"defects": [], "overall": "maybe"}
     assert client.put("/api/cases/plan/flat_run_p1/annotation", json=bad_overall).status_code == 422
 
 
 # ── AI 预评（judge 端点）─────────────────────────────────────────────────────
 
 
-def _preset_scores(self, case, fixture, output):  # noqa: ARG001 — LLMJudge.score signature
+def _preset_scores(self, case, fixture, output):  # noqa: ARG001
     return [
-        DimensionScore(
-            dimension="boundary_quality",
-            score=4.0,
+        ProblemTypeStats(
+            problem_type="semantic_boundary",
+            error_count=0,
+            warning_count=1,
             passed=True,
-            detail="边界基本合理",
             evidence=["p0000_0"],
-            issues=[{"unit_id": "p0000_0", "problem": "断在从句中间", "severity": "minor"}],
+            issues=[{"unit_id": "p0000_0", "problem": "断在从句中间"}],
         ),
-        DimensionScore(dimension="split_necessity", score=3.0, passed=False, detail="存在过碎 unit", evidence=[]),
+        ProblemTypeStats(problem_type="over_fragmentation", error_count=1, warning_count=0, passed=False, evidence=[]),
     ]
 
 
@@ -227,15 +248,15 @@ def test_judge_endpoint(client: TestClient, judge_mock: None, tmp_path: Path) ->
     res = client.post("/api/cases/plan/flat_run_p1/judge")
     assert res.status_code == 200
     data = res.json()
-    assert data["suggested_overall"] == "borderline"  # 仅 minor 缺陷
-    bq = data["dimensions"]["boundary_quality"]
-    assert bq == {
-        "score": 4.0,
-        "summary": "边界基本合理",
-        "issues": [{"unit_id": "p0000_0", "problem": "断在从句中间", "severity": "minor"}],
-    }
-    sn = data["dimensions"]["split_necessity"]
-    assert sn == {"score": 3.0, "summary": "存在过碎 unit", "issues": []}
+    assert data["suggested_overall"] == "fail"
+    bq = data["problem_types"]["semantic_boundary"]
+    assert bq["error_count"] == 0
+    assert bq["warning_count"] == 1
+    assert bq["passed"] is True
+    assert bq["issues"] == [{"unit_id": "p0000_0", "problem": "断在从句中间"}]
+    of = data["problem_types"]["over_fragmentation"]
+    assert of["error_count"] == 1
+    assert of["passed"] is False
 
     # persisted verbatim to .eval_run/judge.json
     stored = json.loads((tmp_path / "suite" / "plan" / "flat_run_p1" / ".eval_run" / "judge.json").read_text("utf-8"))
@@ -273,8 +294,7 @@ def _save_annotation(client: TestClient) -> None:
     res = client.put(
         "/api/cases/plan/flat_run_p1/annotation",
         json={
-            "dimensions": {"boundary_quality": 4, "split_necessity": 4},
-            "defects": [{"unit_id": "p0000_0", "issue": "旧缺陷"}],
+            "defects": [{"unit_id": "p0000_0", "problem_type": "semantic_boundary", "note": "旧缺陷"}],
             "overall": "pass",
         },
     )
@@ -326,11 +346,10 @@ def test_judge_without_llm_key_409(client: TestClient) -> None:
 def test_annotation_with_judge_suggestion_round_trip(client: TestClient, tmp_path: Path) -> None:
     client.post("/api/cases", json={"candidate": "flat_run_p1", "step": "plan", "kind": "control"})
     suggestion = {
-        "dimensions": {"boundary_quality": {"score": 5, "summary": "ok", "issues": []}},
+        "problem_types": {"semantic_boundary": {"error_count": 0, "warning_count": 0, "passed": True, "issues": []}},
         "suggested_overall": "pass",
     }
     payload = {
-        "dimensions": {"boundary_quality": 4},
         "defects": [],
         "overall": "pass",
         "judge_suggestion": suggestion,

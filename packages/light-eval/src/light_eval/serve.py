@@ -3,13 +3,16 @@
 Serves a single-page vanilla-JS UI (``web/index.html``, shipped as package
 data) plus a small JSON API:
 
-- ``GET  /api/candidates``                    harvest candidates from the output dir
-- ``GET  /api/candidates/{name}/units``       unit sequence of one candidate (range picking)
-- ``POST /api/cases``                         create a case from a candidate (whole video or unit range)
-- ``GET  /api/cases``                         list existing cases (with annotation status)
-- ``GET  /api/cases/{step}/{name}/output``        step output for the detail view
-- ``POST /api/cases/{step}/{name}/run``           (re-)run the runner for one case
-- ``POST /api/cases/{step}/{name}/judge``         LLM pre-judge of the persisted output
+- ``GET    /api/output-dirs``                    list manually-added scan directories
+- ``POST   /api/output-dirs``                    add a scan directory
+- ``DELETE /api/output-dirs``                    remove a scan directory
+- ``GET    /api/candidates``                     harvest candidates from all registered dirs
+- ``GET    /api/candidates/{name}?step=``        candidate detail (subtitle list filtered by step)
+- ``POST   /api/cases``                          create a case from a candidate (selected unit_ids)
+- ``GET    /api/cases``                          list existing cases (with annotation status)
+- ``GET    /api/cases/{step}/{name}/output``        step output for the detail view
+- ``POST   /api/cases/{step}/{name}/run``           (re-)run the runner for one case
+- ``POST   /api/cases/{step}/{name}/judge``         LLM pre-judge of the persisted output
 - ``GET/PUT /api/cases/{step}/{name}/annotation`` read / save ``annotation.yaml``
 
 Cases are addressed as ``<step>/<name>`` (e.g. ``plan/my_case``).  Run outputs are
@@ -25,21 +28,15 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from . import loader
 from .harvest import create_case, scan_candidate_units, scan_candidates
 from .judges.llm import LLMJudge, suggest_overall
-from .models import VALID_KINDS, VALID_STEPS, EvalCase, StepOutput
+from .models import PROBLEM_TYPES, VALID_KINDS, VALID_STEPS, EvalCase, StepOutput
 from .runner import build_llm_client, run_case
-
-# Annotation dimensions per step (drives both validation and the UI form).
-ANNOTATION_DIMENSIONS: dict[str, list[str]] = {
-    "plan": ["boundary_quality", "split_necessity"],
-    "translate": ["faithfulness", "naturalness", "unit_integrity", "terminology"],
-}
 
 OVERALL_CHOICES = ("pass", "borderline", "fail")
 
@@ -50,36 +47,44 @@ _RUN_JUDGE = Path(".eval_run") / "judge.json"
 # ── Request models ──────────────────────────────────────────────────────────
 
 
+class AddDirRequest(BaseModel):
+    path: str
+
+
 class CreateCaseRequest(BaseModel):
-    candidate: str  # candidate name from GET /api/candidates
+    candidate: str
     step: str
     kind: str = "control"
-    start_unit: str | None = None  # optional unit range (both or neither)
-    end_unit: str | None = None
+    unit_ids: list[str] | None = None
+    name: str | None = None
 
 
-class Defect(BaseModel):
+class DefectIn(BaseModel):
     unit_id: str = ""
-    issue: str = ""
-    severity: str = ""  # must_fix | minor；空 = 未分级（读取侧按 minor 兼容处理）
+    problem_type: str = ""
+    note: str = ""
+    confirmed: bool | None = None
 
 
 class AnnotationRequest(BaseModel):
-    dimensions: dict[str, int] = {}
-    defects: list[Defect] = []
+    defects: list[DefectIn] = []
     overall: str = ""
-    judge_suggestion: dict | None = None  # raw judge-endpoint JSON, echoed back for audit
+    judge_suggestion: dict | None = None
     reviewed_by: str = ""
 
 
 # ── App factory ─────────────────────────────────────────────────────────────
 
 
-def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "output") -> FastAPI:
-    """Build the workbench app bound to *suite_dir* (cases) and *output_dir* (candidates)."""
+def create_app(
+    suite_dir: str | Path = "tests/eval",
+    output_dirs: list[str | Path] | None = None,
+) -> FastAPI:
+    """Build the workbench app bound to *suite_dir* (cases) and *output_dirs* (candidates)."""
     suite_dir = Path(suite_dir)
-    output_dir = Path(output_dir)
+    dirs: list[Path] = [Path(d) for d in (output_dirs or []) if Path(d).is_dir()]
     app = FastAPI(title="light-eval workbench")
+    app.state.output_dirs = dirs
 
     # ── UI ──────────────────────────────────────────────────────────────────
 
@@ -87,25 +92,109 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
     def index() -> str:
         return resources.files("light_eval").joinpath("web/index.html").read_text(encoding="utf-8")
 
+    # ── Output directories ─────────────────────────────────────────────────
+
+    @app.get("/api/output-dirs")
+    def list_output_dirs() -> dict:
+        return {"dirs": [str(d) for d in app.state.output_dirs]}
+
+    @app.post("/api/output-dirs")
+    def add_output_dir(req: AddDirRequest) -> dict:
+        path = Path(req.path).resolve()
+        if not path.is_dir():
+            raise HTTPException(400, f"not a directory: {path}")
+        if any(path == d or path in d.parents for d in app.state.output_dirs):
+            raise HTTPException(409, f"directory already added or is a parent: {path}")
+        if any(d == path or d in path.parents for d in app.state.output_dirs):
+            raise HTTPException(409, f"a parent of this directory is already added: {path}")
+        app.state.output_dirs.append(path)
+        return {"ok": True, "dirs": [str(d) for d in app.state.output_dirs]}
+
+    @app.delete("/api/output-dirs")
+    def remove_output_dir(path: str = Query(...)) -> dict:
+        p = Path(path).resolve()
+        matches = [d for d in app.state.output_dirs if d == p]
+        if not matches:
+            raise HTTPException(404, f"directory not found: {path}")
+        for m in matches:
+            app.state.output_dirs.remove(m)
+        return {"ok": True, "dirs": [str(d) for d in app.state.output_dirs]}
+
     # ── Candidates ──────────────────────────────────────────────────────────
 
     @app.get("/api/candidates")
     def list_candidates() -> dict:
-        candidates = scan_candidates(output_dir) if output_dir.is_dir() else []
-        return {"output_dir": str(output_dir), "candidates": [c.to_dict() for c in candidates]}
+        all_candidates = []
+        seen: set[tuple[str, str]] = set()
+        for d in app.state.output_dirs:
+            if not d.is_dir():
+                continue
+            for c in scan_candidates(d):
+                key = (c.name, c.run)
+                if key not in seen:
+                    seen.add(key)
+                    all_candidates.append(c)
+        all_candidates.sort(key=lambda c: (c.run, c.name))
+        return {
+            "dirs": [str(d) for d in app.state.output_dirs],
+            "candidates": [
+                {
+                    "name": c.name,
+                    "run": c.run,
+                    "duration_s": round(c.duration_s, 3),
+                    "steps": c.steps,
+                    "lang_pair": c.lang_pair,
+                }
+                for c in all_candidates
+            ],
+        }
 
-    @app.get("/api/candidates/{name}/units")
-    def candidate_units(name: str, step: str | None = None) -> dict:
-        """Unit sequence of one candidate for range picking (``?step=plan|translate``)."""
+    @app.get("/api/candidates/{name}")
+    def candidate_detail(name: str, step: str | None = None) -> dict:
+        """Candidate subtitle list for the detail view (``?step=plan|translate``)."""
         match = _find_candidate(name)
         if match is None:
             raise HTTPException(404, f"candidate not found: {name!r}")
-        chosen = step or ("translate" if "translate" in match.steps else "plan")
+        chosen = step
+        if chosen not in match.steps:
+            chosen = match.steps[0]
+        if chosen not in VALID_STEPS:
+            raise HTTPException(422, f"invalid step {chosen!r}")
         try:
             units = scan_candidate_units(match, chosen)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
-        return {"candidate": name, "step": chosen, "units": units}
+
+        target_texts: dict[str, str] = {}
+        if chosen == "translate" and match.target_langs:
+            trans_path = match.run_dir / "translations" / "raw.json"
+            if trans_path.is_file():
+                try:
+                    with open(trans_path, encoding="utf-8") as f:
+                        trans_data = json.load(f)
+                except (OSError, json.JSONDecodeError):
+                    pass
+                else:
+                    trans_units = []
+                    if isinstance(trans_data, dict):
+                        trans_units = trans_data.get("units") or trans_data.get("output") or []
+                    elif isinstance(trans_data, list):
+                        trans_units = trans_data
+                    target_texts = {str(u.get("unit_id", "")): u.get("text", "") for u in trans_units}
+
+        return {
+            "candidate": {
+                "name": match.name,
+                "run": match.run,
+                "duration_s": round(match.duration_s, 3),
+                "steps": match.steps,
+                "source_lang": match.source_lang,
+                "target_langs": match.target_langs,
+                "lang_pair": match.lang_pair,
+            },
+            "step": chosen,
+            "units": [{**u, "target_text": target_texts.get(str(u["unit_id"]), "")} for u in units],
+        }
 
     # ── Cases ───────────────────────────────────────────────────────────────
 
@@ -120,7 +209,12 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
             raise HTTPException(404, f"candidate not found: {req.candidate!r}")
         try:
             case_dir = create_case(
-                match, req.step, req.kind, suite_dir, start_unit=req.start_unit, end_unit=req.end_unit
+                match,
+                req.step,
+                req.kind,
+                suite_dir,
+                unit_ids=req.unit_ids,
+                name=req.name or None,
             )
         except FileExistsError as exc:
             raise HTTPException(409, str(exc)) from exc
@@ -176,13 +270,6 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
 
     @app.post("/api/cases/{step}/{name}/judge")
     def judge_case_api(step: str, name: str) -> dict:
-        """LLM pre-judge of the persisted step output; persists to .eval_run/judge.json.
-
-        Re-running starts the review from a clean slate: the stale judge.json
-        is deleted up front (a failed run leaves nothing behind), and on
-        success the saved annotation.yaml is deleted too (it is kept when
-        judging fails).
-        """
         case = _resolve_case(step, name)
         out_path = case.case_dir / _RUN_OUTPUT
         if not out_path.is_file():
@@ -193,14 +280,22 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
         fixture = loader.load_fixture(case)
         step_output = StepOutput.from_dict(json.loads(out_path.read_text(encoding="utf-8")))
         judge_path = case.case_dir / _RUN_JUDGE
-        judge_path.unlink(missing_ok=True)  # 重跑先删旧评审——失败也不残留过期结果
+        judge_path.unlink(missing_ok=True)
         scores = LLMJudge(llm).score(case, fixture, step_output)
         if not scores:
             raise HTTPException(409, "步骤输出不可用（出错 / 跳过 / 为空），无法预评")
-        # 重跑即重来：评审成功后删除旧标注，本轮从干净状态开始（失败则保留旧标注）
         (case.case_dir / loader.ANNOTATION_YAML).unlink(missing_ok=True)
         result = {
-            "dimensions": {s.dimension: {"score": s.score, "summary": s.detail, "issues": s.issues} for s in scores},
+            "problem_types": {
+                s.problem_type: {
+                    "error_count": s.error_count,
+                    "warning_count": s.warning_count,
+                    "passed": s.passed,
+                    "issues": s.issues,
+                    "evidence": s.evidence,
+                }
+                for s in scores
+            },
             "suggested_overall": suggest_overall(scores),
         }
         judge_path.parent.mkdir(parents=True, exist_ok=True)
@@ -213,27 +308,32 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
     def get_annotation(step: str, name: str) -> dict:
         case = _resolve_case(step, name)
         annotation = loader.load_annotation(case)
-        empty = {"dimensions": {}, "defects": [], "overall": ""}
+        empty = {"defects": [], "overall": ""}
         return annotation.to_dict() if annotation is not None else empty
 
     @app.put("/api/cases/{step}/{name}/annotation")
     def put_annotation(step: str, name: str, req: AnnotationRequest) -> dict:
         case = _resolve_case(step, name)
-        allowed = set(ANNOTATION_DIMENSIONS[case.step])
-        unknown = sorted(set(req.dimensions) - allowed)
-        if unknown:
-            raise HTTPException(422, f"unknown dimensions for step {case.step!r}: {unknown}")
-        for dim, value in req.dimensions.items():
-            if not 1 <= value <= 5:
-                raise HTTPException(422, f"dimension {dim!r} must be 1-5, got {value}")
+        valid_types = set(PROBLEM_TYPES.get(case.step, {}))
         if req.overall and req.overall not in OVERALL_CHOICES:
             raise HTTPException(422, f"overall must be one of {OVERALL_CHOICES}")
+        for d in req.defects:
+            if d.problem_type and d.problem_type not in valid_types:
+                raise HTTPException(422, f"unknown problem_type {d.problem_type!r} for step {case.step!r}")
         data: dict[str, Any] = {
-            "dimensions": req.dimensions,
             "defects": [
-                {k: v for k, v in {"unit_id": d.unit_id, "issue": d.issue, "severity": d.severity}.items() if v}
+                {
+                    k: v
+                    for k, v in {
+                        "unit_id": d.unit_id,
+                        "problem_type": d.problem_type,
+                        "note": d.note,
+                        "confirmed": d.confirmed,
+                    }.items()
+                    if v is not False or k == "confirmed"
+                }
                 for d in req.defects
-                if d.issue or d.unit_id
+                if d.problem_type or d.unit_id
             ],
             "overall": req.overall,
         }
@@ -249,13 +349,16 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
     # ── Helpers ─────────────────────────────────────────────────────────────
 
     def _find_candidate(name: str):
-        """Candidate named *name* from a fresh scan, or None."""
-        if not output_dir.is_dir():
-            return None
-        return next((c for c in scan_candidates(output_dir) if c.name == name), None)
+        """Candidate named *name* from a fresh scan of all registered dirs, or None."""
+        for d in app.state.output_dirs:
+            if not d.is_dir():
+                continue
+            found = next((c for c in scan_candidates(d) if c.name == name), None)
+            if found is not None:
+                return found
+        return None
 
     def _resolve_case(step: str, name: str) -> EvalCase:
-        """Load the case identified by ``<step>/<name>`` or 404."""
         case_dir = suite_dir / step / name
         if step not in VALID_STEPS or not name or not (case_dir / loader.CASE_YAML).is_file():
             raise HTTPException(404, f"case not found: {step}/{name!r}")
@@ -273,11 +376,10 @@ def create_app(suite_dir: str | Path = "tests/eval", output_dir: str | Path = "o
             "annotated": annotation is not None,
             "has_judge_suggestion": annotation is not None and annotation.judge_suggestion is not None,
             "has_output": (case.case_dir / _RUN_OUTPUT).is_file(),
-            "annotation_dimensions": ANNOTATION_DIMENSIONS[case.step],
+            "problem_types": PROBLEM_TYPES[case.step],
         }
 
     def _shape_items(case: EvalCase, output: list[dict]) -> list[dict]:
-        """View-model rows: plan units, or source/translation pairs for translate."""
         if case.step == "plan":
             return [
                 {

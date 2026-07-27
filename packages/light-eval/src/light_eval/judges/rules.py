@@ -1,24 +1,4 @@
-"""Rule judges — deterministic per-step metrics, no LLM involved.
-
-plan dimensions:
-- ``word_coverage``: output unit words must cover 100% of input words.
-- ``duration_violations``: units shorter than ``min_duration`` or longer
-  than the *soft* cap ``max_duration * 1.15`` — the plan split validator
-  tolerates slight overflow by design (semantic-first).
-- ``dangling_tails``: units ending on a function word (reuses
-  :func:`light_subtitle.plan.boundary.dangling_tail`).
-- ``empty_units``: units with blank text.
-
-translate dimensions:
-- ``unit_coverage``: share of input units covered by output cues
-  (``merged_from`` chains count, via ``covered_unit_ids``).
-- ``empty_translations``: cues with blank text.
-- ``target_lang_ratio``: CJK character share of cue text (zh only; pass
-  threshold defaults to 0.6, overridable via
-  ``params.target_lang_ratio_threshold``).
-- ``source_fidelity``: per-cue consistency with the input units — known
-  unit ids, chain order, and timing window (via ``covered_time_window``).
-"""
+"""Rule judges — deterministic per-step metrics, no LLM involved."""
 
 from __future__ import annotations
 
@@ -33,17 +13,13 @@ from light_subtitle.translate.translate import covered_unit_ids
 from light_text import is_cjk
 
 from ..loader import Fixture
-from ..models import DimensionScore, EvalCase, StepOutput
+from ..models import EvalCase, ProblemTypeStats, StepOutput
 
 _TIME_TOLERANCE_S = 0.05
 _DEFAULT_TARGET_LANG_RATIO_THRESHOLD = 0.6
 
 
-# ── Entry point ─────────────────────────────────────────────────────────────
-
-
 def judge_for_step(step: str) -> PlanRulesJudge | TranslateRulesJudge:
-    """Return the rule judge for *step*."""
     if step == "plan":
         return PlanRulesJudge()
     if step == "translate":
@@ -57,7 +33,7 @@ def judge_for_step(step: str) -> PlanRulesJudge | TranslateRulesJudge:
 class PlanRulesJudge:
     """Rule metrics for planned cue units (``plan.json`` output)."""
 
-    def score(self, case: EvalCase, fixture: Fixture, output: StepOutput) -> list[DimensionScore]:
+    def score(self, case: EvalCase, fixture: Fixture, output: StepOutput) -> list[ProblemTypeStats]:
         if output.skipped or output.error:
             return []
         units = output.output
@@ -73,8 +49,7 @@ def _word_key(word_dict: dict) -> tuple[str, float, float]:
     return (word_dict["text"].strip(), round(word_dict["start"], 3), round(word_dict["end"], 3))
 
 
-def _word_coverage(fixture: Fixture, units: list[dict]) -> DimensionScore:
-    """Share of input words covered by the planned units (100% to pass)."""
+def _word_coverage(fixture: Fixture, units: list[dict]) -> ProblemTypeStats:
     input_words = Counter(
         (w.text.strip(), round(w.start, 3), round(w.end, 3)) for seg in fixture.segments for w in seg.words
     )
@@ -82,26 +57,17 @@ def _word_coverage(fixture: Fixture, units: list[dict]) -> DimensionScore:
     missing = input_words - output_words
     total = sum(input_words.values())
     covered = total - sum(missing.values())
-    ratio = covered / total if total else 1.0
     evidence = [f'"{text}" x{n}' for (text, _, _), n in sorted(missing.items())][:20]
-    return DimensionScore(
-        dimension="word_coverage",
-        score=ratio,
+    return ProblemTypeStats(
+        problem_type="word_coverage",
+        error_count=0 if not missing else 1,
         passed=not missing,
         detail=f"{covered}/{total} input words covered",
         evidence=evidence,
     )
 
 
-def _duration_violations(case: EvalCase, units: list[dict]) -> DimensionScore:
-    """Count units outside [min_duration, soft_max] (0 to pass).
-
-    The plan step's own contract tolerates slight overflow: the split
-    validator accepts parts up to ``max_duration * 1.15`` — a small overflow
-    beats an unnatural mid-phrase cut (see plan_split_system.j2).  The rule
-    therefore flags only violations of that *soft* cap; anything between
-    strict and soft max is intentional, not a defect.
-    """
+def _duration_violations(case: EvalCase, units: list[dict]) -> ProblemTypeStats:
     min_dur = float(case.params.get("min_duration", PlanConfig.min_duration))
     max_dur = float(case.params.get("max_duration", PlanConfig.max_duration))
     soft_max = max_dur * 1.15
@@ -110,21 +76,16 @@ def _duration_violations(case: EvalCase, units: list[dict]) -> DimensionScore:
         dur = unit["end"] - unit["start"]
         if dur < min_dur or dur > soft_max:
             violations.append(f"{unit['unit_id']} ({dur:.2f}s)")
-    return DimensionScore(
-        dimension="duration_violations",
-        score=float(len(violations)),
+    return ProblemTypeStats(
+        problem_type="duration_violations",
+        error_count=len(violations),
         passed=not violations,
-        detail=f"{len(violations)} unit(s) outside [{min_dur}, {soft_max:.2f}]s (soft cap = max*1.15)",
+        detail=f"{len(violations)} unit(s) outside [{min_dur}, {soft_max:.2f}]s",
         evidence=violations,
     )
 
 
-def _dangling_tails(units: list[dict]) -> DimensionScore:
-    """Count units whose effective tail word is a stranded function word (0 to pass).
-
-    Ghost words (zero-confidence ASR artifacts) are skipped when locating
-    the tail — they carry no real speech (``boundary.effective_tail``).
-    """
+def _dangling_tails(units: list[dict]) -> ProblemTypeStats:
     offenders = []
     for unit in units:
         words = [word_from_dict(w) for w in unit.get("words", [])]
@@ -134,21 +95,20 @@ def _dangling_tails(units: list[dict]) -> DimensionScore:
         bad = dangling_tail(tail)
         if bad is not None:
             offenders.append(f'{unit["unit_id"]} (ends on "{bad}")')
-    return DimensionScore(
-        dimension="dangling_tails",
-        score=float(len(offenders)),
+    return ProblemTypeStats(
+        problem_type="dangling_tails",
+        error_count=len(offenders),
         passed=not offenders,
         detail=f"{len(offenders)} unit(s) end on a function word",
         evidence=offenders,
     )
 
 
-def _empty_units(units: list[dict]) -> DimensionScore:
-    """Count units with blank text (0 to pass)."""
+def _empty_units(units: list[dict]) -> ProblemTypeStats:
     empty = [unit["unit_id"] for unit in units if not unit.get("text", "").strip()]
-    return DimensionScore(
-        dimension="empty_units",
-        score=float(len(empty)),
+    return ProblemTypeStats(
+        problem_type="empty_units",
+        error_count=len(empty),
         passed=not empty,
         detail=f"{len(empty)} empty unit(s)",
         evidence=empty,
@@ -161,7 +121,7 @@ def _empty_units(units: list[dict]) -> DimensionScore:
 class TranslateRulesJudge:
     """Rule metrics for translated cues (``raw.json``-schema output)."""
 
-    def score(self, case: EvalCase, fixture: Fixture, output: StepOutput) -> list[DimensionScore]:
+    def score(self, case: EvalCase, fixture: Fixture, output: StepOutput) -> list[ProblemTypeStats]:
         if output.skipped or output.error:
             return []
         cues = [artifacts.cue_from_dict(raw) for raw in output.output]
@@ -173,63 +133,51 @@ class TranslateRulesJudge:
         ]
 
 
-def _unit_coverage(fixture: Fixture, cues) -> DimensionScore:
-    """Share of input unit ids covered by cues incl. merge chains (100% to pass)."""
+def _unit_coverage(fixture: Fixture, cues) -> ProblemTypeStats:
     input_ids = {seg.unit_id for seg in fixture.segments}
     covered = covered_unit_ids(cues) & input_ids
     missing = sorted(input_ids - covered)
-    ratio = len(covered) / len(input_ids) if input_ids else 1.0
-    return DimensionScore(
-        dimension="unit_coverage",
-        score=ratio,
+    return ProblemTypeStats(
+        problem_type="unit_coverage",
+        error_count=0 if not missing else 1,
         passed=not missing,
         detail=f"{len(covered)}/{len(input_ids)} units covered",
         evidence=missing[:20],
     )
 
 
-def _empty_translations(cues) -> DimensionScore:
-    """Count cues with blank target text (0 to pass)."""
+def _empty_translations(cues) -> ProblemTypeStats:
     empty = [cue.unit_id for cue in cues if not cue.text.strip()]
-    return DimensionScore(
-        dimension="empty_translations",
-        score=float(len(empty)),
+    return ProblemTypeStats(
+        problem_type="empty_translations",
+        error_count=len(empty),
         passed=not empty,
         detail=f"{len(empty)} empty translation(s)",
         evidence=empty,
     )
 
 
-def _target_lang_ratio(case: EvalCase, cues) -> DimensionScore:
-    """CJK share of cue text for ``target_lang=zh`` (threshold to pass).
-
-    Term-dense content legitimately keeps Latin names/terms ("OpenAI 发布了
-    GPT Live"), so the default threshold is 0.6 rather than a near-total CJK
-    share — the metric targets wholesale untranslated output, not terminology.
-    Override per case via ``params.target_lang_ratio_threshold``.
-    """
+def _target_lang_ratio(case: EvalCase, cues) -> ProblemTypeStats:
     target_lang = str(case.params.get("target_lang", "zh"))
     if target_lang != "zh":
-        return DimensionScore(
-            dimension="target_lang_ratio",
-            score=1.0,
+        return ProblemTypeStats(
+            problem_type="target_lang_ratio",
             passed=True,
-            detail=f"target_lang={target_lang}: ratio check implemented for zh only",
+            detail=f"target_lang={target_lang}: zh-only",
         )
     chars = [ch for cue in cues for ch in cue.text if not ch.isspace()]
     cjk = sum(1 for ch in chars if is_cjk(ch))
     ratio = cjk / len(chars) if chars else 0.0
     threshold = float(case.params.get("target_lang_ratio_threshold", _DEFAULT_TARGET_LANG_RATIO_THRESHOLD))
-    return DimensionScore(
-        dimension="target_lang_ratio",
-        score=ratio,
+    return ProblemTypeStats(
+        problem_type="target_lang_ratio",
+        error_count=0 if ratio >= threshold else 1,
         passed=ratio >= threshold,
         detail=f"{cjk}/{len(chars)} non-space chars are CJK (threshold {threshold})",
     )
 
 
-def _source_fidelity(fixture: Fixture, cues) -> DimensionScore:
-    """Per-cue consistency with input units: known ids, ordered chains, timing."""
+def _source_fidelity(fixture: Fixture, cues) -> ProblemTypeStats:
     input_by_id = {seg.unit_id: seg for seg in fixture.segments}
     input_order = {seg.unit_id: i for i, seg in enumerate(fixture.segments)}
     unit_times = {seg.unit_id: (seg.start, seg.end) for seg in fixture.segments}
@@ -253,10 +201,9 @@ def _source_fidelity(fixture: Fixture, cues) -> DimensionScore:
         if not timing_ok:
             problems.append(f"{cue.cue_id}: timing mismatch vs covered units")
     n_ok = len(cues) - len(problems)
-    ratio = n_ok / len(cues) if cues else 1.0
-    return DimensionScore(
-        dimension="source_fidelity",
-        score=ratio,
+    return ProblemTypeStats(
+        problem_type="source_fidelity",
+        error_count=len(problems),
         passed=not problems,
         detail=f"{n_ok}/{len(cues)} cues consistent with input units",
         evidence=problems[:20],

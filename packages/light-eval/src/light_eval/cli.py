@@ -3,8 +3,7 @@
 
 ``run`` executes a suite (rule judges + optional LLM judge) and persists
 per-case outputs; ``harvest`` lists harvestable candidates from real
-pipeline runs; ``serve`` launches the eval workbench web UI; ``calibrate``
-compares LLM-judge scores against human annotations.
+pipeline runs; ``serve`` launches the eval workbench web UI.
 """
 
 from __future__ import annotations
@@ -89,7 +88,9 @@ def run(
 
 def cases_summary(agg: dict) -> str:
     """One-line aggregate summary for the console."""
-    dims = ", ".join(f"{dim} {counts['passed']}/{counts['total']}" for dim, counts in sorted(agg["dimensions"].items()))
+    dims = ", ".join(
+        f"{pt} {counts['passed']}/{counts['total']}" for pt, counts in sorted(agg["problem_types"].items())
+    )
     return (
         f"cases: {agg['n_passed']}/{agg['n_cases']} passed"
         f" (errored: {agg['n_errored']}, skipped: {agg['n_skipped']})" + (f" · {dims}" if dims else "")
@@ -118,101 +119,11 @@ def harvest(
 
 
 @app.command()
-def calibrate(
-    suite_dir: Path = typer.Argument(Path("tests/eval"), help="Suite root containing <step>/<case_name>/ dirs"),
-    step: str | None = typer.Option(None, "--step", help=f"Restrict to one step: {', '.join(VALID_STEPS)}"),
-    llm_base_url: str = typer.Option(DEFAULT_LLM_BASE_URL, "--llm-base-url"),
-    llm_model: str = typer.Option(DEFAULT_LLM_MODEL, "--llm-model"),
-    llm_api_key: str = typer.Option("", "--llm-api-key", help="Falls back to env DEEPSEEK_API_KEY"),
-    output: Path | None = typer.Option(None, "-o", "--output", help="Write calibration report JSON here"),
-) -> None:
-    """Calibrate LLM-judge scores against human annotations (annotation.yaml).
-
-    Cases annotated via AI pre-judge carry ``judge_suggestion`` in their
-    annotation — those are used verbatim (no LLM call).  Cases without a
-    stored suggestion fall back to re-judging the persisted step output
-    (``.eval_run/output.json`` from ``serve`` or ``run``), which needs an
-    API key.  Cases with neither annotation nor (when needed) output are
-    skipped.
-    """
-    import json
-
-    from .calibration import calibrate as run_calibration
-    from .judges.llm import LLMJudge, passes
-    from .models import DimensionScore, StepOutput
-    from .serve import _RUN_OUTPUT
-
-    if step is not None and step not in VALID_STEPS:
-        raise typer.BadParameter(f"--step must be one of: {', '.join(VALID_STEPS)}")
-
-    pairs = []
-    pending = []  # cases without a stored suggestion — re-judged live below
-    n_adjusted = 0  # dims where the human final score differs from the suggestion
-    n_compared = 0
-    for case in loader.discover_cases(suite_dir, step=step):
-        annotation = loader.load_annotation(case)
-        if annotation is None:
-            typer.echo(f"[SKIP] {case.step}/{case.name} (no annotation)")
-            continue
-        suggestion = (annotation.judge_suggestion or {}).get("dimensions") or {}
-        if suggestion:
-            scores = [
-                DimensionScore(
-                    dimension=dim,
-                    score=float(entry.get("score", 0.0)),
-                    passed=passes(entry.get("issues") or []),
-                    detail=str(entry.get("reason", "")),
-                    evidence=[str(item) for item in entry.get("evidence") or []],
-                    issues=[i for i in entry.get("issues") or [] if isinstance(i, dict)],
-                )
-                for dim, entry in suggestion.items()
-                if isinstance(entry, dict)
-            ]
-            pairs.append((annotation, scores))
-            for dim, human in annotation.dimensions.items():
-                entry = suggestion.get(dim)
-                if isinstance(entry, dict):
-                    n_compared += 1
-                    n_adjusted += int(float(entry.get("score", 0.0)) != float(human))
-            typer.echo(f"[SUGGESTION] {case.step}/{case.name} ({len(scores)} dimensions, stored)")
-            continue
-        out_path = case.case_dir / _RUN_OUTPUT
-        if not out_path.is_file():
-            typer.echo(f"[SKIP] {case.step}/{case.name} (no persisted output)")
-            continue
-        pending.append((case, annotation, out_path))
-
-    if pending:
-        llm = build_llm_client(base_url=llm_base_url, model=llm_model, api_key=llm_api_key)
-        if llm is None:
-            typer.echo("calibrate requires an LLM API key (--llm-api-key or DEEPSEEK_API_KEY)")
-            raise typer.Exit(code=1)
-        judge = LLMJudge(llm)
-        for case, annotation, out_path in pending:
-            fixture = loader.load_fixture(case)
-            step_output = StepOutput.from_dict(json.loads(out_path.read_text(encoding="utf-8")))
-            scores = judge.score(case, fixture, step_output)
-            pairs.append((annotation, scores))
-            typer.echo(f"[JUDGED] {case.step}/{case.name} ({len(scores)} dimensions)")
-
-    if not pairs:
-        typer.echo("No calibratable cases (need annotation.yaml with judge_suggestion, or + .eval_run/output.json)")
-        raise typer.Exit(code=1)
-
-    report = run_calibration(pairs)
-    typer.echo()
-    typer.echo(report.to_text())
-    if n_compared:
-        typer.echo(f"人工调整率: {n_adjusted}/{n_compared} 维度被人工改分 ({n_adjusted / n_compared:.1%})")
-    if output is not None:
-        output.write_text(json.dumps(report.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
-        typer.echo(f"Calibration report written to {output}")
-
-
-@app.command()
 def serve(
     suite_dir: Path = typer.Option(Path("tests/eval"), "--suite-dir", help="Case suite root (<step>/<case_name>/)"),
-    output_dir: Path = typer.Option(Path("output"), "--output-dir", help="Run output dir scanned for candidates"),
+    output_dir: list[Path] = typer.Option(
+        [], "--output-dir", help="Run output directories scanned for candidates (can repeat)"
+    ),
     host: str = typer.Option("127.0.0.1", "--host"),
     port: int = typer.Option(8788, "--port"),
 ) -> None:
@@ -222,5 +133,6 @@ def serve(
     from .serve import create_app
 
     suite_dir.mkdir(parents=True, exist_ok=True)
-    typer.echo(f"eval workbench: http://{host}:{port}  (suite: {suite_dir}, candidates: {output_dir})")
-    uvicorn.run(create_app(suite_dir=suite_dir, output_dir=output_dir), host=host, port=port)
+    output_dirs = [str(d) for d in output_dir] if output_dir else []
+    typer.echo(f"eval workbench: http://{host}:{port}  (suite: {suite_dir}, candidate dirs: {output_dirs or 'none'})")
+    uvicorn.run(create_app(suite_dir=suite_dir, output_dirs=output_dirs), host=host, port=port)

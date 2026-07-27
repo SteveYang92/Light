@@ -41,7 +41,6 @@ errored: {n_errored} · skipped: {n_skipped}</div>
 
 
 def to_html(report: EvalReport) -> str:
-    """Render *report* as a standalone HTML page."""
     agg = report.aggregate()
     return _PAGE.format(
         step=html.escape(report.step),
@@ -50,25 +49,24 @@ def to_html(report: EvalReport) -> str:
         n_passed=agg["n_passed"],
         n_errored=agg["n_errored"],
         n_skipped=agg["n_skipped"],
-        dim_table=_dimension_table(agg["dimensions"]),
+        dim_table=_dimension_table(agg["problem_types"]),
         case_tables="\n".join(_case_table(result) for result in report.cases),
     )
 
 
 def save_html(report: EvalReport, path: str | Path) -> Path:
-    """Write the HTML report to *path*."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(to_html(report), encoding="utf-8")
     return path
 
 
-def _dimension_table(dimensions: dict[str, dict[str, int]]) -> str:
+def _dimension_table(types: dict[str, dict[str, int]]) -> str:
     rows = "".join(
-        f"<tr><td>{html.escape(dim)}</td><td>{counts['passed']}/{counts['total']}</td></tr>"
-        for dim, counts in sorted(dimensions.items())
+        f"<tr><td>{html.escape(pt)}</td><td>{counts['passed']}/{counts['total']}</td></tr>"
+        for pt, counts in sorted(types.items())
     )
-    return f"<table><tr><th>dimension</th><th>passed</th></tr>{rows}</table>"
+    return f"<table><tr><th>problem_type</th><th>passed</th></tr>{rows}</table>"
 
 
 def _case_table(result) -> str:
@@ -81,13 +79,13 @@ def _case_table(result) -> str:
         status = _PASS_MARK if result.passed else _FAIL_MARK
     rows = "".join(
         "<tr>"
-        f"<td>{html.escape(score.dimension)}</td>"
+        f"<td>{html.escape(score.problem_type)}</td>"
         f"<td>{_PASS_MARK if score.passed else _FAIL_MARK}</td>"
-        f"<td>{score.score:.4g}</td>"
+        f"<td>{score.error_count + score.warning_count} issues</td>"
         f"<td>{html.escape(score.detail)}"
         + (
-            f'<div class="evidence">must_fix ×{sum(1 for i in score.issues if i.get("severity") != "minor")}</div>'
-            if any(i.get("severity") != "minor" for i in score.issues)
+            f'<div class="evidence">error ×{score.error_count}, warn ×{score.warning_count}</div>'
+            if score.error_count or score.warning_count
             else ""
         )
         + (f'<div class="evidence">{html.escape("; ".join(score.evidence))}</div>' if score.evidence else "")
@@ -97,4 +95,4 @@ def _case_table(result) -> str:
     header = f'<h2>{html.escape(case.name)} <span class="meta">[{html.escape(case.kind)}] {status}</span></h2>'
     if not result.scores:
         return header
-    return header + f"<table><tr><th>dimension</th><th>verdict</th><th>score</th><th>detail</th></tr>{rows}</table>"
+    return header + f"<table><tr><th>type</th><th>verdict</th><th>count</th><th>detail</th></tr>{rows}</table>"

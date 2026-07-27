@@ -278,21 +278,19 @@ def create_case(
     dest_root: str | Path,
     *,
     name: str | None = None,
-    start_unit: str | None = None,
-    end_unit: str | None = None,
+    unit_ids: list[str] | None = None,
 ) -> Path:
     """Materialize *candidate* as one case under ``<dest_root>/<step>/<name>/``.
 
-    With *start_unit*/*end_unit* (both required together) the fixture keeps
-    only the contiguous unit range between them (inclusive, in unit order),
-    the case is named ``<video>__<start>-<end>`` (numbered on collision),
-    and ``case.yaml`` records the range.  Without a range the whole video
-    is used (previous behavior).
+    With *unit_ids* the fixture keeps only those units (in original order),
+    the case is named ``<video>__<first>-<last>`` (numbered on collision),
+    and ``case.yaml`` records the selection.  Without *unit_ids* the whole
+    video is used.
 
     Returns the created case directory; raises ``FileExistsError`` when it
     already exists (whole-video / explicit-name cases), and ``ValueError``
-    when the candidate lacks the material *step* needs or the range is
-    invalid (unknown unit ids, or end before start).
+    when the candidate lacks the material *step* needs or any unit_id is
+    unknown.
     """
     if step not in VALID_STEPS:
         raise ValueError(f"invalid step {step!r} (expected one of {VALID_STEPS})")
@@ -300,16 +298,20 @@ def create_case(
         raise ValueError(f"invalid kind {kind!r} (expected one of {VALID_KINDS})")
     if step not in candidate.steps:
         raise ValueError(f"candidate {candidate.name!r} has no material for step {step!r}")
-    if (start_unit is None) != (end_unit is None):
-        raise ValueError("start_unit and end_unit must be given together")
-    unit_range = (start_unit, end_unit) if start_unit is not None and end_unit is not None else None
+    if unit_ids is not None and not unit_ids:
+        raise ValueError("unit_ids must not be empty")
+    if unit_ids is not None:
+        unit_ids = sorted(unit_ids)
 
-    case_name = _slugify(name or candidate.name)
-    if unit_range is not None and name is None:
-        case_name = _slugify(f"{candidate.name}__{unit_range[0]}-{unit_range[1]}")
+    if name is not None:
+        case_name = _slugify(name)
+    elif unit_ids is not None:
+        case_name = _slugify(f"{candidate.name}__{unit_ids[0]}-{unit_ids[-1]}")
+    else:
+        case_name = _slugify(candidate.name)
     case_dir = Path(dest_root) / step / case_name
     if case_dir.exists():
-        if unit_range is None or name is not None:
+        if name is not None or unit_ids is None:
             raise FileExistsError(f"case already exists: {case_dir}")
         case_dir = _numbered_case_dir(case_dir)
         case_name = case_dir.name
@@ -319,9 +321,9 @@ def create_case(
     params: dict[str, Any] = {}
     try:
         if step == "plan":
-            _write_plan_fixture(candidate, fixture_dir, unit_range)
+            _write_plan_fixture(candidate, fixture_dir, unit_ids)
         else:
-            _write_translate_fixture(candidate, fixture_dir, unit_range)
+            _write_translate_fixture(candidate, fixture_dir, unit_ids)
             if candidate.target_langs:
                 params["target_lang"] = candidate.target_langs[0]
     except Exception:
@@ -335,8 +337,8 @@ def create_case(
         "source": str(candidate.run_dir),
         "params": params,
     }
-    if unit_range is not None:
-        case_yaml["range"] = {"start_unit": unit_range[0], "end_unit": unit_range[1]}
+    if unit_ids is not None:
+        case_yaml["range"] = {"unit_ids": unit_ids}
     (case_dir / CASE_YAML).write_text(yaml.safe_dump(case_yaml, allow_unicode=True), encoding="utf-8")
     return case_dir
 
@@ -349,17 +351,13 @@ def _numbered_case_dir(case_dir: Path) -> Path:
     return case_dir.with_name(f"{case_dir.name}_{n}")
 
 
-def _unit_bounds(ids: list[str], unit_range: tuple[str, str]) -> tuple[int, int]:
-    """Inclusive ``[i, j]`` indexes of *unit_range* in *ids*; ``ValueError`` when invalid."""
-    start_unit, end_unit = unit_range
-    if start_unit not in ids:
-        raise ValueError(f"unknown start_unit {start_unit!r}")
-    if end_unit not in ids:
-        raise ValueError(f"unknown end_unit {end_unit!r}")
-    i, j = ids.index(start_unit), ids.index(end_unit)
-    if j < i:
-        raise ValueError(f"invalid range: {end_unit!r} comes before {start_unit!r}")
-    return i, j
+def _filter_segment_units(units: list[dict], unit_ids: list[str]) -> list[dict]:
+    """Keep only units whose unit_id is in *unit_ids*, sorted by the original order in *units*."""
+    unit_set = frozenset(unit_ids)
+    unknown = sorted(set(unit_ids) - {str(u.get("unit_id", "")) for u in units})
+    if unknown:
+        raise ValueError(f"unknown unit_ids: {unknown}")
+    return [u for u in units if str(u.get("unit_id", "")) in unit_set]
 
 
 def _in_span(w_start: float, w_end: float, start: float, end: float) -> bool:
@@ -367,13 +365,13 @@ def _in_span(w_start: float, w_end: float, start: float, end: float) -> bool:
     return w_start >= start - 0.05 and w_end <= end + 0.05
 
 
-def _write_plan_fixture(candidate: Candidate, fixture_dir: Path, unit_range: tuple[str, str] | None = None) -> None:
+def _write_plan_fixture(candidate: Candidate, fixture_dir: Path, unit_ids: list[str] | None = None) -> None:
     """``fixture/segment.json`` + ``fixture/words.json`` from a transcript.
 
     Full-layout runs reuse the pipeline's own ``segment/segment.json``;
     flat runs regenerate segments from the word timeline via the real
-    :func:`light_subtitle.segment.run`.  With *unit_range*, both files are
-    filtered to the range's segments and the words they cover.
+    :func:`light_subtitle.segment.run`.  With *unit_ids*, both files are
+    filtered to the selected segments and the words they cover.
     """
     if candidate.transcript is None:
         raise ValueError(f"candidate {candidate.name!r} has no transcript")
@@ -384,16 +382,15 @@ def _write_plan_fixture(candidate: Candidate, fixture_dir: Path, unit_range: tup
 
     seg_json = candidate.run_dir / "segment" / artifacts.SEGMENT_JSON
     if candidate.transcript.name == "transcript.json" and seg_json.is_file():
-        if unit_range is None:
+        if unit_ids is None:
             shutil.copyfile(seg_json, fixture_dir / artifacts.SEGMENT_JSON)
         else:
-            start, end = _write_filtered_segment_json(seg_json, fixture_dir / artifacts.SEGMENT_JSON, unit_range)
+            start, end = _write_filtered_segment_json(seg_json, fixture_dir / artifacts.SEGMENT_JSON, unit_ids)
             words = [w for w in words if _in_span(w.start, w.end, start, end)]
     else:
         segments = segment_step.run(words)
-        if unit_range is not None:
-            i, j = _unit_bounds([s.unit_id for s in segments], unit_range)
-            segments = segments[i : j + 1]
+        if unit_ids is not None:
+            segments = _filter_segment_list(segments, unit_ids)
             words = [w for w in words if _in_span(w.start, w.end, segments[0].start, segments[-1].end)]
         export_segments(words, segments, str(fixture_dir / artifacts.SEGMENT_JSON))
     (fixture_dir / "words.json").write_text(
@@ -401,13 +398,21 @@ def _write_plan_fixture(candidate: Candidate, fixture_dir: Path, unit_range: tup
     )
 
 
-def _write_filtered_segment_json(src: Path, dest: Path, unit_range: tuple[str, str]) -> tuple[float, float]:
-    """Write *src* segment.json filtered to *unit_range*; returns the kept time span."""
+def _filter_segment_list(segments: list[Segment], unit_ids: list[str]) -> list[Segment]:
+    """Keep only segments whose unit_id is in *unit_ids*, in original order."""
+    unit_set = frozenset(unit_ids)
+    unknown = sorted(set(unit_ids) - {s.unit_id for s in segments})
+    if unknown:
+        raise ValueError(f"unknown unit_ids: {unknown}")
+    return [s for s in segments if s.unit_id in unit_set]
+
+
+def _write_filtered_segment_json(src: Path, dest: Path, unit_ids: list[str]) -> tuple[float, float]:
+    """Write *src* segment.json filtered to *unit_ids*; returns the kept time span."""
     with open(src, encoding="utf-8") as f:
         data = json.load(f)
     units = data.get("units", [])
-    i, j = _unit_bounds([str(u.get("unit_id", "")) for u in units], unit_range)
-    kept = units[i : j + 1]
+    kept = _filter_segment_units(units, unit_ids)
     start, end = float(kept[0].get("start", 0.0)), float(kept[-1].get("end", 0.0))
     kept_words = [
         w for w in data.get("words", []) if _in_span(float(w.get("start", 0.0)), float(w.get("end", 0.0)), start, end)
@@ -423,24 +428,23 @@ def _write_filtered_segment_json(src: Path, dest: Path, unit_range: tuple[str, s
     return start, end
 
 
-def _write_translate_fixture(
-    candidate: Candidate, fixture_dir: Path, unit_range: tuple[str, str] | None = None
-) -> None:
+def _write_translate_fixture(candidate: Candidate, fixture_dir: Path, unit_ids: list[str] | None = None) -> None:
     """``fixture/plan.json`` + optional glossary / summary sidecars.
 
-    With *unit_range*, plan.json keeps its schema but only the range's units;
+    With *unit_ids*, plan.json keeps its schema but only the selected units;
     glossary / summary are always copied whole.
     """
     plan_json = candidate.plan_json
     if not plan_json.is_file():
         raise ValueError(f"candidate {candidate.name!r} has no plan/plan.json")
-    if unit_range is None:
+    if unit_ids is None:
         shutil.copyfile(plan_json, fixture_dir / artifacts.PLAN_JSON)
     else:
         with open(plan_json, encoding="utf-8") as f:
             data = json.load(f)
-        i, j = _unit_bounds([str(u.get("unit_id", "")) for u in data.get("units", [])], unit_range)
-        out = dict(data, units=data["units"][i : j + 1])
+        units = data.get("units", [])
+        kept = _filter_segment_units(units, unit_ids)
+        out = dict(data, units=kept)
         (fixture_dir / artifacts.PLAN_JSON).write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     for sidecar in ("glossary.json", "summary.json"):
         src = candidate.run_dir / "context" / sidecar

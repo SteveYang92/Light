@@ -1,9 +1,9 @@
-"""Judge protocol — one judge scores one case's step output per dimension.
+"""Judge protocol — one judge scores one case's step output per problem type.
 
 Judges receive the case, its loaded fixture (step inputs), and the
-``StepOutput`` produced by the runner, and return one ``DimensionScore``
-per dimension.  Rule judges compute deterministic metrics; LLM judges
-(later milestone) will emit 1-5 scores calibrated against annotations.
+``StepOutput`` produced by the runner, and return one ``ProblemTypeStats``
+per problem type.  Rule judges compute deterministic metrics; LLM judges
+detect semantic defects and classify them by problem type.
 """
 
 from __future__ import annotations
@@ -11,10 +11,10 @@ from __future__ import annotations
 from typing import Protocol
 
 from ..loader import Fixture
-from ..models import DimensionScore, EvalCase, StepOutput
+from ..models import EvalCase, ProblemTypeStats, StepOutput
 
 
 class Judge(Protocol):
-    """Scores a step output along named dimensions."""
+    """Inspects a step output and reports per-problem-type statistics."""
 
-    def score(self, case: EvalCase, fixture: Fixture, output: StepOutput) -> list[DimensionScore]: ...
+    def score(self, case: EvalCase, fixture: Fixture, output: StepOutput) -> list[ProblemTypeStats]: ...

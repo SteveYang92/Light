@@ -1,4 +1,4 @@
-"""Eval data model — case, step output, dimension score, and report.
+"""Eval data model — case, step output, problem-type stats, and report.
 
 All models serialize to plain JSON dicts (``to_dict`` / ``from_dict``) so
 reports are stable, diff-able artifacts.  ``StepOutput.output`` holds the
@@ -20,6 +20,40 @@ CaseKind = Literal["control", "edge", "boundary"]
 VALID_STEPS: tuple[str, ...] = ("plan", "translate")
 VALID_KINDS: tuple[str, ...] = ("control", "edge", "boundary")
 
+# ── Problem types ──────────────────────────────────────────────────────────
+# Each problem type has a label (Chinese name) and a default severity
+# (error | warning).  The severity determines whether the type gates pass/fail:
+# any confirmed defect of an error-severity type fails the case.
+
+PROBLEM_TYPES: dict[str, dict[str, dict[str, str]]] = {
+    "plan": {
+        "semantic_boundary": {"label": "语义边界不当", "severity": "error"},
+        "over_fragmentation": {"label": "过碎可合并", "severity": "warning"},
+        "over_long_unit": {"label": "过长应拆分", "severity": "warning"},
+        "dangling_word": {"label": "孤词/悬垂词尾", "severity": "error"},
+        "empty_unit": {"label": "空单元", "severity": "error"},
+        "flash_unit": {"label": "闪帧单元", "severity": "error"},
+    },
+    "translate": {
+        "missing_content": {"label": "漏译", "severity": "error"},
+        "extra_content": {"label": "增译/幻译", "severity": "error"},
+        "semantic_drift": {"label": "语义偏移/歪曲原意", "severity": "error"},
+        "translation_ese": {"label": "翻译腔/不自然", "severity": "warning"},
+        "unit_mismatch": {"label": "单元串位/错位", "severity": "error"},
+        "terminology_inconsistent": {"label": "术语不一致", "severity": "warning"},
+        "word_choice": {"label": "用词不当", "severity": "warning"},
+        "bad_line_break": {"label": "断行不当", "severity": "warning"},
+    },
+}
+
+
+def problem_type_severity(step: str, problem_type: str) -> str:
+    return PROBLEM_TYPES.get(step, {}).get(problem_type, {}).get("severity", "warning")
+
+
+def problem_type_label(step: str, problem_type: str) -> str:
+    return PROBLEM_TYPES.get(step, {}).get(problem_type, {}).get("label", problem_type)
+
 
 # ── Case ────────────────────────────────────────────────────────────────────
 
@@ -31,8 +65,8 @@ class EvalCase:
     name: str
     step: StepName
     kind: CaseKind
-    source: str  # provenance: which real run / output dir this case was harvested from
-    params: dict[str, Any] = field(default_factory=dict)  # e.g. target_lang, duration thresholds
+    source: str
+    params: dict[str, Any] = field(default_factory=dict)
     case_dir: Path = Path()
 
     def to_dict(self) -> dict:
@@ -45,25 +79,65 @@ class EvalCase:
         }
 
 
-@dataclass
-class Annotation:
-    """Human annotation from ``annotation.yaml`` (used to calibrate judges later).
+# ── Defect ──────────────────────────────────────────────────────────────────
 
-    ``judge_suggestion`` holds the raw LLM pre-judge JSON (from the workbench
-    ``judge`` endpoint) when the human reviewed an AI pre-score; ``reviewed_by``
-    records who finalized the annotation.  Both are optional — old
-    ``annotation.yaml`` files without them load with defaults.
+
+@dataclass
+class Defect:
+    """One defect record — a specific problem found on a unit.
+
+    *confirmed* is a tri-state: None = undecided, True = confirmed valid issue,
+    False = dismissed by human reviewer.
     """
 
-    dimensions: dict[str, int] = field(default_factory=dict)  # dimension → 1-5 human score
-    defects: list[dict[str, str]] = field(default_factory=list)  # [{"unit_id", "issue", "severity"?}]
+    unit_id: str
+    problem_type: str
+    note: str = ""
+    confirmed: bool | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"unit_id": self.unit_id, "problem_type": self.problem_type}
+        if self.note:
+            d["note"] = self.note
+        if self.confirmed is not None:
+            d["confirmed"] = self.confirmed
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Defect:
+        confirmed = data.get("confirmed")
+        if confirmed is not None:
+            confirmed = bool(confirmed)
+        return cls(
+            unit_id=str(data.get("unit_id", "")),
+            problem_type=str(data.get("problem_type", "")),
+            note=str(data.get("note", "")),
+            confirmed=confirmed,
+        )
+
+
+# ── Annotation ──────────────────────────────────────────────────────────────
+
+
+@dataclass
+class Annotation:
+    """Human annotation from ``annotation.yaml``.
+
+    ``defects`` holds the reviewed defect list.  ``overall`` is the human
+    final verdict (pass / borderline / fail).  ``judge_suggestion`` holds the
+    raw AI pre-judge JSON when the human reviewed an AI suggestion.
+    """
+
+    defects: list[Defect] = field(default_factory=list)
     overall: str = ""
-    judge_suggestion: dict | None = None  # raw judge endpoint JSON {dimensions, suggested_overall}
+    judge_suggestion: dict | None = None
     reviewed_by: str = ""
 
     def to_dict(self) -> dict:
-        # Omit the optional fields when unset so the base schema stays stable.
-        data: dict[str, Any] = {"dimensions": self.dimensions, "defects": self.defects, "overall": self.overall}
+        data: dict[str, Any] = {
+            "defects": [d.to_dict() for d in self.defects],
+            "overall": self.overall,
+        }
         if self.judge_suggestion is not None:
             data["judge_suggestion"] = self.judge_suggestion
         if self.reviewed_by:
@@ -72,17 +146,8 @@ class Annotation:
 
     @classmethod
     def from_dict(cls, data: dict) -> Annotation:
-        # severity is optional — old annotations without it load unchanged
-        defects = []
-        for d in data.get("defects") or []:
-            if not isinstance(d, dict):
-                continue
-            defect = {"unit_id": str(d.get("unit_id", "")), "issue": str(d.get("issue", ""))}
-            if d.get("severity"):
-                defect["severity"] = str(d["severity"])
-            defects.append(defect)
+        defects = [Defect.from_dict(d) for d in (data.get("defects") or []) if isinstance(d, dict)]
         return cls(
-            dimensions={str(k): int(v) for k, v in (data.get("dimensions") or {}).items()},
             defects=defects,
             overall=str(data.get("overall", "")),
             judge_suggestion=data.get("judge_suggestion"),
@@ -98,14 +163,13 @@ class StepOutput:
     """Result of running one pipeline step on one case."""
 
     case: str
-    output: list[dict] = field(default_factory=list)  # serialized plan units / translated cues
+    output: list[dict] = field(default_factory=list)
     usage: dict | None = None
     duration_s: float = 0.0
     error: str | None = None
-    skipped: bool = False  # e.g. translate without an LLM client
+    skipped: bool = False
 
     def summary(self) -> dict:
-        """Compact, report-friendly view (no full payload)."""
         return {
             "n_items": len(self.output),
             "duration_s": round(self.duration_s, 3),
@@ -136,52 +200,59 @@ class StepOutput:
         )
 
 
-# ── Dimension score ─────────────────────────────────────────────────────────
+# ── Problem-type stats ──────────────────────────────────────────────────────
 
 
 @dataclass
-class DimensionScore:
-    """One judge dimension verdict for one case.
+class ProblemTypeStats:
+    """Per-problem-type verdict for one case.
 
-    ``score`` is the computed metric value for rule judges (ratio / count);
-    LLM judges will emit 1-5.  ``passed`` is the boolean gate; ``evidence``
-    lists offending ids (unit_id / cue_id / word text).  ``issues`` holds the
-    LLM judge's structured per-unit findings (``{"unit_id", "problem"}``);
-    it stays empty for rule judges.
+    ``error_count`` / ``warning_count`` are the raw issue counts returned by
+    the judge.  ``passed`` indicates whether the type has no error-severity
+    issues (i.e. no blocking problems).  ``issues`` holds the structured
+    per-unit findings from the LLM judge (rule judges leave it empty).
     """
 
-    dimension: str
-    score: float
-    passed: bool
+    problem_type: str
+    error_count: int = 0
+    warning_count: int = 0
+    passed: bool = True
     detail: str = ""
     evidence: list[str] = field(default_factory=list)
     issues: list[dict[str, str]] = field(default_factory=list)
 
+    @property
+    def count(self) -> int:
+        return self.error_count + self.warning_count
+
     def to_dict(self) -> dict:
-        data: dict[str, Any] = {
-            "dimension": self.dimension,
-            "score": round(self.score, 4),
+        d: dict[str, Any] = {
+            "problem_type": self.problem_type,
+            "error_count": self.error_count,
+            "warning_count": self.warning_count,
             "passed": self.passed,
-            "detail": self.detail,
-            "evidence": self.evidence,
         }
-        if self.issues:  # omit when empty so the base schema stays stable
-            data["issues"] = self.issues
-        return data
+        if self.detail:
+            d["detail"] = self.detail
+        d["evidence"] = self.evidence
+        if self.issues:
+            d["issues"] = self.issues
+        return d
 
     @classmethod
-    def from_dict(cls, data: dict) -> DimensionScore:
+    def from_dict(cls, data: dict) -> ProblemTypeStats:
         issues = []
         for i in data.get("issues") or []:
             if not isinstance(i, dict):
                 continue
             issue = {"unit_id": str(i.get("unit_id", "")), "problem": str(i.get("problem", ""))}
-            if i.get("severity"):  # 仅非空时写入——旧文件（无 severity）往返保持一致
+            if i.get("severity"):
                 issue["severity"] = str(i["severity"])
             issues.append(issue)
         return cls(
-            dimension=data["dimension"],
-            score=data.get("score", 0.0),
+            problem_type=data.get("problem_type", ""),
+            error_count=data.get("error_count", 0),
+            warning_count=data.get("warning_count", 0),
             passed=data.get("passed", False),
             detail=data.get("detail", ""),
             evidence=list(data.get("evidence", [])),
@@ -197,12 +268,11 @@ class CaseResult:
     """Per-case report entry: scores + step-output summary."""
 
     case: EvalCase
-    scores: list[DimensionScore]
+    scores: list[ProblemTypeStats]
     output: StepOutput
 
     @property
     def passed(self) -> bool:
-        """True only when the step ran (not skipped/errored) and every dimension passed."""
         return self.output.error is None and not self.output.skipped and all(s.passed for s in self.scores)
 
     def to_dict(self) -> dict:
@@ -223,11 +293,10 @@ class EvalReport:
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def aggregate(self) -> dict:
-        """Aggregate stats: case counts + per-dimension pass totals."""
-        dimensions: dict[str, dict[str, int]] = {}
+        types: dict[str, dict[str, int]] = {}
         for result in self.cases:
             for score in result.scores:
-                bucket = dimensions.setdefault(score.dimension, {"total": 0, "passed": 0})
+                bucket = types.setdefault(score.problem_type, {"total": 0, "passed": 0})
                 bucket["total"] += 1
                 bucket["passed"] += int(score.passed)
         return {
@@ -235,7 +304,7 @@ class EvalReport:
             "n_passed": sum(1 for c in self.cases if c.passed),
             "n_errored": sum(1 for c in self.cases if c.output.error),
             "n_skipped": sum(1 for c in self.cases if c.output.skipped),
-            "dimensions": dimensions,
+            "problem_types": types,
         }
 
     def to_dict(self) -> dict:

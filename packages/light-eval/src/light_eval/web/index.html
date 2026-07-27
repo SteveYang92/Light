@@ -5,113 +5,136 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>light-eval workbench</title>
 <style>
-  :root { --bd: #d0d7de; --fg: #1f2328; --mut: #656d76; --acc: #0969da; --bg: #f6f8fa; }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body { margin: 0; font: 15px/1.6 -apple-system, "Segoe UI", "PingFang SC", sans-serif; color: var(--fg); display: flex; flex-direction: column; overflow: hidden; }
-
-  /* 固定顶栏 */
-  header { position: sticky; top: 0; z-index: 10; background: #fff; padding: 10px 20px; border-bottom: 1px solid var(--bd); display: flex; gap: 16px; align-items: center; flex: none; }
-  header b { font-size: 15px; }
-  nav button { border: 0; background: none; padding: 8px 12px; cursor: pointer; font-size: 14px; color: var(--mut); border-bottom: 2px solid transparent; }
-  nav button.active { color: var(--fg); border-bottom-color: var(--acc); font-weight: 600; }
-
-  main { flex: 1; min-height: 0; padding: 12px 20px; display: flex; flex-direction: column; }
-  section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  section[hidden] { display: none; }
-
-  table { border-collapse: collapse; width: 100%; }
-  th, td { border: 1px solid var(--bd); padding: 6px 10px; text-align: left; vertical-align: top; }
-  th { background: var(--bg); font-weight: 600; white-space: nowrap; }
-  td.text { max-width: 420px; }
-  button.act { background: var(--acc); color: #fff; border: 0; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 14px; }
-  button.act:disabled { background: #94a3b8; cursor: not-allowed; }
-  button.plain { background: none; border: 1px solid var(--bd); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-  select, input[type=text] { padding: 5px 8px; border: 1px solid var(--bd); border-radius: 6px; font-size: 14px; }
-  .bar { display: flex; gap: 10px; align-items: center; margin: 8px 0; flex-wrap: wrap; flex: none; }
-  /* 详情页顶栏：不换行，左侧文案超长时省略号截断，按钮固定靠右不被顶走 */
-  #detail-bar { flex-wrap: nowrap; }
-  #detail-bar b, #detail-bar .muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #detail-bar button { flex: none; }
-  .muted { color: var(--mut); }
-  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--bd); font-size: 13px; }
-  .sev-tag { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 12px; border: 1px solid; }
-  .sev-must { background: #ffebe9; color: #cf222e; border-color: #cf222e; }
-  .sev-minor { background: #fff8c5; color: #9a6700; border-color: #d4a72c; }
-  .msg { padding: 8px 12px; border-radius: 6px; margin: 8px 0; display: none; flex: none; }
-  .msg.ok { display: block; background: #dafbe1; border: 1px solid #2da44e; }
-  .msg.err { display: block; background: #ffebe9; border: 1px solid #cf222e; }
-
-  /* 列表区：独立滚动 + 表头吸顶 */
-  .scroll { flex: 1; min-height: 0; overflow-y: auto; border: 1px solid var(--bd); border-radius: 8px; }
-  .scroll table { border: 0; }
-  .scroll thead th { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--bd); }
-
-  /* 候选行内选段面板 */
-  .picker-row > td { background: var(--bg); }
-  .pk-units { max-height: 45vh; overflow-y: auto; border: 1px solid var(--bd); border-radius: 8px; background: #fff; }
-  .pk-units table { border: 0; }
-  .pk-units thead th { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--bd); }
-  .pk-units tbody tr { cursor: pointer; }
-  .pk-units tbody tr:hover { background: #f0f6ff; }
-  .pk-units tbody tr.pk-in { background: #ddf4ff; }
-  .pk-units tbody tr.pk-edge td:first-child { box-shadow: inset 3px 0 0 var(--acc); font-weight: 600; }
-
-  /* 详情页：左右分栏（左输出 / 右标注），各自独立滚动 */
-  .split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
-  .pane { min-height: 0; display: flex; flex-direction: column; }
-  .pane > .scroll { flex: 1; }
-  #output-wrap tbody tr { cursor: pointer; }
-  #output-wrap tbody tr:hover { background: #ddf4ff; }
-
-  .dim-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; flex-wrap: wrap; }
-  .dim-row label { width: 150px; flex: none; }
-  .dim-summary { flex-basis: 100%; font-size: 13px; margin: -2px 0 2px; }
-
-  /* 缺陷记录：扁平列表 + 逐条通过/不通过评审 */
-  .defect-card { padding: 10px 4px; border-bottom: 1px solid var(--bd); }
-  .defect-card:last-child { border-bottom: 0; }
-  .defect-card.ok { background: #f6fef9; }
-  .defect-card.no { background: #fff5f5; }
-  .defect-card.no .unit-snippet, .defect-card.no textarea.issue { opacity: 0.45; }
-  .defect-head { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
-  .uid-badge { background: var(--bg); border: 1px solid var(--bd); border-radius: 10px; padding: 1px 10px;
-    font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; cursor: pointer; }
-  .uid-badge:hover { border-color: var(--acc); color: var(--acc); }
-  .defect-head input.uid { width: 140px; font-size: 13px; padding: 2px 8px; }
-  .defect-head .head-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
-  .ai-tag { font-size: 13px; color: var(--mut); }
-  .verdict-btn.on-ok { background: #2da44e; border-color: #2da44e; color: #fff; }
-  .verdict-btn.on-no { background: #cf222e; border-color: #cf222e; color: #fff; }
-  .review-progress { font-size: 13px; color: var(--mut); }
-
-  /* 左表 uid 角标：该 unit 的缺陷卡片数，点击反向定位右侧卡片 */
-  .uid-flag { margin-left: 6px; border: 1px solid #d29922; background: #fff8c5; color: #9a6700;
-    border-radius: 8px; padding: 0 6px; font-size: 11px; cursor: pointer; }
-  .uid-flag:hover { border-color: var(--acc); color: var(--acc); }
-  .defect-card.flash { animation: card-flash 1s ease-out; }
-  @keyframes card-flash { 0% { background: #fff8c5; } 100% { background: transparent; } }
-  .defect-card textarea.issue { width: 100%; min-height: 2.4em; resize: vertical; padding: 4px 6px;
-    border: 0; background: transparent; font-size: 14px; font-family: inherit; line-height: 1.5; }
-  .defect-card textarea.issue:focus { outline: 1px solid var(--acc); border-radius: 4px; background: #fff; }
-  .unit-snippet { font-size: 13px; color: var(--mut); border-left: 3px solid var(--bd); padding: 2px 8px;
-    margin: 4px 0; white-space: pre-wrap; word-break: break-word; max-height: 6.5em; overflow-y: auto; }
-  .unit-snippet .sn-label { color: var(--acc); font-weight: 600; margin-right: 4px; }
-
-  /* 定位高亮：1s 淡出 */
-  #output-wrap tr.flash { animation: uid-flash 1s ease-out; }
-  @keyframes uid-flash { 0% { background: #fff8c5; } 100% { background: transparent; } }
-  fieldset { border: 1px solid var(--bd); border-radius: 8px; margin: 10px 0; }
-  legend { font-weight: 600; padding: 0 6px; }
-  #view-detail h3 { margin-bottom: 4px; }
-
-  /* 窄屏回退为上下布局 */
-  @media (max-width: 900px) {
-    body { overflow: auto; }
-    main { display: block; }
-    .split { display: block; }
-    .scroll { max-height: 60vh; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f8f9fb; --surface: #ffffff; --surface-hover: #f4f6f8;
+    --border: #e5e7eb; --border-light: #f0f1f3;
+    --text-primary: #111827; --text-secondary: #6b7280; --text-muted: #9ca3af;
+    --accent: #3b82f6; --accent-hover: #2563eb; --accent-light: #eff6ff;
+    --success: #10b981; --success-bg: #d1fae5;
+    --error: #ef4444; --error-bg: #fee2e2;
+    --warning: #f59e0b; --warning-bg: #fef3c7;
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+    --shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+    --radius-sm: 6px; --radius: 10px; --radius-lg: 16px;
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  html, body { height: 100%; }
+  body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text-primary); font-size: 14px; line-height: 1.6; display: flex; flex-direction: column; overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; gap: 16px; align-items: center; flex: none; }
+  header b { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+  nav { display: flex; gap: 2px; }
+  nav button { border: 0; background: none; padding: 8px 12px; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-secondary); border-bottom: 2px solid transparent; transition: var(--transition); }
+  nav button:hover { color: var(--text-primary); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+  main { flex: 1; min-height: 0; padding: 16px 20px; display: flex; flex-direction: column; }
+  section[hidden] { display: none; }
+  section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+  .muted { color: var(--text-secondary); }
+  .mono { font-family: "JetBrains Mono", "SF Mono", "Roboto Mono", monospace; font-size: 13px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); }
+  .btn:hover { border-color: var(--text-muted); color: var(--text-primary); background: var(--surface-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn-primary:disabled { background: var(--text-muted); border-color: var(--text-muted); opacity: 1; }
+  .btn-danger { color: var(--error); border-color: var(--error); }
+  .btn-danger:hover { background: var(--error-bg); }
+
+  input[type=text], select { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--surface); color: var(--text-primary); font-family: inherit; transition: var(--transition); }
+  input[type=text]:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+  select { cursor: pointer; appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+  textarea { padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--surface); color: var(--text-primary); font-family: inherit; resize: vertical; min-height: 2.4em; transition: var(--transition); }
+  textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+  .bar { display: flex; gap: 10px; align-items: center; margin: 8px 0; flex-wrap: wrap; flex: none; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+
+  .msg { padding: 10px 14px; border-radius: var(--radius-sm); margin: 8px 0; display: none; flex: none; font-size: 14px; font-weight: 500; }
+  .msg.ok { display: block; background: var(--success-bg); border: 1px solid var(--success); color: #065f46; }
+  .msg.err { display: block; background: var(--error-bg); border: 1px solid var(--error); color: #991b1b; }
+
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+  thead { position: sticky; top: 0; z-index: 10; }
+  thead th { background: var(--surface); padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 600; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; transition: background 0.15s; }
+  tbody tr:last-child > td { border-bottom: none; }
+  td.text { max-width: 420px; word-break: break-word; }
+
+  #cand-table tbody tr { cursor: pointer; transition: background 0.15s; }
+  #cand-table tbody tr:hover { background: var(--accent-light); }
+
+  .dir-list { flex: none; margin-bottom: 6px; }
+  .dir-item { display: flex; gap: 8px; align-items: center; padding: 6px 10px; margin: 2px 0; border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--border-light); }
+  .dir-item .path { flex: 1; font-family: "JetBrains Mono", "SF Mono", monospace; font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #cd-table tbody tr { cursor: pointer; transition: background 0.15s; }
+  #cd-table tbody tr:hover { background: var(--accent-light); }
+  #cd-table tbody tr.selected { background: var(--accent-light); }
+  #cd-table tbody tr.hidden-by-search { display: none; }
+  mark { background: #fde68a; color: #000; padding: 0 2px; border-radius: 2px; }
+  #create-form { background: var(--surface); padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow-sm); margin-bottom: 6px; flex: none; }
+  #create-form label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+
+  /* Problem-type stat cards (QC-report style) */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; padding: 8px 0; }
+  .stat-card { background: var(--surface); border-radius: var(--radius); padding: 20px 18px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); cursor: pointer; transition: var(--transition); position: relative; overflow: hidden; }
+  .stat-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; opacity: 0; transition: opacity 0.2s; }
+  .stat-card.active::before { opacity: 1; }
+  .stat-card.pass::before { background: var(--success); }
+  .stat-card.pass.active { border-color: var(--success); background: var(--success-bg); }
+  .stat-card.fail::before { background: var(--error); }
+  .stat-card.fail.active { border-color: var(--error); background: var(--error-bg); }
+  .stat-card.warn::before { background: var(--warning); }
+  .stat-card.warn.active { border-color: var(--warning); background: var(--warning-bg); }
+  .stat-card.empty::before { background: var(--text-muted); }
+  .stat-card .sc-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .stat-card .sc-value { font-size: 32px; font-weight: 700; line-height: 1; color: var(--text-primary); transition: color 0.2s; }
+  .stat-card.pass .sc-value { color: var(--success); }
+  .stat-card.fail .sc-value { color: var(--error); }
+  .stat-card.warn .sc-value { color: #b45309; }
+  .stat-card.empty .sc-value { color: var(--text-muted); }
+  .stat-card .sc-detail { font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+
+  /* Output table */
+  #output-wrap tbody tr.unit-row { cursor: pointer; transition: background 0.15s; }
+  #output-wrap tbody tr.unit-row:hover { background: var(--accent-light); }
+  #output-wrap tbody tr.unit-row.has-defects td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
+  #output-wrap tbody tr.unit-row.hidden-by-search { display: none; }
+  #output-wrap tbody tr.defect-row td { padding: 4px 14px 6px 14px; border-bottom: 1px solid var(--border-light); }
+  #output-wrap tbody tr.defect-row td.fold,
+  #output-wrap tbody tr.defect-row.fold { display: none; }
+  #output-wrap tbody tr.context-row td { padding: 4px 14px 4px 14px; font-size: 13px; color: var(--text-muted); border-bottom: 1px solid var(--border-light); }
+  #output-wrap tbody tr.context-row td span.sn-label { color: var(--accent); font-weight: 500; margin-right: 4px; }
+
+  .defect-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 4px 0; }
+  .pt-badge { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; border: 1px solid; }
+  .pt-badge.error { background: var(--error-bg); color: var(--error); border-color: var(--error); }
+  .pt-badge.warning { background: var(--warning-bg); color: #b45309; border-color: var(--warning); }
+  .defect-note { font-size: 14px; color: var(--text-primary); flex: 1; min-width: 200px; padding: 2px 0; }
+  .defect-actions { display: flex; gap: 4px; align-items: center; margin-left: auto; }
+  .defect-actions button { padding: 3px 8px !important; font-size: 12px !important; }
+  .add-defect-btn { border: 1px dashed var(--border); color: var(--text-muted); font-size: 12px; padding: 2px 6px; border-radius: var(--radius-sm); cursor: pointer; background: none; }
+  .add-defect-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .add-defect-form { display: none; padding: 6px 0; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .add-defect-form.show { display: table-row; }
+
+  .verdict-btn.on-confirm { background: var(--success); border-color: var(--success); color: #fff; }
+  .verdict-btn.on-dismiss { background: var(--error); border-color: var(--error); color: #fff; }
+  .ctx-unit td { opacity: 0.55; }
+  .nav-btn { font-size: 12px; }
+
+  .flash { animation: row-flash 1s ease-out; }
+  @keyframes row-flash { 0% { background: var(--accent-light); } 100% { background: transparent; } }
+
+  @media (max-width: 900px) { body { overflow: auto; } main { display: block; } .scroll { max-height: 60vh; } }
 </style>
 </head>
 <body>
@@ -128,835 +151,540 @@
 
   <section id="view-candidates">
     <div class="bar">
-      <button class="plain" onclick="loadCandidates()">刷新</button>
-      <span class="muted" id="cand-dir"></span>
-      <span style="flex:1"></span>
-      <label>kind
-        <select id="new-kind">
-          <option>control</option><option>edge</option><option>boundary</option>
-        </select>
-      </label>
-      <button class="act" onclick="createCases()">勾选建 case</button>
+      <input type="text" id="dir-input" placeholder="输入 output 目录绝对路径…" style="flex:1; max-width:500px">
+      <button class="btn btn-primary" onclick="addDir()">添加目录</button>
     </div>
-    <div class="scroll">
-      <table id="cand-table">
-        <thead><tr><th></th><th>名称</th><th>时长</th><th>可用步骤</th><th>建 case 步骤</th><th>语言对</th><th>规模</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <div class="dir-list" id="dir-list"></div>
+    <div class="bar"><span class="muted" id="cand-count"></span><span style="flex:1"></span><button class="btn" onclick="loadCandidates()">刷新</button></div>
+    <div class="scroll"><table id="cand-table"><thead><tr><th>名称</th><th>时长</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section id="view-cand-detail" hidden>
+    <div class="bar"><button class="btn" onclick="backToCandidates()">← 返回</button><b id="cd-title"></b><span class="muted" id="cd-meta"></span><span style="flex:1"></span><label>step <select id="cd-step"></select></label></div>
+    <div class="bar">
+      <input type="text" id="cd-search" placeholder="搜索定位…" style="width:220px" oninput="applySearch()">
+      <button class="btn" onclick="selectAllUnits()">全选</button><button class="btn" onclick="deselectAllUnits()">取消全选</button><button class="btn" onclick="invertUnitSelection()">反选</button>
+      <span id="cd-sel-count" class="muted">已选 0 条</span><span style="flex:1"></span>
+      <button class="btn btn-primary" id="cd-create-btn" disabled onclick="showCreateForm()">创建 case</button>
     </div>
+    <div id="create-form" style="display:none">
+      <label>kind <select id="cf-kind"><option>control</option><option>edge</option><option>boundary</option></select></label>
+      <label>名称 <input type="text" id="cf-name" style="width:300px" placeholder="自动生成"></label>
+      <button class="btn btn-primary" onclick="confirmCreateCase()">确认创建</button><button class="btn" onclick="hideCreateForm()">取消</button>
+    </div>
+    <div class="scroll"><table id="cd-table"><thead><tr id="cd-head-row"></tr></thead><tbody></tbody></table></div>
   </section>
 
   <section id="view-cases" hidden>
-    <div class="bar">
-      <button class="plain" onclick="loadCases()">刷新</button>
-      <span class="muted" id="suite-dir"></span>
-      <span style="flex:1"></span>
-      <span id="queue-progress" class="muted"></span>
-      <button class="act" id="continue-btn" onclick="continueReview()">继续审核</button>
-    </div>
-    <div class="scroll">
-      <table id="case-table">
-        <thead><tr><th>名称</th><th>step</th><th>kind</th><th>已标注</th><th>已运行</th><th>来源</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <div class="bar"><button class="btn" onclick="loadCases()">刷新</button><span class="muted" id="suite-dir"></span><span style="flex:1"></span><span id="queue-progress" class="muted"></span><button class="btn btn-primary" id="continue-btn" onclick="continueReview()">继续审核</button></div>
+    <div class="scroll"><table id="case-table"><thead><tr><th>名称</th><th>step</th><th>kind</th><th>已标注</th><th>已运行</th><th>来源</th><th></th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <section id="view-detail" hidden>
     <div class="bar" id="detail-bar">
-      <b id="detail-title"></b>
-      <span class="muted" id="detail-meta"></span>
-      <span style="flex:1"></span>
+      <b id="detail-title"></b><span class="muted" id="detail-meta"></span><span style="flex:1"></span>
       <span class="muted" id="run-status"></span>
-      <button class="act" id="run-btn" onclick="runCase()">运行 / 重跑</button>
-      <button class="act" id="judge-btn" onclick="runJudge()">AI 预评</button>
+      <button class="btn btn-primary" id="run-btn" onclick="runCase()">运行 / 重跑</button>
+      <button class="btn btn-primary" id="judge-btn" onclick="runJudge()">AI 预评</button>
     </div>
-    <div class="split">
-      <div class="pane">
-        <div class="scroll" id="output-wrap"></div>
-      </div>
-      <div class="pane">
-        <div class="scroll" style="padding: 0 14px;">
-          <details style="margin:8px 0">
-            <summary style="cursor:pointer;font-weight:600">成功标准（评分锚点）</summary>
-            <div id="criteria-box" style="font-size:13px;line-height:1.7"></div>
-          </details>
-          <div class="muted" style="font-size:13px">点击左侧行定位高亮（有空 uid 卡片则回填）；点行内 ＋ 为该 unit 建缺陷卡片；卡片 ✕ 可删除；点击卡片徽标定位左侧行；点击 ⚠ 角标定位右侧卡片</div>
-          <div id="dim-form"></div>
-          <div class="bar" style="border-top:1px solid var(--bd);padding-top:10px;margin-top:12px">
-            <b>缺陷记录</b>
-            <span class="review-progress" id="review-progress"></span>
-            <span style="flex:1"></span>
-            <button class="plain" onclick="addDefectCard('', '')">+ 添加</button>
-            <button class="plain" onclick="verdictAll(true)">全部通过</button>
-          </div>
-          <div id="defect-list"></div>
-          <div class="dim-row" style="border-top:1px solid var(--bd);padding-top:10px;margin-top:12px">
-            <label>总体判定</label>
-            <select id="overall">
-              <option value="">（未判定）</option>
-              <option value="pass">pass</option>
-              <option value="borderline">borderline</option>
-              <option value="fail">fail</option>
-            </select>
-          </div>
-          <div class="bar">
-            <button class="act" onclick="saveAnnotation(true)">Approve 保存并下一条（⌘/Ctrl+Enter）</button>
-            <button class="plain" onclick="saveAnnotation(false)">仅保存</button>
-          </div>
-        </div>
-      </div>
+    <details open id="detail-stats">
+      <summary>问题类型概览 <span id="review-progress" class="muted"></span></summary>
+      <div id="stats-grid" class="stats-grid"></div>
+    </details>
+    <div class="bar">
+      <input type="text" id="detail-search" placeholder="搜索问题 unit…" style="width:220px" oninput="filterDefects()">
+      <button class="btn" id="filter-only-btn" onclick="toggleDefectFilter()">仅问题</button>
+      <button class="btn" onclick="clearDefectFilter()">全屏</button>
+      <span class="muted" style="font-size:12px">|</span>
+      <button class="btn nav-btn" onclick="navToDefect(-1)" title="上一个 issue">▲ 上一个</button>
+      <button class="btn nav-btn" onclick="navToDefect(1)" title="下一个 issue">▼ 下一个</button>
+      <span id="nav-pos" class="muted" style="font-size:12px"></span>
+    </div>
+    <div class="scroll" id="output-wrap"></div>
+    <div class="bar" style="border-top:1px solid var(--border);padding-top:10px;margin-top:0">
+      <label>总体判定 <select id="overall"><option value="">未判定</option><option value="pass">pass</option><option value="borderline">borderline</option><option value="fail">fail</option></select></label>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary" onclick="saveAnnotation()">保存（⌘/Ctrl+S）</button>
     </div>
   </section>
 </main>
 
 <script>
-let candidates = [];
-let cases = [];
-let current = null;   // 当前打开的 case 对象
-let currentItems = new Map();  // unit_id → 输出行（缺陷卡片内联预览用）
-let judgeSuggestion = null;  // 当前 case 本次 AI 预评的原始 JSON（保存标注时透传）
+let candidates = [], cases = [], current = null;
+let currentDefects = [];  // [{unit_id, problem_type, note, confirmed}]
+let currentItems = new Map();
+let judgeSuggestion = null;
+let filterDefectOnly = false;
+let activeFilterType = null;  // currently filtered problem type, if any
+
+// ── candidate detail state ──────────────────────────────────────────────────
+let candDetail = null; let selectedUnits = new Set(); let cdNameCache = {};
 
 const $ = (sel) => document.querySelector(sel);
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const fmtDur = (s) => { s = Math.round(s || 0); const m = Math.floor(s / 60), h = Math.floor(m / 60);
-  return h ? `${h}:${String(m % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}` : `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+const esc = (s) => String(s??"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtDur = (s) => { s = Math.round(s||0); const m = Math.floor(s/60), h = Math.floor(m/60);
+  return h ? `${h}:${String(m%60).padStart(2,"0")}:${String(s%60).padStart(2,"0")}` : `${String(m).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`; };
 
-function showMsg(text, ok) {
-  const el = $("#msg");
-  el.textContent = text;
-  el.className = "msg " + (ok ? "ok" : "err");
-  if (ok) setTimeout(() => { el.className = "msg"; }, 4000);
-}
+function showMsg(text, ok) { const el = $("#msg"); el.textContent = text; el.className = "msg " + (ok?"ok":"err"); if(ok) setTimeout(()=>{el.className="msg"}, 4000); }
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
-  if (!res.ok) {
-    let detail = res.statusText;
-    try { detail = (await res.json()).detail || detail; } catch (e) { /* keep statusText */ }
-    throw new Error(detail);
-  }
+  if (!res.ok) { let d = res.statusText; try { d = (await res.json()).detail||d; } catch(e){} throw new Error(d); }
   return res.json();
 }
 
 // ── Tabs ────────────────────────────────────────────────────────────────────
-// 标签页状态同步进 location.hash，浏览器刷新后可恢复（详情页含具体 case）
 function activateTab(tab) {
-  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
-  ["candidates", "cases", "detail"].forEach((t) => { $("#view-" + t).hidden = t !== tab; });
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  ["candidates","cand-detail","cases","detail"].forEach(t => { $("#view-"+t).hidden = t !== tab; });
   if (tab === "candidates") loadCandidates();
   if (tab === "cases") loadCases();
-  const hash = tab === "detail" && current ? `#detail/${current.step}/${encodeURIComponent(current.name)}` : `#${tab}`;
+  const hash = tab === "detail" && current ? `#detail/${current.step}/${encodeURIComponent(current.name)}`
+    : tab === "cand-detail" && candDetail ? `#candidate/${encodeURIComponent(candDetail.candidate.name)}` : `#${tab}`;
   history.replaceState(null, "", hash);
 }
+document.querySelectorAll("nav button").forEach(btn => { btn.addEventListener("click", () => { if(btn.disabled) return; activateTab(btn.dataset.tab); }); });
 
-document.querySelectorAll("nav button").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    if (btn.disabled) return;
-    activateTab(btn.dataset.tab);
-  });
-});
-
-// ── Candidates ──────────────────────────────────────────────────────────────
+// ═══ Candidates ═══════════════════════════════════════════════════════════════
 async function loadCandidates() {
-  closePicker();
   const data = await api("/api/candidates");
   candidates = data.candidates;
-  $("#cand-dir").textContent = `output 目录：${data.output_dir}（${candidates.length} 个候选）`;
-  const tbody = $("#cand-table tbody");
-  tbody.innerHTML = "";
-  candidates.forEach((c, i) => {
-    const tr = document.createElement("tr");
-    tr.dataset.row = i;
-    const stepOpts = c.steps.map((s) => `<option>${s}</option>`).join("");
-    tr.innerHTML = `
-      <td><input type="checkbox" data-idx="${i}"></td>
-      <td>${esc(c.name)}</td>
-      <td>${fmtDur(c.duration_s)}</td>
-      <td>${c.steps.map((s) => `<span class="tag">${s}</span>`).join(" ")}</td>
-      <td><select data-step-for="${i}">${stepOpts}</select></td>
-      <td>${esc(c.lang_pair)}</td>
-      <td class="muted">${c.n_words} 词 / ${c.n_units} unit</td>
-      <td><button class="plain" onclick="togglePicker(${i})">选段</button></td>`;
-    tbody.appendChild(tr);
+  renderDirList(data.dirs);
+  $("#cand-count").textContent = `${data.dirs.length} 个目录，${candidates.length} 个候选`;
+  let h = ""; candidates.forEach(c => { h += `<tr><td>${esc(c.name)}</td><td>${fmtDur(c.duration_s)}</td></tr>`; });
+  $("#cand-table tbody").innerHTML = h;
+  [...$("#cand-table tbody").querySelectorAll("tr")].forEach((tr, i) => {
+    tr.title = `run: ${esc(candidates[i].run)} · steps: ${candidates[i].steps.join(", ")} · ${candidates[i].lang_pair}`;
+    tr.addEventListener("click", () => openCandidate(candidates[i].name));
   });
 }
+async function loadDirs() { renderDirList((await api("/api/output-dirs")).dirs); }
+function renderDirList(dirs) { $("#dir-list").innerHTML = dirs.map(d => `<div class="dir-item"><span class="path" title="${esc(d)}">${esc(d)}</span><button class="btn btn-danger" onclick="removeDir('${esc(d)}')">移除</button></div>`).join(""); }
+async function addDir() { const p = $("#dir-input").value.trim(); if(!p) { showMsg("请输入路径",false); return; }
+  try { const d = await api("/api/output-dirs", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({path:p})}); renderDirList(d.dirs); $("#dir-input").value=""; loadCandidates(); showMsg("已添加",true); } catch(e) { showMsg(e.message,false); } }
+async function removeDir(path) { try { const d = await api("/api/output-dirs?path="+encodeURIComponent(path), {method:"DELETE"}); renderDirList(d.dirs); loadCandidates(); } catch(e) { showMsg(e.message,false); } }
 
-async function createCases() {
-  const kind = $("#new-kind").value;
-  const boxes = [...document.querySelectorAll("#cand-table input[type=checkbox]:checked")];
-  if (!boxes.length) { showMsg("先勾选至少一个候选", false); return; }
-  let okCount = 0;
-  for (const box of boxes) {
-    const c = candidates[Number(box.dataset.idx)];
-    const step = document.querySelector(`select[data-step-for="${box.dataset.idx}"]`).value;
-    try {
-      await api("/api/cases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candidate: c.name, step, kind }),
-      });
-      okCount++;
-      box.checked = false;
-    } catch (e) {
-      showMsg(`建 case 失败（${c.name}/${step}）：${e.message}`, false);
-    }
-  }
-  if (okCount) showMsg(`已创建 ${okCount} 个 case`, true);
+// ═══ Candidate Detail ════════════════════════════════════════════════════════
+async function openCandidate(name) { const c = candidates.find(x => x.name === name); if(!c) return; await loadCandidateDetail(name, c.steps.includes("translate")?"translate":"plan"); activateTab("cand-detail"); }
+function backToCandidates() { candDetail=null; selectedUnits.clear(); cdNameCache={}; activateTab("candidates"); }
+async function loadCandidateDetail(name, step) {
+  const data = await api(`/api/candidates/${encodeURIComponent(name)}?step=${step}`);
+  candDetail = data; selectedUnits.clear(); cdNameCache = {};
+  $("#cd-title").textContent = data.candidate.name;
+  $("#cd-meta").textContent = `${data.candidate.lang_pair} · ${fmtDur(data.candidate.duration_s)} · run: ${data.candidate.run}`;
+  const sel = $("#cd-step"); sel.innerHTML = data.candidate.steps.map(s => `<option value="${s}" ${s===data.step?"selected":""}>${s}</option>`).join("");
+  sel.onchange = () => loadCandidateDetail(data.candidate.name, sel.value);
+  $("#cd-search").value = ""; hideCreateForm(); renderUnitTable(); updateSelCount();
 }
-
-// ── 选段建 case（同一候选可反复建多段）───────────────────────────────────────
-let picker = null;  // {idx, units, startId, endId}
-
-function closePicker() {
-  document.querySelector(".picker-row")?.remove();
-  picker = null;
-}
-
-async function togglePicker(i) {
-  if (picker && picker.idx === i) { closePicker(); return; }
-  closePicker();
-  const c = candidates[i];
-  const panel = document.createElement("tr");
-  panel.className = "picker-row";
-  const stepOpts = c.steps.map((s) => `<option>${s}</option>`).join("");
-  panel.innerHTML = `<td colspan="8">
-    <div class="bar" style="margin-top:4px">
-      <b>选段建 case — ${esc(c.name)}</b>
-      <label>step <select id="pk-step">${stepOpts}</select></label>
-      <label>kind <select id="pk-kind"><option>control</option><option>edge</option><option>boundary</option></select></label>
-      <span id="pk-sel" class="muted"></span>
-      <span style="flex:1"></span>
-      <button class="act" id="pk-create" disabled onclick="createRangeCase()">建 case</button>
-      <button class="plain" onclick="closePicker()">收起</button>
-    </div>
-    <div class="pk-units" id="pk-units"><p class="muted" style="padding:10px">加载中…</p></div>
-  </td>`;
-  document.querySelector(`#cand-table tbody tr[data-row="${i}"]`).after(panel);
-  picker = { idx: i, units: [], startId: null, endId: null };
-  $("#pk-step").value = document.querySelector(`select[data-step-for="${i}"]`).value;
-  $("#pk-step").addEventListener("change", loadPickerUnits);
-  updatePickerSel();
-  await loadPickerUnits();
-}
-
-async function loadPickerUnits() {
-  const c = candidates[picker.idx];
-  picker.startId = picker.endId = null;
-  updatePickerSel();
-  try {
-    const step = $("#pk-step").value;
-    const data = await api(`/api/candidates/${encodeURIComponent(c.name)}/units?step=${step}`);
-    picker.units = data.units;
-    const rows = picker.units.map((u, k) => {
-      const range = `${Number(u.start).toFixed(2)} – ${Number(u.end).toFixed(2)}`;
-      const dur = `${(Number(u.end) - Number(u.start)).toFixed(1)}s`;
-      return `<tr data-uid="${esc(u.unit_id)}" data-k="${k}"><td>${esc(u.unit_id)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(u.text)}</td></tr>`;
-    }).join("");
-    $("#pk-units").innerHTML = `<table><thead><tr><th>unit_id</th><th>起止</th><th>时长</th><th>文本</th></tr></thead><tbody>${rows}</tbody></table>`;
-    $("#pk-units tbody").addEventListener("click", (e) => {
-      const tr = e.target.closest("tr[data-uid]");
-      if (tr) pickUnit(tr.dataset.uid);
-    });
-  } catch (e) {
-    $("#pk-units").innerHTML = `<p class="muted" style="padding:10px">加载失败：${esc(e.message)}</p>`;
-  }
-}
-
-// 首点起点、再点终点（起止可交换，自动取序）；已选全后再点重新选起点
-function pickUnit(uid) {
-  if (!picker.startId || picker.endId) { picker.startId = uid; picker.endId = null; }
-  else picker.endId = uid;
-  paintPickerSelection();
-  updatePickerSel();
-}
-
-function pickerBounds() {  // [lo, hi] inclusive indexes into picker.units; null 未选全
-  if (!picker.startId || !picker.endId) return null;
-  const ids = picker.units.map((u) => String(u.unit_id));
-  const i = ids.indexOf(picker.startId), j = ids.indexOf(picker.endId);
-  if (i < 0 || j < 0) return null;
-  return i <= j ? [i, j] : [j, i];
-}
-
-function paintPickerSelection() {
-  const bounds = pickerBounds();
-  let lo = -1, hi = -1;
-  if (bounds) [lo, hi] = bounds;
-  else if (picker.startId) lo = hi = picker.units.findIndex((u) => String(u.unit_id) === picker.startId);
-  document.querySelectorAll("#pk-units tbody tr").forEach((tr) => {
-    const k = Number(tr.dataset.k);
-    tr.classList.toggle("pk-in", lo >= 0 && k >= lo && k <= hi);
-    tr.classList.toggle("pk-edge", k === lo || k === hi);
+function renderUnitTable() { if(!candDetail) return;
+  const ist = candDetail.step === "translate";
+  $("#cd-head-row").innerHTML = ist
+    ? `<th><input type="checkbox" id="cd-select-all" onclick="toggleSelectAll()"></th><th>unit_id</th><th>起止</th><th>时长</th><th>原文</th><th>译文</th>`
+    : `<th><input type="checkbox" id="cd-select-all" onclick="toggleSelectAll()"></th><th>unit_id</th><th>起止</th><th>时长</th><th>文本</th>`;
+  let h = ""; candDetail.units.forEach(u => {
+    const uid = String(u.unit_id), start = Number(u.start), end = Number(u.end);
+    const range = `${start.toFixed(2)} – ${end.toFixed(2)}`, dur = `${(end-start).toFixed(1)}s`;
+    const chk = selectedUnits.has(uid)?" checked":"", sel = selectedUnits.has(uid)?" selected":"";
+    h += ist
+      ? `<tr data-uid="${esc(uid)}" class="${sel}"><td><input type="checkbox" data-uid="${esc(uid)}"${chk} onclick="toggleUnit('${esc(uid)}', this.checked)"></td><td>${esc(uid)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(u.text)}</td><td class="text">${esc(u.target_text||"")}</td></tr>`
+      : `<tr data-uid="${esc(uid)}" class="${sel}"><td><input type="checkbox" data-uid="${esc(uid)}"${chk} onclick="toggleUnit('${esc(uid)}', this.checked)"></td><td>${esc(uid)}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(u.text)}</td></tr>`;
   });
+  $("#cd-table tbody").innerHTML = h;
+  $("#cd-table tbody").addEventListener("click", e => {
+    const tr = e.target.closest("tr[data-uid]"); if(!tr||e.target.tagName==="INPUT") return;
+    toggleUnit(tr.dataset.uid, !selectedUnits.has(tr.dataset.uid));
+  });
+  applySearch();
+}
+function toggleUnit(uid, checked) { checked?selectedUnits.add(uid):selectedUnits.delete(uid); const tr = document.querySelector(`#cd-table tr[data-uid="${CSS.escape(uid)}"]`); if(tr) tr.classList.toggle("selected", checked); const cb = document.querySelector(`#cd-table input[data-uid="${CSS.escape(uid)}"]`); if(cb) cb.checked=checked; updateSelCount(); updateSelectAllCheckbox(); updateCreateBtn(); }
+function toggleSelectAll() { const cb = $("#cd-select-all"); const vids = getVisibleUnitIds(); if(cb.checked) vids.forEach(uid => selectedUnits.add(uid)); else vids.forEach(uid => selectedUnits.delete(uid)); renderUnitTable(); updateSelCount(); updateCreateBtn(); }
+function selectAllUnits() { getVisibleUnitIds().forEach(uid=>selectedUnits.add(uid)); renderUnitTable(); updateSelCount(); updateCreateBtn(); }
+function deselectAllUnits() { selectedUnits.clear(); renderUnitTable(); updateSelCount(); updateCreateBtn(); }
+function invertUnitSelection() { const vset = new Set(getVisibleUnitIds()); vset.forEach(uid=>selectedUnits.has(uid)?selectedUnits.delete(uid):selectedUnits.add(uid)); renderUnitTable(); updateSelCount(); updateCreateBtn(); }
+function getVisibleUnitIds() { return [...document.querySelectorAll("#cd-table tbody tr:not(.hidden-by-search)")].map(tr=>tr.dataset.uid).filter(Boolean); }
+function getSelectedUnitIds() { if(!candDetail) return []; const ord = candDetail.units.map(u=>String(u.unit_id)); return ord.filter(uid=>selectedUnits.has(uid)); }
+function updateSelCount() { $("#cd-sel-count").textContent=`已选 ${selectedUnits.size} 条`; }
+function updateSelectAllCheckbox() { const cb = $("#cd-select-all"); if(!cb) return; const vids = getVisibleUnitIds(); cb.checked = vids.length>0&&vids.every(uid=>selectedUnits.has(uid)); cb.indeterminate = !cb.checked&&vids.some(uid=>selectedUnits.has(uid)); }
+function updateCreateBtn() { $("#cd-create-btn").disabled = getSelectedUnitIds().length === 0; }
+function applySearch() { const q = $("#cd-search").value.trim().toLowerCase(); document.querySelectorAll("#cd-table tbody tr").forEach(tr => { tr.classList.toggle("hidden-by-search", !!q && !tr.textContent.toLowerCase().includes(q)); }); updateSelectAllCheckbox(); updateCreateBtn(); }
+function showCreateForm() { const ids = getSelectedUnitIds(); if(!ids.length){showMsg("先选择至少一个 unit",false);return;} const f = $("#create-form"); f.style.display="flex"; if(!cdNameCache[candDetail.step]) cdNameCache[candDetail.step]=`${candDetail.candidate.name}__${ids[0]}-${ids[ids.length-1]}`; $("#cf-name").value = cdNameCache[candDetail.step]; }
+function hideCreateForm() { $("#create-form").style.display = "none"; }
+async function confirmCreateCase() {
+  const ids = getSelectedUnitIds(); if(!ids.length) return;
+  const name = $("#cf-name").value.trim()||null; cdNameCache[candDetail.step] = name||cdNameCache[candDetail.step];
+  try { const data = await api("/api/cases", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({candidate:candDetail.candidate.name, step:candDetail.step, kind:$("#cf-kind").value, unit_ids:ids, name})});
+    showMsg(`已创建 case：${data.case.id}`, true); hideCreateForm(); selectedUnits.clear(); cdNameCache={}; await loadCases();
+    const c = cases.find(x=>x.id===data.case.id); if(c){openCase(cases.indexOf(c));return;} activateTab("cases");
+  } catch(e){showMsg(`创建失败：${e.message}`,false);}
 }
 
-function updatePickerSel() {
-  const bounds = pickerBounds();
-  if (bounds) {
-    const [i, j] = bounds;
-    $("#pk-sel").textContent = `已选 ${picker.units[i].unit_id} → ${picker.units[j].unit_id}（${j - i + 1} 个 unit）`;
-  } else if (picker.startId) {
-    $("#pk-sel").textContent = `起点 ${picker.startId}，再点击终点行`;
-  } else {
-    $("#pk-sel").textContent = "点击两行选定区间（先起点后终点）";
-  }
-  $("#pk-create").disabled = !bounds;
-}
-
-async function createRangeCase() {
-  const bounds = pickerBounds();
-  if (!bounds) return;
-  const [i, j] = bounds;
-  const c = candidates[picker.idx];
-  try {
-    const res = await api("/api/cases", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        candidate: c.name,
-        step: $("#pk-step").value,
-        kind: $("#pk-kind").value,
-        start_unit: picker.units[i].unit_id,
-        end_unit: picker.units[j].unit_id,
-      }),
-    });
-    showMsg(`已创建 case：${res.case.id}（可继续选下一段）`, true);
-    picker.startId = picker.endId = null;
-    paintPickerSelection();
-    updatePickerSel();
-  } catch (e) {
-    showMsg(`建 case 失败：${e.message}`, false);
-  }
-}
-
-// ── Cases ───────────────────────────────────────────────────────────────────
+// ═══ Cases ═══════════════════════════════════════════════════════════════════
 async function loadCases() {
-  const data = await api("/api/cases");
-  cases = data.cases;
-  const reviewed = cases.filter((c) => c.annotated).length;
-  $("#suite-dir").textContent = `suite 目录：${data.suite_dir}（${cases.length} 个 case）`;
-  $("#queue-progress").textContent = `已审核 ${reviewed}/${cases.length}`;
-  $("#continue-btn").disabled = !cases.length || reviewed >= cases.length;
-  const tbody = $("#case-table tbody");
-  tbody.innerHTML = "";
-  cases.forEach((c, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${esc(c.name)}</td>
-      <td><span class="tag">${c.step}</span></td>
-      <td>${c.kind}</td>
-      <td>${c.annotated ? (c.has_judge_suggestion ? "🤖✅" : "✅") : "—"}</td>
-      <td>${c.has_output ? "✅" : "—"}</td>
-      <td class="muted">${esc(c.source)}</td>
-      <td><button class="plain" onclick="openCase(${i})">打开</button></td>`;
-    tbody.appendChild(tr);
-  });
+  const data = await api("/api/cases"); cases = data.cases;
+  const rev = cases.filter(c=>c.annotated).length;
+  $("#suite-dir").textContent=`suite 目录：${data.suite_dir}（${cases.length} 个 case）`; $("#queue-progress").textContent=`已审核 ${rev}/${cases.length}`;
+  $("#continue-btn").disabled = !cases.length||rev>=cases.length;
+  let h = ""; cases.forEach((c,i)=>{ h+=`<tr><td>${esc(c.name)}</td><td><span class="tag">${c.step}</span></td><td>${c.kind}</td><td>${c.annotated?(c.has_judge_suggestion?"🤖✅":"✅"):"—"}</td><td>${c.has_output?"✅":"—"}</td><td class="muted">${esc(c.source)}</td><td><button class="btn" onclick="openCase(${i})">打开</button></td></tr>`; });
+  $("#case-table tbody").innerHTML = h;
 }
+function continueReview() { const i = cases.findIndex(c=>!c.annotated); if(i<0){showMsg("全部审核完成",true);return;} openCase(i); }
 
-// 队列入口：打开案例列表中第一个未审核 case
-function continueReview() {
-  const i = cases.findIndex((c) => !c.annotated);
-  if (i < 0) { showMsg("全部审核完成", true); return; }
-  openCase(i);
+// ═══ Case Detail ═════════════════════════════════════════════════════════════
+function setRunStatus(text) { const el=$("#run-status"); el.textContent=text; el.title=text; }
+function openCase(i) { current=cases[i]; judgeSuggestion=null; currentDefects=[]; currentItems.clear(); filterDefectOnly=false;
+  $("#tab-detail").disabled=false; activateTab("detail");
+  $("#detail-title").textContent=`${current.step} / ${current.name}`;
+  const idx = cases.indexOf(current); const pos = idx>=0?`第 ${idx+1}/${cases.length} 条`:"未入列";
+  const status = current.annotated?"已标注":"未标注";
+  $("#detail-meta").textContent=`${pos} · ${status} · kind=${current.kind} · source=${current.source}`;
+  $("#run-btn").disabled=false; setRunStatus(""); buildStatsGrid(); loadOutput(); loadAnnotation();
 }
-
-// ── Detail ──────────────────────────────────────────────────────────────────
-function updateDetailMeta() {
-  const idx = cases.indexOf(current);
-  const pos = idx >= 0 ? `第 ${idx + 1}/${cases.length} 条` : "未入列";
-  const status = current.annotated ? "已标注" : "未标注";
-  $("#detail-meta").textContent = `${pos} · ${status} · kind=${current.kind} · source=${current.source}`;
+async function runCase() { if(!current) return; $("#run-btn").disabled=true; setRunStatus("运行中…（translate 可能较慢）");
+  try { const d = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/run`, {method:"POST"});
+    current.has_output=true; renderOutput(d.items||[]); setRunStatus(d.error?`出错：${d.error}`:`完成，${d.items?.length||0} 条，${d.duration_s}s`); }
+  catch(e){setRunStatus(`无法运行：${e.message}`);showMsg(e.message,false);} finally {$("#run-btn").disabled=false;}
 }
+async function loadOutput() { try { const d = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/output`);
+  if(!d.has_output){$("#output-wrap").innerHTML='<p class="muted" style="padding:10px">尚未运行 — 点击「运行 / 重跑」生成步骤输出。</p>';return;}
+  renderOutput(d.items||[]); } catch(e){$("#output-wrap").innerHTML=`<p class="muted" style="padding:10px">输出加载失败：${esc(e.message)}</p>`;} }
 
-function setRunStatus(text) {
-  const el = $("#run-status");
-  el.textContent = text;
-  el.title = text;  // 状态被省略号截断时悬停可见全文
-}
-
-function openCase(i) {
-  current = cases[i];
-  judgeSuggestion = null;
-  $("#tab-detail").disabled = false;
-  $("#tab-detail").click();
-  $("#detail-title").textContent = `${current.step} / ${current.name}`;
-  updateDetailMeta();
-  $("#run-btn").disabled = false;
-  setRunStatus("");
-  renderCriteria();
-  buildDimForm();
-  loadOutput();
-  loadAnnotation();
-}
-
-async function runCase() {
-  if (!current) return;
-  $("#run-btn").disabled = true;
-  setRunStatus("运行中…（translate 可能较慢）");
-  try {
-    const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/run`, { method: "POST" });
-    renderOutput(data);
-    setRunStatus(data.error ? `出错：${data.error}` : `完成，${data.items.length} 条，${data.duration_s}s`);
-    current.has_output = true;
-  } catch (e) {
-    setRunStatus(`无法运行：${e.message}`);
-    showMsg(e.message, false);
-  } finally {
-    $("#run-btn").disabled = false;
-  }
-}
-
-// ── AI 预评（LLM judge 预填，人工复核后保存）─────────────────────────────────
-async function runJudge() {
-  if (!current) return;
-  // 重跑先清掉上一轮未决的 AI 产物，避免与新一批混淆：
-  // 未判定的 AI 缺陷卡片删除（已人工判定 通过/不通过 的保留），预评缓存置空
-  document.querySelectorAll('#defect-list .defect-card[data-origin="ai"]').forEach((c) => {
-    if (!c.classList.contains("ok") && !c.classList.contains("no")) c.remove();
-  });
-  judgeSuggestion = null;
-  refreshBadges();
-  updateReviewProgress();
-  const btn = $("#judge-btn");
-  btn.disabled = true;
-  btn.textContent = "预评中…";
-  try {
-    const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/judge`, { method: "POST" });
-    judgeSuggestion = data;  // 保存标注时原样透传
-    // 后端已删除旧标注：表单同步清空（维度分/缺陷卡片/总体判定），从干净状态复核
-    document.querySelectorAll("#dim-form select").forEach((sel) => { sel.value = ""; });
-    document.querySelectorAll("#defect-list .defect-card").forEach((c) => c.remove());
-    $("#overall").value = "";
-    current.annotated = false;
-    updateDetailMeta();
-    Object.entries(data.dimensions || {}).forEach(([dim, info]) => {
-      const sel = document.querySelector(`#dim-form select[data-dim="${dim}"]`);
-      if (sel) sel.value = String(info.score);
-      const summary = document.querySelector(`.dim-summary[data-summary-for="${dim}"]`);
-      if (summary) { summary.textContent = info.summary || ""; summary.hidden = !info.summary; }
-      // issues 逐条生成缺陷卡片（AI 来源 + severity 标签，带 ✓/✗ 逐条审核；按 uid+problem 查重——同一 unit 可被多维度各报一条）
-      (info.issues || []).forEach((issue) => {
-        const uid = String(issue.unit_id || "");
-        const problem = issue.problem || "";
-        if (!findDefectCardBy(uid, problem)) addDefectCard(uid, problem, "ai", dim, issue.severity || "");
-      });
-    });
-    if (data.suggested_overall) $("#overall").value = data.suggested_overall;
-    showMsg("AI 预评已回填（旧标注已清除），请人工复核后保存", true);
-  } catch (e) {
-    showMsg(`预评失败：${e.message}`, false);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "AI 预评";
-  }
-}
-
-async function loadOutput() {
-  try {
-    const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/output`);
-    if (!data.has_output) {
-      $("#output-wrap").innerHTML = '<p class="muted" style="padding:10px">尚未运行 — 点击「运行 / 重跑」生成步骤输出。</p>';
-      return;
-    }
-    renderOutput(data);
-  } catch (e) {
-    $("#output-wrap").innerHTML = `<p class="muted" style="padding:10px">输出加载失败：${esc(e.message)}</p>`;
-  }
-}
-
-function renderOutput(data) {
-  if (data.error) {
-    $("#output-wrap").innerHTML = `<p class="muted" style="padding:10px">运行出错：${esc(data.error)}</p>`;
-    return;
-  }
-  currentItems = new Map((data.items || []).map((it) => [String(it.unit_id), it]));
-  refreshSnippets();
+function renderOutput(items) {
+  currentItems.clear(); items.forEach(it => currentItems.set(String(it.unit_id), it));
   const isTranslate = current.step === "translate";
   const head = isTranslate
-    ? "<tr><th>unit_id</th><th>起止</th><th>时长</th><th>源文</th><th>译文</th></tr>"
+    ? "<tr><th>unit_id</th><th>起止</th><th>时长</th><th>原文</th><th>译文</th></tr>"
     : "<tr><th>unit_id</th><th>起止</th><th>时长</th><th>文本</th></tr>";
-  const rows = data.items.map((it) => {
-    const start = Number(it.start), end = Number(it.end);
-    const range = `${start.toFixed(2)} – ${end.toFixed(2)}`;
-    const dur = `${(end - start).toFixed(1)}s`;
-    const uidCell = `${esc(it.unit_id)} <button class="plain add-defect" data-uid="${esc(it.unit_id)}" title="为此 unit 添加缺陷卡片">＋</button>`;
-    return isTranslate
-      ? `<tr data-uid="${esc(it.unit_id)}"><td>${uidCell}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.source_text)}</td><td class="text">${esc(it.text)}</td></tr>`
-      : `<tr data-uid="${esc(it.unit_id)}"><td>${uidCell}</td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.text)}</td></tr>`;
-  }).join("");
-  $("#output-wrap").innerHTML = `<table><thead>${head}</thead><tbody>${rows}</tbody></table>`;
-  // 角标 → 反向定位右侧卡片；＋ → 显式为该 unit 建缺陷卡片；
-  // 点击行 → 仅定位高亮（有空 uid 卡片则回填，不自动建卡）
-  $("#output-wrap tbody").addEventListener("click", (e) => {
-    const flag = e.target.closest(".uid-flag");
-    if (flag) { locateDefect(flag.dataset.uid); return; }
-    const addBtn = e.target.closest(".add-defect");
-    if (addBtn) {
-      const existing = findDefectCard(addBtn.dataset.uid);
-      if (existing) { locateDefect(addBtn.dataset.uid); return; }
-      const card = addDefectCard(addBtn.dataset.uid, "");
-      card.scrollIntoView({ block: "center", behavior: "smooth" });
-      return;
+  let rows = "";
+  items.forEach(it => {
+    const uid = String(it.unit_id), start = Number(it.start), end = Number(it.end);
+    const range = `${start.toFixed(2)} – ${end.toFixed(2)}`, dur = `${(end-start).toFixed(1)}s`;
+    const defects = currentDefects.filter(d => d.unit_id === uid);
+    const hasD = defects.length > 0;
+    const rowClass = hasD ? "unit-row has-defects" : "unit-row";
+
+    if (isTranslate) {
+      rows += `<tr class="${rowClass}" data-uid="${esc(uid)}"><td>${esc(uid)} <span class="add-defect-btn" onclick="showAddDefect('${esc(uid)}');event.stopPropagation()">＋</span></td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.source_text||"")}</td><td class="text">${esc(it.text||"")}</td></tr>`;
+    } else {
+      rows += `<tr class="${rowClass}" data-uid="${esc(uid)}"><td>${esc(uid)} <span class="add-defect-btn" onclick="showAddDefect('${esc(uid)}');event.stopPropagation()">＋</span></td><td class="muted">${range}</td><td class="muted">${dur}</td><td class="text">${esc(it.text||"")}</td></tr>`;
     }
-    const tr = e.target.closest("tr[data-uid]");
-    if (!tr) return;
-    locateUnit(tr.dataset.uid);
-    const emptyCard = [...document.querySelectorAll("#defect-list .defect-card")].find((c) => !cardUid(c));
-    if (emptyCard) setCardUid(emptyCard, tr.dataset.uid);
+    // Inline defect rows
+    if (hasD) {
+      defects.forEach(d => {
+        const sev = (current.problem_types?.[d.problem_type]?.severity) || "warning";
+        const label = (current.problem_types?.[d.problem_type]?.label) || d.problem_type;
+        const cc = d.confirmed === true ? "confirmed" : d.confirmed === false ? "dismissed" : "";
+        rows += `<tr class="defect-row" data-uid="${esc(uid)}" data-pt="${esc(d.problem_type)}">
+          <td></td><td></td><td></td>
+          <td colspan="${isTranslate?2:1}">
+            <div class="defect-bar">
+              <span class="pt-badge ${sev}">${esc(label)}</span>
+              <span class="defect-note">${esc(d.note||"")}</span>
+              <span class="defect-actions">
+                <button class="btn verdict-btn ${d.confirmed===true?'on-confirm':''}" onclick="confirmDefect('${esc(d.unit_id)}','${esc(d.problem_type)}','${esc(d.note)}');event.stopPropagation()">确认</button>
+                <button class="btn verdict-btn ${d.confirmed===false?'on-dismiss':''}" onclick="dismissDefect('${esc(d.unit_id)}','${esc(d.problem_type)}','${esc(d.note)}');event.stopPropagation()">驳回</button>
+                <button class="btn btn-danger" onclick="removeDefect('${esc(d.unit_id)}','${esc(d.problem_type)}','${esc(d.note)}');event.stopPropagation()">✕</button>
+              </span>
+            </div>
+          </td></tr>`;
+      });
+    }
+    // Add defect form (hidden)
+    rows += `<tr class="add-defect-form" data-uid="${esc(uid)}"><td></td><td></td><td></td><td colspan="${isTranslate?2:1}" style="padding:6px 14px">
+      <select class="add-pt-sel">${Object.entries(current.problem_types||{}).map(([k,v])=>`<option value="${k}">${v.label} [${v.severity}]</option>`).join("")}</select>
+      <textarea class="add-note" placeholder="问题描述…" style="width:300px;min-height:1.5em" rows="1"></textarea>
+      <button class="btn btn-primary" onclick="commitDefect('${esc(uid)}');event.stopPropagation()">添加</button>
+      <button class="btn" onclick="hideAddDefect('${esc(uid)}');event.stopPropagation()">取消</button>
+    </td></tr>`;
   });
-  refreshBadges();
-}
+  $("#output-wrap").innerHTML = `<table><thead>${head}</thead><tbody>${rows}</tbody></table>`;
 
-// 定位左侧输出表中的 unit 行并高亮 1s
-function locateUnit(uid) {
-  const tr = document.querySelector(`#output-wrap tr[data-uid="${CSS.escape(uid)}"]`);
-  if (!tr) { showMsg(`左侧输出中找不到 ${uid}`, false); return; }
-  tr.scrollIntoView({ block: "center", behavior: "smooth" });
-  tr.classList.remove("flash");
-  void tr.offsetWidth;  // 重新触发动画
-  tr.classList.add("flash");
-  setTimeout(() => tr.classList.remove("flash"), 1000);
-}
-
-// 反向定位：右侧滚动到该 uid 的第一张缺陷卡片并高亮 1s
-function locateDefect(uid) {
-  const card = findDefectCard(uid);
-  if (!card) return;
-  card.scrollIntoView({ block: "center", behavior: "smooth" });
-  card.classList.remove("flash");
-  void card.offsetWidth;  // 重新触发动画
-  card.classList.add("flash");
-  setTimeout(() => card.classList.remove("flash"), 1000);
-}
-
-// 左表 ⚠n 角标：统计未排除（非「不通过」）卡片的 uid（不落盘），卡片增删/判定/改 uid 后统一调
-function refreshBadges() {
-  const counts = new Map();
-  document.querySelectorAll("#defect-list .defect-card:not(.no)").forEach((c) => {
-    const uid = cardUid(c);
-    if (uid) counts.set(uid, (counts.get(uid) || 0) + 1);
+  // Click handler for unit rows
+  $("#output-wrap tbody").addEventListener("click", e => {
+    const tr = e.target.closest("tr.unit-row"); if(!tr) return;
+    if(e.target.closest(".add-defect-btn")||e.target.closest("button")) return;
+    locateRow(tr.dataset.uid);
   });
-  document.querySelectorAll("#output-wrap tr[data-uid]").forEach((tr) => {
-    const cell = tr.querySelector("td");
-    cell.querySelector(".uid-flag")?.remove();
-    const n = counts.get(tr.dataset.uid) || 0;
-    if (!n) return;
-    const flag = document.createElement("button");
-    flag.type = "button";
-    flag.className = "uid-flag";
-    flag.dataset.uid = tr.dataset.uid;
-    flag.textContent = `⚠${n}`;
-    flag.title = `${n} 条缺陷记录，点击定位到右侧卡片`;
-    cell.appendChild(flag);
+  updateStatsGrid();
+  applyFilters();
+}
+
+function locateRow(uid) {
+  const tr = document.querySelector(`#output-wrap tr.unit-row[data-uid="${CSS.escape(uid)}"]`);
+  if(!tr) return; tr.scrollIntoView({block:"center", behavior:"smooth"});
+  tr.classList.remove("flash"); void tr.offsetWidth; tr.classList.add("flash");
+  setTimeout(()=>tr.classList.remove("flash"), 1000);
+}
+
+// ── Defects (inline) ────────────────────────────────────────────────────────
+function findDefectIdx(uid, pt, note) {
+  return currentDefects.findIndex(d => d.unit_id===uid && d.problem_type===pt && (d.note||"")===(note||""));
+}
+function confirmDefect(uid, pt, note) {
+  const idx = findDefectIdx(uid, pt, note); if(idx<0) return;
+  currentDefects[idx].confirmed = true; rerenderDefects();
+}
+function dismissDefect(uid, pt, note) {
+  const idx = findDefectIdx(uid, pt, note); if(idx<0) return;
+  currentDefects[idx].confirmed = false; rerenderDefects();
+}
+function removeDefect(uid, pt, note) {
+  const idx = findDefectIdx(uid, pt, note); if(idx<0) return;
+  currentDefects.splice(idx, 1); rerenderDefects();
+}
+function showAddDefect(uid) {
+  // Hide all other forms first
+  document.querySelectorAll(".add-defect-form.show").forEach(f => f.classList.remove("show"));
+  const row = document.querySelector(`#output-wrap tr.add-defect-form[data-uid="${CSS.escape(uid)}"]`);
+  if(row) row.classList.add("show");
+}
+function hideAddDefect(uid) {
+  const row = document.querySelector(`#output-wrap tr.add-defect-form[data-uid="${CSS.escape(uid)}"]`);
+  if(row) row.classList.remove("show");
+}
+function commitDefect(uid) {
+  const row = document.querySelector(`#output-wrap tr.add-defect-form[data-uid="${CSS.escape(uid)}"]`);
+  if(!row) return;
+  const pt = row.querySelector(".add-pt-sel").value;
+  const note = row.querySelector(".add-note").value.trim();
+  if(!pt){showMsg("请选择问题类型",false);return;}
+  currentDefects.push({unit_id:uid, problem_type:pt, note});
+  row.querySelector(".add-note").value = "";
+  row.classList.remove("show");
+  rerenderDefects();
+}
+function rerenderDefects() {
+  const items = [...currentItems.values()].sort((a,b)=>String(a.unit_id).localeCompare(String(b.unit_id), undefined, {numeric:true}));
+  renderOutput(items); applyFilters(); updateStatsGrid(); updateReviewProgress();
+}
+
+// ── Problem-type stat cards ──────────────────────────────────────────────────
+function buildStatsGrid() {
+  const types = current?.problem_types || {};
+  let h = "";
+  Object.entries(types).forEach(([pt, info]) => {
+    const errs = currentDefects.filter(d => d.problem_type===pt && d.confirmed!==false && info.severity==="error").length;
+    const warns = currentDefects.filter(d => d.problem_type===pt && d.confirmed!==false && info.severity==="warning").length;
+    const s = (errs+warns)===0 ? "empty" : errs>0 ? "fail" : "warn";
+    const icon = errs>0 ? "❌" : warns>0 ? "⚠️" : "✅";
+    h += `<div class="stat-card ${s}" data-pt="${esc(pt)}" onclick="filterByType('${esc(pt)}', this)">
+      <div class="sc-label">${esc(info.label)}</div>
+      <div class="sc-value">${errs+warns}</div>
+      <div class="sc-detail">${icon} 错误 ${errs} · 警告 ${warns}</div>
+    </div>`;
   });
+  if(!h) h = '<span class="muted" style="padding:12px">暂无问题类型配置</span>';
+  $("#stats-grid").innerHTML = h;
 }
-
-// ── Annotation ──────────────────────────────────────────────────────────────
-// 成功标准（与 docs/eval/success_criteria.md 同步）
-const CRITERIA = {
-  plan: {
-    boundary_quality: "约束下语义最优边界：仅当存在满足时长预算且语义更好的边界却未用时扣分（被时长逼出的断点不扣分）",
-    split_necessity: "拆分/合并必要性：不过碎（可合法合并的碎 unit）不过长（有合规拆分点却硬塞多句）；时长违规归规则指标",
-  },
-  translate: {
-    faithfulness: "忠实度：不漏译、不增译、不歪曲原意",
-    naturalness: "口语自然度：像母语者说的话，无翻译腔",
-    unit_integrity: "单元完整性：不串单元、unit_id 对应正确",
-    terminology: "术语一致性：遵循 glossary，前后一致",
-  },
-};
-const ANCHORS = "5=无问题 · 4=轻微不影响观看 · 3=明显问题但可理解 · 2=影响理解 · 1=严重错误";
-
-function renderCriteria() {
-  const dims = CRITERIA[current.step] || {};
-  const rows = Object.entries(dims).map(([d, desc]) => `<div><b>${d}</b>：${desc}</div>`).join("");
-  $("#criteria-box").innerHTML = `${rows}<div class="muted" style="margin-top:4px">${ANCHORS}（≥4 为 passed）</div>`;
-}
-
-function buildDimForm() {
-  const wrap = $("#dim-form");
-  wrap.innerHTML = "";
-  current.annotation_dimensions.forEach((dim) => {
-    const row = document.createElement("div");
-    row.className = "dim-row";
-    row.innerHTML = `<label>${dim}</label><select data-dim="${dim}">
-      <option value="">—</option>${[1, 2, 3, 4, 5].map((v) => `<option value="${v}">${v}</option>`).join("")}
-    </select><div class="dim-summary muted" data-summary-for="${dim}" hidden></div>`;
-    wrap.appendChild(row);
+function updateStatsGrid() {
+  if(!current?.problem_types) return;
+  [...$("#stats-grid").querySelectorAll(".stat-card")].forEach(card => {
+    const pt = card.dataset.pt;
+    if(!pt) return;
+    const info = current.problem_types[pt];
+    if(!info) return;
+    const errs = currentDefects.filter(d => d.problem_type===pt && d.confirmed!==false && info.severity==="error").length;
+    const warns = currentDefects.filter(d => d.problem_type===pt && d.confirmed!==false && info.severity==="warning").length;
+    const s = (errs+warns)===0 ? "empty" : errs>0 ? "fail" : "warn";
+    card.className = `stat-card ${s} ${card.classList.contains("active")?"active":""}`;
+    const icon = errs>0 ? "❌" : warns>0 ? "⚠️" : "✅";
+    card.querySelector(".sc-value").textContent = `${errs+warns}`;
+    card.querySelector(".sc-detail").innerHTML = `${icon} 错误 ${errs} · 警告 ${warns}`;
   });
-}
-
-// ── 缺陷卡片 ─────────────────────────────────────────────────────────────────
-function cardUid(card) {
-  const badge = card.querySelector(".uid-badge");
-  if (badge) return badge.textContent.trim();
-  const input = card.querySelector("input.uid");
-  return input ? input.value.trim() : "";
-}
-
-function findDefectCard(uid) {
-  if (!uid) return null;
-  return [...document.querySelectorAll("#defect-list .defect-card")].find((c) => cardUid(c) === uid) || null;
-}
-
-// 按 (uid, problem) 精确查重——同一 unit 可被多个维度各报一条，独立成卡评审
-function findDefectCardBy(uid, problem) {
-  return [...document.querySelectorAll("#defect-list .defect-card")].find(
-    (c) => cardUid(c) === uid && c.querySelector(".issue").value.trim() === (problem || "").trim()
-  ) || null;
-}
-
-// 卡片头部 uid 控件：有 uid → 可点击定位的徽标；空 → 可编辑 input（填好回车/失焦后变徽标）
-function setCardUid(card, uid) {
-  const head = card.querySelector(".defect-head");
-  head.querySelector(".uid-badge, input.uid")?.remove();
-  let el;
-  if (uid) {
-    el = document.createElement("button");
-    el.type = "button";
-    el.className = "uid-badge";
-    el.textContent = uid;
-    el.title = "点击定位到左侧输出行";
-    el.onclick = () => locateUnit(uid);
-  } else {
-    el = document.createElement("input");
-    el.className = "uid";
-    el.placeholder = "unit_id";
-    el.onchange = () => { if (el.value.trim()) setCardUid(card, el.value.trim()); };
-  }
-  head.prepend(el);
-  updateCardSnippet(card);
-  refreshBadges();
-}
-
-function autoGrow(ta) {
-  ta.style.height = "auto";
-  ta.style.height = ta.scrollHeight + "px";
-}
-
-// 缺陷卡片内联预览：unit 的源文/译文（translate）或文本（plan），免去反查左侧
-function unitSnippetHtml(uid) {
-  const it = currentItems.get(uid);
-  if (!it) return '<span class="muted">（输出中未找到该 unit）</span>';
-  if (current && current.step === "translate") {
-    return `<div><span class="sn-label">源</span>${esc(it.source_text)}</div><div><span class="sn-label">译</span>${esc(it.text)}</div>`;
-  }
-  return esc(it.text);
-}
-
-function updateCardSnippet(card) {
-  const sn = card.querySelector(".unit-snippet");
-  if (!sn) return;
-  const uid = cardUid(card);
-  sn.innerHTML = uid ? unitSnippetHtml(uid) : "";
-  sn.hidden = !uid;
-}
-
-function refreshSnippets() {
-  document.querySelectorAll("#defect-list .defect-card").forEach(updateCardSnippet);
-}
-
-// origin: "human"（默认通过态）| "ai"（AI 预评生成，未决态）；dim 为报告该问题的评审维度
-function addDefectCard(unitId, problem, origin = "human", dim = "", severity = "") {
-  const card = document.createElement("div");
-  card.className = "defect-card";
-  if (origin === "ai") card.dataset.origin = "ai";
-  if (severity) card.dataset.severity = severity;
-  const head = document.createElement("div");
-  head.className = "defect-head";
-  card.appendChild(head);
-  setCardUid(card, unitId || "");
-  const actions = document.createElement("span");
-  actions.className = "head-actions";
-  if (origin === "ai") {
-    const tag = document.createElement("span");
-    tag.className = "ai-tag";
-    tag.textContent = dim ? `AI · ${dim}` : "AI";
-    actions.appendChild(tag);
-  }
-  if (severity) {
-    const sev = document.createElement("span");
-    sev.className = severity === "must_fix" ? "sev-tag sev-must" : "sev-tag sev-minor";
-    sev.textContent = severity === "must_fix" ? "必改" : "次要";
-    actions.appendChild(sev);
-  }
-  const okBtn = document.createElement("button");
-  okBtn.className = "plain verdict-btn";
-  okBtn.textContent = "通过";
-  okBtn.title = "确认是缺陷（保存时收录）";
-  okBtn.onclick = () => setVerdict(card, true);
-  actions.appendChild(okBtn);
-  const noBtn = document.createElement("button");
-  noBtn.className = "plain verdict-btn";
-  noBtn.textContent = "不通过";
-  noBtn.title = "不是缺陷（保存时排除）";
-  noBtn.onclick = () => setVerdict(card, false);
-  actions.appendChild(noBtn);
-  const delBtn = document.createElement("button");
-  delBtn.className = "plain";
-  delBtn.textContent = "✕";
-  delBtn.title = "删除此卡片（不进入保存）";
-  delBtn.onclick = () => { card.remove(); refreshBadges(); updateReviewProgress(); };
-  actions.appendChild(delBtn);
-  head.appendChild(actions);
-  const sn = document.createElement("div");
-  sn.className = "unit-snippet";
-  sn.hidden = true;
-  card.appendChild(sn);
-  const ta = document.createElement("textarea");
-  ta.className = "issue";
-  ta.rows = 2;
-  ta.placeholder = "问题描述";
-  ta.value = problem || "";
-  ta.addEventListener("input", () => autoGrow(ta));
-  card.appendChild(ta);
-  $("#defect-list").appendChild(card);
-  if (origin !== "ai") card.classList.add("ok");  // 人工添加默认通过
-  updateCardSnippet(card);
-  autoGrow(ta);
-  refreshBadges();
   updateReviewProgress();
-  return card;
 }
 
-// 逐条评审：通过=绿底收录 / 不通过=红底排除；判定后自动跳下一条未决
-function setVerdict(card, ok) {
-  card.classList.toggle("ok", ok);
-  card.classList.toggle("no", !ok);
-  card.querySelector(".issue").disabled = !ok;
-  const [okBtn, noBtn] = card.querySelectorAll(".verdict-btn");
-  okBtn.classList.toggle("on-ok", ok);
-  noBtn.classList.toggle("on-no", !ok);
-  refreshBadges();
-  updateReviewProgress();
-  recomputeSuggestedOverall();
-  const next = [...document.querySelectorAll("#defect-list .defect-card")].find(
-    (c) => !c.classList.contains("ok") && !c.classList.contains("no")
-  );
-  if (next) {
-    next.scrollIntoView({ block: "center", behavior: "smooth" });
-    next.classList.remove("flash");
-    void next.offsetWidth;
-    next.classList.add("flash");
-    setTimeout(() => next.classList.remove("flash"), 1000);
-  }
-}
-
-// 一键把未决卡片全部设为通过/不通过（ok=true 通过；ok=false 不通过）
-function verdictAll(ok) {
-  document.querySelectorAll("#defect-list .defect-card:not(.ok):not(.no)").forEach((c) => {
-    c.classList.toggle("ok", ok);
-    c.classList.toggle("no", !ok);
-    c.querySelector(".issue").disabled = !ok;
-    const [okBtn, noBtn] = c.querySelectorAll(".verdict-btn");
-    okBtn.classList.toggle("on-ok", ok);
-    noBtn.classList.toggle("on-no", !ok);
-  });
-  refreshBadges();
-  updateReviewProgress();
-  recomputeSuggestedOverall();
-}
-
-// 由已收录（通过）缺陷卡派生建议判定：任一必改 → fail；任一收录 → borderline；无 → pass
-// AI 预评回填时用 endpoint 的 suggested_overall；人工判定后这里持续跟踪，select 仍可手改
-function recomputeSuggestedOverall() {
-  const okCards = [...document.querySelectorAll("#defect-list .defect-card.ok")];
-  let suggested = "pass";
-  if (okCards.length) suggested = "borderline";
-  if (okCards.some((c) => c.dataset.severity === "must_fix")) suggested = "fail";
-  $("#overall").value = suggested;
-}
-
-// 评审进度：已判定 i/N（人工添加的通过态也计入）
 function updateReviewProgress() {
-  const cards = [...document.querySelectorAll("#defect-list .defect-card")];
-  const decided = cards.filter((c) => c.classList.contains("ok") || c.classList.contains("no")).length;
-  const el = $("#review-progress");
-  if (!el) return;
-  el.textContent = cards.length ? `已审 ${decided}/${cards.length}` : "";
+  const total = currentDefects.length;
+  const decided = currentDefects.filter(d => d.confirmed !== undefined).length;
+  const el = $("#review-progress"); if(!el) return;
+  el.textContent = total ? `已审 ${decided}/${total}` : "";
+  recomputeOverall();
+}
+function recomputeOverall() {
+  const confirmed = currentDefects.filter(d => d.confirmed === true);
+  const errs = confirmed.filter(d => (current?.problem_types?.[d.problem_type]?.severity) === "error").length;
+  const warns = confirmed.filter(d => (current?.problem_types?.[d.problem_type]?.severity) === "warning").length;
+  let v = "pass"; if(errs>0) v = "fail"; else if(warns>0) v = "borderline";
+  $("#overall").value = currentDefects.length ? v : $("#overall").value;
 }
 
-async function loadAnnotation() {
-  $("#defect-list").innerHTML = "";
-  refreshBadges();
-  updateReviewProgress();
-  $("#overall").value = "";
-  document.querySelectorAll("#dim-form select").forEach((s) => { s.value = ""; });
-  document.querySelectorAll("#dim-form .dim-summary").forEach((el) => { el.textContent = ""; el.hidden = true; });
-  const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/annotation`);
-  Object.entries(data.dimensions || {}).forEach(([dim, v]) => {
-    const sel = document.querySelector(`#dim-form select[data-dim="${dim}"]`);
-    if (sel) sel.value = String(v);
-  });
-  (data.defects || []).forEach((d) => addDefectCard(d.unit_id, d.issue, "human", "", d.severity || ""));
-  $("#overall").value = data.overall || "";
+function filterByType(pt, cardEl) {
+  const wasActive = cardEl?.classList.contains("active");
+  document.querySelectorAll("#stats-grid .stat-card").forEach(c => c.classList.remove("active"));
+  if (wasActive) { clearDefectFilter(); return; }
+  if (cardEl) cardEl.classList.add("active");
+  activeFilterType = pt;
+  filterDefectOnly = true;
+  $("#filter-only-btn").textContent = "仅问题 ✓";
+  $("#detail-search").value = "";
+  applyFilters();
 }
 
-async function saveAnnotation(advance) {
-  const dimensions = {};
-  document.querySelectorAll("#dim-form select").forEach((s) => {
-    if (s.value) dimensions[s.dataset.dim] = Number(s.value);
+function applyFilters() {
+  const q = $("#detail-search").value.trim().toLowerCase();
+  const ids = [...currentItems.keys()];
+  // Collect matching unit ids + context ±2
+  const matchingUids = new Set();
+  // Only add context when there's a query or a type filter
+  const needCtx = !!(q || activeFilterType);
+  currentDefects.forEach(d => {
+    if (d.confirmed === false) return;
+    let match = false;
+    if (q) {
+      const it = currentItems.get(d.unit_id);
+      const src = (it?.source_text || "") + (it?.text || "");
+      const types = current?.problem_types || {};
+      const label = types[d.problem_type]?.label || d.problem_type;
+      const text = `${d.unit_id} ${label} ${d.note||""} ${src}`.toLowerCase();
+      match = text.includes(q);
+    }
+    if (activeFilterType && d.problem_type === activeFilterType) match = true;
+    if (!match) return;
+    matchingUids.add(d.unit_id);
+    const idx = ids.indexOf(d.unit_id);
+    for (let i = Math.max(0, idx - 2); i <= Math.min(ids.length - 1, idx + 2); i++)
+      matchingUids.add(ids[i]);
   });
-  const defects = [...document.querySelectorAll("#defect-list .defect-card.ok")]
-    .map((card) => ({ unit_id: cardUid(card), issue: card.querySelector(".issue").value.trim(), severity: card.dataset.severity || "" }))
-    .filter((d) => d.unit_id || d.issue);
-  const body = { dimensions, defects, overall: $("#overall").value };
-  if (judgeSuggestion) {  // 做过 AI 预评 → 带上原始建议 + 人工复核标记
-    body.judge_suggestion = judgeSuggestion;
-    body.reviewed_by = "human";
+
+  document.querySelectorAll("#output-wrap tr").forEach(tr => {
+    if (tr.classList.contains("defect-row")) {
+      const pt = tr.dataset.pt;
+      const typeOk = !activeFilterType || pt === activeFilterType;
+      const searchOk = !q || matchingUids.has(tr.dataset.uid);
+      tr.classList.toggle("fold", !typeOk || !searchOk);
+    }
+    if (tr.classList.contains("unit-row")) {
+      const uid = tr.dataset.uid;
+      const hasFilter = !!(q || activeFilterType || filterDefectOnly);
+      if (!hasFilter) {
+        tr.classList.remove("hidden-by-search", "ctx-unit");
+      } else {
+        const visible = matchingUids.has(uid);
+        tr.classList.toggle("hidden-by-search", !visible);
+        if (visible) {
+          const isDirectMatch = currentDefects.some(
+            d => d.unit_id === uid && d.confirmed !== false
+            && (!activeFilterType || d.problem_type === activeFilterType)
+          );
+          tr.classList.toggle("ctx-unit", !isDirectMatch);
+        }
+      }
+    }
+    if (tr.classList.contains("add-defect-form")) {
+      if (activeFilterType) tr.classList.add("hidden-by-search");
+    }
+  });
+
+  // handle "仅问题" mode
+  if (filterDefectOnly && !q && !activeFilterType) {
+    document.querySelectorAll("#output-wrap tr.unit-row").forEach(tr => {
+      const hasDefects = currentDefects.some(d => d.unit_id === tr.dataset.uid && d.confirmed !== false);
+      tr.classList.toggle("hidden-by-search", !hasDefects);
+    });
+    document.querySelectorAll("#output-wrap tr.add-defect-form").forEach(tr => {
+      tr.classList.add("hidden-by-search");
+    });
   }
+  // Reset nav position
+  document.querySelector("#output-wrap tr.defect-row.flash")?.classList.remove("flash");
+  const vis = [...document.querySelectorAll("#output-wrap tr.defect-row")].filter(tr => !tr.classList.contains("fold"));
+  $("#nav-pos").textContent = vis.length ? `0/${vis.length}` : "";
+}
+function toggleDefectFilter() {
+  filterDefectOnly = !filterDefectOnly; activeFilterType = null;
+  $("#filter-only-btn").textContent = filterDefectOnly ? "仅问题 ✓" : "仅问题";
+  document.querySelectorAll("#stats-grid .stat-card").forEach(c => c.classList.remove("active"));
+  applyFilters();
+}
+function clearDefectFilter() {
+  filterDefectOnly = false; activeFilterType = null;
+  $("#filter-only-btn").textContent = "仅问题"; $("#detail-search").value = "";
+  document.querySelectorAll("#stats-grid .stat-card").forEach(c => c.classList.remove("active"));
+  applyFilters();
+}
+function filterDefects() {
+  // Called from search input — clear type filter, apply text search
+  activeFilterType = null;
+  filterDefectOnly = false; $("#filter-only-btn").textContent = "仅问题";
+  document.querySelectorAll("#stats-grid .stat-card").forEach(c => c.classList.remove("active"));
+  applyFilters();
+}
+
+function navToDefect(delta) {
+  const all = [...document.querySelectorAll("#output-wrap tr.defect-row")].filter(tr => !tr.classList.contains("fold"));
+  if (!all.length) return;
+  const current = document.querySelector("#output-wrap tr.defect-row.flash");
+  let idx = current ? all.indexOf(current) : -1;
+  idx = idx >= 0 ? idx + delta : (delta > 0 ? 0 : all.length - 1);
+  if (idx < 0) idx = 0;
+  if (idx >= all.length) idx = all.length - 1;
+  const target = all[idx];
+  target.scrollIntoView({ block: "center", behavior: "smooth" });
+  current?.classList.remove("flash");
+  target.classList.add("flash");
+  setTimeout(() => target.classList.remove("flash"), 1500);
+  $("#nav-pos").textContent = `${idx + 1}/${all.length}`;
+}
+
+// ── AI 预评 ─────────────────────────────────────────────────────────────────
+async function runJudge() {
+  if(!current) return;
+  $("#judge-btn").disabled=true; $("#judge-btn").textContent="预评中…";
+  try {
+    const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/judge`, {method:"POST"});
+    judgeSuggestion = data;
+    // Clear old annotation
+    current.annotated = false; currentDefects = [];
+    // Populate defects from judge result
+    Object.entries(data.problem_types||{}).forEach(([pt, info]) => {
+      (info.issues||[]).forEach(issue => {
+        currentDefects.push({unit_id: String(issue.unit_id||""), problem_type: pt, note: String(issue.note||issue.problem||"")});
+      });
+    });
+    $("#overall").value = data.suggested_overall||"";
+    rerenderDefects(); showMsg("AI 预评已回填，请人工复核后保存", true);
+  } catch(e){showMsg(`预评失败：${e.message}`,false);}
+  finally {$("#judge-btn").disabled=false; $("#judge-btn").textContent="AI 预评";}
+}
+
+// ── Annotation save/load ────────────────────────────────────────────────────
+async function loadAnnotation() {
+  const data = await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/annotation`);
+  currentDefects = (data.defects||[]).map(d => ({
+    unit_id: String(d.unit_id||d.unit_id||""),
+    problem_type: String(d.problem_type||d.problem_type||""),
+    note: String(d.note||d.issue||""),
+    confirmed: d.confirmed!==undefined ? d.confirmed : undefined,
+  }));
+  $("#overall").value = data.overall||"";
+  const items = [...currentItems.values()].sort((a,b)=>String(a.unit_id).localeCompare(String(b.unit_id), undefined, {numeric:true}));
+  renderOutput(items); updateStatsGrid();
+}
+async function saveAnnotation() {
+  const defects = currentDefects
+    .filter(d => d.confirmed === true)
+    .map(d => ({unit_id:d.unit_id, problem_type:d.problem_type, note:d.note||""}));
+  const body = {defects, overall: $("#overall").value};
+  if(judgeSuggestion){body.judge_suggestion=judgeSuggestion; body.reviewed_by="human";}
   try {
     await api(`/api/cases/${current.step}/${encodeURIComponent(current.name)}/annotation`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body),
     });
-    current.annotated = true;
-    updateDetailMeta();
-    if (!advance) { showMsg("标注已保存", true); return; }
-    // 队列推进：案例列表中当前之后第一个未审核 case；没有则收工回案例 tab
-    const idx = cases.indexOf(current);
-    const next = cases.findIndex((c, j) => j > idx && !c.annotated);
-    if (next >= 0) {
-      showMsg("已保存，跳到下一条未审核 case", true);
-      openCase(next);
-    } else {
-      showMsg("已保存，全部审核完成", true);
-      document.querySelector('nav button[data-tab="cases"]').click();
-    }
-  } catch (e) {
-    showMsg(`保存失败：${e.message}`, false);
-  }
+    current.annotated = true; showMsg("标注已保存（仅保存已确认的缺陷）", true);
+  } catch(e){showMsg(`保存失败：${e.message}`,false);}
 }
 
-// ⌘/Ctrl+Enter = Approve 保存并下一条（仅详情页生效）
-document.addEventListener("keydown", (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && current && !$("#view-detail").hidden) {
-    e.preventDefault();
-    saveAnnotation(true);
-  }
+document.addEventListener("keydown", e => {
+  if((e.metaKey||e.ctrlKey)&&e.key==="s"&&current&&!$("#view-detail").hidden){e.preventDefault(); saveAnnotation();}
 });
 
-// 启动：从 location.hash 恢复标签页；#detail/<step>/<name> 直接 reopen 该 case
+// ── Restore view from hash ──────────────────────────────────────────────────
 (function restoreView() {
   const detail = location.hash.match(/^#detail\/([^/]+)\/(.+)$/);
-  if (detail) {
-    const [, step, rawName] = detail;
-    loadCases()
-      .then(() => {
-        const i = cases.findIndex((c) => c.step === step && c.name === decodeURIComponent(rawName));
-        if (i >= 0) {
-          $("#tab-detail").disabled = false;
-          openCase(i);
-        } else {
-          activateTab("cases");  // case 已被删除/改名，退回列表
-        }
-      })
-      .catch(() => activateTab("candidates"));
-    return;
-  }
-  activateTab(location.hash === "#cases" ? "cases" : "candidates");
+  if(detail){const[,step,rawName]=detail; loadCases().then(()=>{const i=cases.findIndex(c=>c.step===step&&c.name===decodeURIComponent(rawName));if(i>=0){$("#tab-detail").disabled=false;openCase(i);}else activateTab("cases");}).catch(()=>activateTab("candidates"));return;}
+  const cand = location.hash.match(/^#candidate\/(.+)$/);
+  if(cand){loadCandidates().then(()=>{const name=decodeURIComponent(cand[1]);if(candidates.some(c=>c.name===name))openCandidate(name);else activateTab("candidates");}).catch(()=>activateTab("candidates"));return;}
+  activateTab(location.hash==="#cases"?"cases":"candidates");
 })();
 </script>
 </body>

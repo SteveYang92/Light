@@ -89,15 +89,20 @@ def test_load_fixture_translate_optional_sidecars_absent(tmp_path) -> None:
 
 def test_load_annotation(tmp_path) -> None:
     annotation = {
-        "dimensions": {"boundary_quality": 4, "readability": 3},
-        "defects": [{"unit_id": "u0002", "issue": "bad split"}],
+        "defects": [
+            {"unit_id": "u0001", "problem_type": "boundary_quality", "note": "score 4"},
+            {"unit_id": "u0002", "problem_type": "readability", "note": "bad split"},
+        ],
         "overall": "acceptable",
     }
     case = loader.load_case(_write_plan_case(tmp_path, annotation=annotation))
     parsed = loader.load_annotation(case)
     assert parsed is not None
-    assert parsed.dimensions == {"boundary_quality": 4, "readability": 3}
-    assert parsed.defects == [{"unit_id": "u0002", "issue": "bad split"}]
+    assert len(parsed.defects) == 2
+    assert parsed.defects[0].problem_type == "boundary_quality"
+    assert parsed.defects[0].unit_id == "u0001"
+    assert parsed.defects[1].problem_type == "readability"
+    assert parsed.defects[1].unit_id == "u0002"
     assert parsed.overall == "acceptable"
 
 

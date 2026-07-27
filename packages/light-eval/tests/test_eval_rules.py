@@ -29,8 +29,8 @@ def _unit_dict(unit_id, words, *, start=None, end=None, text=None) -> dict:
     }
 
 
-def _scores_by_dim(scores):
-    return {s.dimension: s for s in scores}
+def _stats_by_type(scores):
+    return {s.problem_type: s for s in scores}
 
 
 # ── plan dimensions ─────────────────────────────────────────────────────────
@@ -42,13 +42,13 @@ def test_word_coverage_pass_and_fail() -> None:
     judge = PlanRulesJudge()
 
     full = StepOutput(case="c", output=[_unit_dict("p0000", words)])
-    score = _scores_by_dim(judge.score(_plan_case(), fixture, full))["word_coverage"]
-    assert score.passed and score.score == 1.0
+    score = _stats_by_type(judge.score(_plan_case(), fixture, full))["word_coverage"]
+    assert score.passed and score.error_count == 0
 
     dropped = StepOutput(case="c", output=[_unit_dict("p0000", words[:-1])])
-    score = _scores_by_dim(judge.score(_plan_case(), fixture, dropped))["word_coverage"]
+    score = _stats_by_type(judge.score(_plan_case(), fixture, dropped))["word_coverage"]
     assert not score.passed
-    assert score.score == 0.75
+    assert score.error_count == 1
     assert any("case." in e for e in score.evidence)
 
 
@@ -58,18 +58,18 @@ def test_duration_violations_respects_params_and_defaults() -> None:
     output = StepOutput(case="c", output=[_unit_dict("p0000", words)])
     judge = PlanRulesJudge()
 
-    score = _scores_by_dim(judge.score(_plan_case(), fixture, output))["duration_violations"]
-    assert not score.passed and score.score == 1.0
+    score = _stats_by_type(judge.score(_plan_case(), fixture, output))["duration_violations"]
+    assert not score.passed and score.error_count == 1
 
-    score = _scores_by_dim(judge.score(_plan_case({"max_duration": 15.0}), fixture, output))["duration_violations"]
-    assert score.passed and score.score == 0.0
+    score = _stats_by_type(judge.score(_plan_case({"max_duration": 15.0}), fixture, output))["duration_violations"]
+    assert score.passed and score.error_count == 0
 
 
 def test_dangling_tails_flags_function_word_endings() -> None:
     words = make_words(["this", "is", "the"])  # ends on a function word
     fixture = Fixture(segments=[make_segment("u0001", words)])
     output = StepOutput(case="c", output=[_unit_dict("p0000", words)])
-    score = _scores_by_dim(PlanRulesJudge().score(_plan_case(), fixture, output))["dangling_tails"]
+    score = _stats_by_type(PlanRulesJudge().score(_plan_case(), fixture, output))["dangling_tails"]
     assert not score.passed
     assert any('"the"' in e for e in score.evidence)
 
@@ -79,7 +79,7 @@ def test_dangling_tails_exempts_clause_punctuation() -> None:
     words[-1] = words[-1].__class__(text="and.", start=words[-1].start, end=words[-1].end, confidence=1.0)
     fixture = Fixture(segments=[make_segment("u0001", words)])
     output = StepOutput(case="c", output=[_unit_dict("p0000", words)])
-    score = _scores_by_dim(PlanRulesJudge().score(_plan_case(), fixture, output))["dangling_tails"]
+    score = _stats_by_type(PlanRulesJudge().score(_plan_case(), fixture, output))["dangling_tails"]
     assert score.passed
 
 
@@ -87,7 +87,7 @@ def test_empty_units_flagged() -> None:
     words = make_words(["a", "b"])
     fixture = Fixture(segments=[make_segment("u0001", words)])
     output = StepOutput(case="c", output=[_unit_dict("p0000", words, text="  ")])
-    score = _scores_by_dim(PlanRulesJudge().score(_plan_case(), fixture, output))["empty_units"]
+    score = _stats_by_type(PlanRulesJudge().score(_plan_case(), fixture, output))["empty_units"]
     assert not score.passed and score.evidence == ["p0000"]
 
 
@@ -114,17 +114,17 @@ def test_unit_coverage_counts_merge_chains() -> None:
     judge = TranslateRulesJudge()
 
     partial = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, "你好世界。")])
-    score = _scores_by_dim(judge.score(_tx_case(), fixture, partial))["unit_coverage"]
-    assert not score.passed and score.score == 0.5 and score.evidence == ["p0001"]
+    score = _stats_by_type(judge.score(_tx_case(), fixture, partial))["unit_coverage"]
+    assert not score.passed and score.error_count == 1 and score.evidence == ["p0001"]
 
     merged = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 4.0, "你好世界测试。", ["p0001"])])
-    score = _scores_by_dim(judge.score(_tx_case(), fixture, merged))["unit_coverage"]
-    assert score.passed and score.score == 1.0
+    score = _stats_by_type(judge.score(_tx_case(), fixture, merged))["unit_coverage"]
+    assert score.passed and score.error_count == 0
 
 
 def test_empty_translations_flagged() -> None:
     output = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, "")])
-    score = _scores_by_dim(TranslateRulesJudge().score(_tx_case(), _tx_fixture(), output))["empty_translations"]
+    score = _stats_by_type(TranslateRulesJudge().score(_tx_case(), _tx_fixture(), output))["empty_translations"]
     assert not score.passed and score.evidence == ["p0000"]
 
 
@@ -133,12 +133,12 @@ def test_target_lang_ratio_zh() -> None:
     fixture = _tx_fixture()
 
     zh = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, "你好世界这是测试文本")])
-    score = _scores_by_dim(judge.score(_tx_case(), fixture, zh))["target_lang_ratio"]
-    assert score.passed and score.score == 1.0
+    score = _stats_by_type(judge.score(_tx_case(), fixture, zh))["target_lang_ratio"]
+    assert score.passed and score.error_count == 0
 
     en = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, "hello world")])
-    score = _scores_by_dim(judge.score(_tx_case(), fixture, en))["target_lang_ratio"]
-    assert not score.passed and score.score == 0.0
+    score = _stats_by_type(judge.score(_tx_case(), fixture, en))["target_lang_ratio"]
+    assert not score.passed and score.error_count == 1
 
 
 def test_source_fidelity_checks_timing_and_ids() -> None:
@@ -146,15 +146,15 @@ def test_source_fidelity_checks_timing_and_ids() -> None:
     fixture = _tx_fixture()
 
     good = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 4.0, "你好世界测试。", ["p0001"])])
-    score = _scores_by_dim(judge.score(_tx_case(), fixture, good))["source_fidelity"]
-    assert score.passed and score.score == 1.0
+    score = _stats_by_type(judge.score(_tx_case(), fixture, good))["source_fidelity"]
+    assert score.passed and score.error_count == 0
 
     shifted = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.5, 2.0, "你好世界。")])
-    score = _scores_by_dim(judge.score(_tx_case(), fixture, shifted))["source_fidelity"]
+    score = _stats_by_type(judge.score(_tx_case(), fixture, shifted))["source_fidelity"]
     assert not score.passed and any("timing" in e for e in score.evidence)
 
     unknown = StepOutput(case="c", output=[_cue_dict("zh_0000", "p9999", 0.0, 2.0, "你好。")])
-    score = _scores_by_dim(judge.score(_tx_case(), fixture, unknown))["source_fidelity"]
+    score = _stats_by_type(judge.score(_tx_case(), fixture, unknown))["source_fidelity"]
     assert not score.passed and any("unknown" in e for e in score.evidence)
 
 
@@ -175,7 +175,7 @@ def test_target_lang_ratio_term_dense_passes_at_default() -> None:
     default — the metric targets wholesale untranslated output, not terminology."""
     text = "OpenAI今天正式发布了GPT Live，官方承诺将给ChatGPT语音助手带来一次真正意义上的重大升级体验"  # ~64% CJK
     output = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, text)])
-    score = _scores_by_dim(TranslateRulesJudge().score(_tx_case(), _tx_fixture(), output))["target_lang_ratio"]
+    score = _stats_by_type(TranslateRulesJudge().score(_tx_case(), _tx_fixture(), output))["target_lang_ratio"]
     assert score.passed
 
 
@@ -184,5 +184,5 @@ def test_target_lang_ratio_threshold_overridable() -> None:
     text = "OpenAI今天正式发布了GPT Live，官方承诺将给ChatGPT语音助手带来一次真正意义上的重大升级体验"
     output = StepOutput(case="c", output=[_cue_dict("zh_0000", "p0000", 0.0, 2.0, text)])
     case = _tx_case({"target_lang_ratio_threshold": 0.95})
-    score = _scores_by_dim(TranslateRulesJudge().score(case, _tx_fixture(), output))["target_lang_ratio"]
+    score = _stats_by_type(TranslateRulesJudge().score(case, _tx_fixture(), output))["target_lang_ratio"]
     assert not score.passed

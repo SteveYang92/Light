@@ -6,8 +6,6 @@ import json
 
 import pytest
 from light_eval.cli import app
-from light_eval.judges.llm import LLMJudge
-from light_eval.models import StepOutput
 from typer.testing import CliRunner
 
 from .conftest import make_words, plan_fixture_files, translate_fixture_files, write_case
@@ -31,7 +29,7 @@ def _write_plan_case(root) -> None:
 def test_help() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    for cmd in ("run", "harvest", "calibrate", "serve"):
+    for cmd in ("run", "harvest", "serve"):
         assert cmd in result.stdout
 
 
@@ -45,7 +43,7 @@ def test_run_plan_suite_json(tmp_path) -> None:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report["step"] == "plan"
     assert report["aggregate"]["n_cases"] == 1
-    assert report["aggregate"]["dimensions"]["word_coverage"] == {"total": 1, "passed": 1}
+    assert report["aggregate"]["problem_types"]["word_coverage"] == {"total": 1, "passed": 1}
 
 
 def test_run_translate_skipped_without_llm(tmp_path) -> None:
@@ -69,62 +67,6 @@ def test_run_empty_suite_fails(tmp_path) -> None:
     result = runner.invoke(app, ["run", str(tmp_path)])
     assert result.exit_code == 1
     assert "No cases found" in result.stdout
-
-
-def test_calibrate_requires_api_key(tmp_path) -> None:
-    """Annotated case without a stored suggestion must be re-judged live → key required."""
-    _write_annotated_plan_case(tmp_path)
-    result = runner.invoke(app, ["calibrate", str(tmp_path)])
-    assert result.exit_code == 1
-    assert "requires an LLM API key" in result.stdout
-
-
-def _write_annotated_plan_case(root, *, annotation: dict | None = None):
-    """Plan case with annotation + persisted .eval_run/output.json (no real run)."""
-    words = make_words(_WORDS)
-    units = [{"unit_id": "u0001", "start": 0.0, "end": 5.0, "source_text": " ".join(_WORDS), "speaker": ""}]
-    if annotation is None:
-        annotation = {"dimensions": {"boundary_quality": 4}, "defects": [], "overall": "pass"}
-    case_dir = write_case(root, "plan", "basic", fixture_files=plan_fixture_files(words, units), annotation=annotation)
-    run_dir = case_dir / ".eval_run"
-    run_dir.mkdir()
-    output = StepOutput(case="basic", output=[{"unit_id": "u0001", "start": 0.0, "end": 5.0, "text": " ".join(_WORDS)}])
-    (run_dir / "output.json").write_text(json.dumps(output.to_dict(), ensure_ascii=False), encoding="utf-8")
-    return case_dir
-
-
-def test_calibrate_prefers_stored_suggestion_without_llm(tmp_path, monkeypatch) -> None:
-    """judge_suggestion in annotation.yaml is used verbatim — no LLM key or call needed."""
-    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
-    monkeypatch.setattr(LLMJudge, "score", lambda *a, **k: pytest.fail("stored suggestion should skip the LLM judge"))
-    suggestion = {
-        "dimensions": {
-            "boundary_quality": {"score": 4, "reason": "边界合理", "evidence": []},
-            "split_necessity": {"score": 5, "reason": "拆分恰当", "evidence": []},
-        },
-        "suggested_overall": "pass",
-    }
-    annotation = {
-        "dimensions": {"boundary_quality": 3, "split_necessity": 5},  # human adjusted one dim 4→3
-        "defects": [],
-        "overall": "borderline",
-        "judge_suggestion": suggestion,
-        "reviewed_by": "human",
-    }
-    _write_annotated_plan_case(tmp_path, annotation=annotation)
-
-    report_path = tmp_path / "cal.json"
-    result = runner.invoke(app, ["calibrate", str(tmp_path), "-o", str(report_path)])
-    assert result.exit_code == 0, result.stdout
-    assert "[SUGGESTION] plan/basic" in result.stdout
-    assert "人工调整率: 1/2" in result.stdout  # boundary_quality 4 → 3
-
-    report = json.loads(report_path.read_text(encoding="utf-8"))
-    assert report["n_cases"] == 1
-    assert report["n_pairs"] == 2
-    dims = {d["dimension"]: d for d in report["dimensions"]}
-    assert dims["boundary_quality"]["mae"] == 1.0
-    assert dims["split_necessity"]["mae"] == 0.0
 
 
 def test_harvest_table_and_json(tmp_path) -> None:
