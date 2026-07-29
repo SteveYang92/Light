@@ -141,7 +141,7 @@ def join_cues(
         result.cues, result.units = _apply_shift(result.cues, result.units, op, config, llm=client)
         result.ops_applied += 1
     for op in merges:
-        result.cues = _apply_merge(result.cues, op)
+        result.cues, result.units = _apply_merge(result.cues, result.units, op)
         result.ops_applied += 1
     logger.info(f"  Join: {result.ops_applied} ops applied")
     result.usage = total_usage or None
@@ -417,7 +417,7 @@ def _join_zh(texts: list[str]) -> str:
 # ── Applying operations ───────────────────────────────────
 
 
-def _apply_merge(cues: list[SubtitleCue], op: dict) -> list[SubtitleCue]:
+def _apply_merge(cues: list[SubtitleCue], units: list[Segment], op: dict) -> tuple[list[SubtitleCue], list[Segment]]:
     start, end = op["from"], op["to"]
     group = cues[start : end + 1]
     head = group[0]
@@ -428,7 +428,12 @@ def _apply_merge(cues: list[SubtitleCue], op: dict) -> list[SubtitleCue]:
         absorbed.extend([c.unit_id, *c.merged_from])
     head.merged_from = [*head.merged_from, *absorbed]
     head.words = [w for c in group for w in _cue_words(c)]
-    return cues[: start + 1] + cues[end + 1 :]
+
+    # Sync units: merge the corresponding planned units too
+    absorbed_ids = {c.unit_id for c in group[1:]}
+    new_units = [u for u in units if u.unit_id not in absorbed_ids]
+
+    return cues[: start + 1] + cues[end + 1 :], new_units
 
 
 def _apply_shift(

@@ -178,13 +178,14 @@ def _patch_retranslate(prev_text="所以你自然会想", next_text="文本压�
 
 
 def test_apply_merge_joins_text_time_and_chains() -> None:
-    cues, _ = _p0002_pair()
-    out = _apply_merge(cues, {"type": "merge", "from": 0, "to": 1})
-    assert len(out) == 1
-    assert out[0].text == "所以你自然会想 文本压缩有没有一个"
-    assert out[0].end == 3.2
-    assert out[0].merged_from == ["p0002_1"]
-    assert len(out[0].words) == 9
+    cues, units = _p0002_pair()
+    out_cues, out_units = _apply_merge(cues, units, {"type": "merge", "from": 0, "to": 1})
+    assert len(out_cues) == 1
+    assert out_cues[0].text == "所以你自然会想 文本压缩有没有一个"
+    assert out_cues[0].end == 3.2
+    assert out_cues[0].merged_from == ["p0002_1"]
+    assert len(out_cues[0].words) == 9
+    assert len(out_units) < len(units)
 
 
 def test_apply_shift_forward_splits_donor_unit() -> None:

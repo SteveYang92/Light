@@ -238,13 +238,18 @@ def _pre_split(nwords, seg_of_word, segments) -> list[tuple[int, int]]:
 
 
 def _find_markers(nwords, seg_ids: list[int]) -> set[int]:
-    """Return indices of words that carry a `|` marker (sentence ending or gap ≥ 0.5s at segment boundary)."""
+    """Return indices of words that carry a `|` marker: sentence endings or gaps ≥ 0.3s."""
     markers: set[int] = set()
     for i in range(len(nwords) - 1):
-        if seg_ids[i] != seg_ids[i + 1]:
-            w = nwords[i]
-            if w.is_sentence_final or w.gap_after >= 0.50:
-                markers.add(i)
+        w = nwords[i]
+        if w.is_sentence_final or w.gap_after >= 0.30:
+            markers.add(i)
+    return markers
+    markers: set[int] = set()
+    for i in range(len(nwords) - 1):
+        w = nwords[i]
+        if w.is_sentence_final or w.gap_after >= 0.50:
+            markers.add(i)
     return markers
 
 
