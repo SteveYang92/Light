@@ -25,11 +25,12 @@ class SegmentConfig:
 
 @dataclass
 class PlanConfig:
-    """LLM cue-boundary planning (``light_subtitle.plan``)."""
+    """Cue-boundary planning (``light_subtitle.plan``)."""
 
     max_duration: float = 7.0
     min_duration: float = 0.8
     llm_temperature: float = 0.4
+    llm_thinking: bool = False
 
 
 @dataclass

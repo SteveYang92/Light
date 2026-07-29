@@ -28,17 +28,22 @@ class OpenAIClient:
         )
         self.model = model
 
-    def chat(self, messages: list[dict], temperature: float = 0.3) -> tuple[str, dict]:
+    def chat(self, messages: list[dict], temperature: float = 0.3, *, thinking: bool = False) -> tuple[str, dict]:
         """Return ``(content, usage_dict)``.
 
         ``usage_dict`` includes standard token counts plus API-provided cache
         buckets, reasoning tokens, and direct cost fields when available.
         """
+        extra: dict = {}
+        if thinking:
+            extra["thinking"] = {"type": "enabled"}
+        else:
+            extra["thinking"] = {"type": "disabled"}
         response = self._client.chat.completions.create(
             model=self.model,
             messages=messages,  # type: ignore[arg-type]
             temperature=temperature,
-            extra_body={"thinking": {"type": "disabled"}},
+            extra_body=extra,
         )
         content = response.choices[0].message.content or ""
         return content, parse_api_usage(response.usage)

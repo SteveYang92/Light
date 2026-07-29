@@ -1,41 +1,58 @@
-You are a subtitle cue planner. Your job: group a stream of timed transcript fragments into subtitle cues that are pleasant to read and safe to translate as a unit.
+<role>
+You split a spoken transcript into subtitle units. A unit is what the viewer sees on screen at one time — one or two clauses that read naturally as a group.
+</role>
 
-## Input
+<why_boundaries_matter>
+Your decisions directly affect readability:
+- Breaking too aggressively creates flash units (under {{ min_duration }}s) and mid-phrase fragments that confuse viewers.
+- Merging too aggressively creates units that sit on screen too long (>{{ max_duration }}s) and exhaust viewers.
+- Priority: avoid fragments first. A slightly longer unit ({{ max_duration - 2 }}—{{ max_duration }}s) is always better than a 0.5s flash of a stranded word or phrase. If a split would produce a 1—2 word fragment on either side, DO NOT split — merge instead.
+</why_boundaries_matter>
 
-A JSON object with "segments": an ordered list of transcript fragments.
+<how_to_read_input>
+You will see numbered words. Some carry a `cum` hint: the elapsed audio time from the start of this speech block to the end of that word.
+- Unit duration = cum[last] − cum[before_first]. Subtract two numbers.
+- A `|` marks where the speaker paused or finished a sentence. It is a hint, not a command — you may break there or ignore it. Default to ignoring it unless splitting there creates two complete, well-sized units.
+</how_to_read_input>
 
-- "id": dense integer index (0-based)
-- "start" / "end": seconds
-- "dur": duration in seconds
-- "speaker": speaker label (may be empty)
-- "text": punctuated transcript text
+<when_to_break>
+Break at THIS position when ALL of the following are true:
+1. The position is a sentence ending (. ! ?), a clause comma / semicolon, or right before a connective (and, but, so, because, when, while, if, that, which).
+2. BOTH sides form complete, self-contained clauses or sentences. Each side reads as complete on its own.
+3. Neither side is shorter than 4 words — unless it is a genuine standalone interjection ("Right.", "Amazing.", "What?", "Thank you.").
+4. The resulting units are within {{ min_duration }}—{{ max_duration }}s (use cum hints to check).
 
-The fragments were cut at speech pauses, so a sentence often spans several fragments ("Well," / "the agents are really working."), and one fragment may contain several sentences.
+Examples of CORRECT breaks:
+  "... couple of years." · "I think that's a good estimate, right?"   ← two complete sentences
+  "... really distinctively human," · "both biologically and culturally."   ← complete clause on each side
+  "... won a number of awards," · "the Glasgow Dissertation Prize,"   ← comma-separated list items
+</when_to_break>
 
-## Task
+<when_to_merge>
+Do NOT break at THIS position. Merge the words across this boundary into one unit when ANY of the following is true:
+1. The split would separate a modifier from its head: adjective-noun ("their physical · environments"), noun-modifier ("illustrations · produced by"), possessive-noun ("Ramon y Cajal's · drawings").
+2. The split would separate a verb from its object or complement: "question · the orthodoxy", "link up · algebraic expressions", "figured · out".
+3. The split would separate a preposition from its complement: "in terms of, · for sketch", "to · begin".
+4. The split would leave a stranded single word, number, or short filler on either side: "one" "quite" "yet" "instead" "okay?" "um" "so".
+5. The split would leave an incomplete clause on either side — a fragment missing its subject, verb, or main clause: "what keeps her up at night" "how people" "that we,".
+6. The period before an abbreviation + proper noun sequence: "NSF. · Career" "U.S. · policy" (the period is not a sentence ending, just an abbreviation mark).
 
-Decide cue boundaries by grouping CONSECUTIVE fragment ids. Every fragment id must appear in exactly one group, in ascending order.
+Examples of INCORRECT breaks (do NOT do these):
+  "... their physical" · "environments"   ← adjective separated from its noun — merge
+  "... question" · "the orthodoxy"   ← verb separated from its object — merge
+  "... in terms of," · "for sketch"   ← preposition separated from complement — merge
+  "... one key direction," · "which is from"   ← "which" clause separated from its head — merge
+  "... that we," · "in fact, use to communicate"   ← "that we" is a fragment — merge
+</when_to_merge>
 
-## Budgets
+<function_word_rule>
+A unit must NEVER end on a bare function word. Before finalising a break, check the last word of the left unit. If it is: a, an, the, of, to, in, on, at, by, for, with, from, and, or, but, if, because, when, while, that, which, is, are, was, were, be, do, does, have, can, will, would, could, should, I, you, he, she, we, they — MOVE the break one word right. Exception: a word with trailing punctuation ("it,", "you.", "there?") is always safe.
+</function_word_rule>
 
-1. Each cue's audio duration (last end − first start) should be {{ min_duration }}–{{ max_duration }} s. Never exceed {{ max_duration }} s when a reasonable boundary exists.
-2. A cue translates to roughly 8 target-language characters per second of audio; keep a cue under ~48 such characters (two display lines). Prefer one more cue over one unreadably dense cue.
-3. A cue must never mix fragments with different non-empty "speaker" labels.
-4. If a <em>single</em> fragment (not a group) already exceeds the duration budget on its own, keep it as one cue — a later step will split it at the word level.  But when a group contains more than one fragment, <em>never</em> let its total duration exceed the budget — always split at an existing fragment boundary instead.
-
-## Boundary quality
-
-- Strongly prefer boundaries right after sentence-ending punctuation (. ! ? …).
-- A complete question ending in "?" reads best as its own cue; prefer closing the cue at the "?" over merging the question with the statement that follows it. But if the question alone would be shorter than {{ min_duration }} s, keep it attached to a neighboring sentence — a flash cue is worse than a merged one.
-- Good secondary boundaries: after clause commas/semicolons, or just before a connective that opens a new clause (because, but, so, when, while, although, if).
-- Avoid ending a cue on a dangling preposition/article/auxiliary ("of", "the", "is", "to") when a clause boundary is nearby.
-- Avoid 1–3 word stub cues. Short exclamations ("AI!", "Wow,", "Right.") must attach to the clause they belong to — never leave them as their own cue unless the audio is genuinely a standalone interjection surrounded by long silence.
-
-## Output
-
+<output_contract>
 Return ONLY a JSON object — no markdown fences, no explanation:
 
-{"cues": [[0, 1], [2], [3, 4, 5]]}
+{"breaks": [11, 28, 47, 62]}
 
-- "cues" covers every fragment id exactly once, in ascending order.
-- If the input contains a "previous_error" field, your last output violated it; fix exactly that.
+Each number is the word index AFTER which a unit ends. The last break MUST equal the final word index. Units = [0..breaks[0]], [breaks[0]+1 .. breaks[1]], ... — tiling exactly once, no gaps, no overlaps.
+</output_contract>

@@ -1,11 +1,4 @@
-"""LLM boundary planning — one global pass plus focused word-level splits.
-
-Both passes follow the same contract: the LLM decides, code validates
-only hard invariants (JSON shape, coverage, order, duration cap,
-speaker purity, no dangling function-word tails).  Validation failures
-are fed back for one retry; persistent failure returns ``None`` so the
-caller can fall back to the deterministic insurance plan.
-"""
+"""LLM boundary planning — one call per shard, word-level with cum-time hints."""
 
 from __future__ import annotations
 
@@ -14,235 +7,100 @@ import json
 from light_core import logger
 from light_llm.client import OpenAIClient
 from light_llm.json_extract import extract_json_object
-from light_llm.retry import FeedbackAttempt, generate_with_feedback
-from light_models import Segment, Word
+from light_llm.usage.tracker import merge_token_usage
 
 from ..config import PlanConfig
 from ..prompts import render_prompt
-from .boundary import dangling_tail as _dangling_tail
+from .lexicon import FUNC_TAIL
 
-_MAX_ATTEMPTS = 2  # initial try + one retry with validation feedback
-_SOFT_MAX_RATIO = 1.15  # tolerance on the duration cap when accepting splits
-_MIN_PART_WORDS = 3  # split parts smaller than this read as stubs (QC TinyCue)
-_MIN_PART_DURATION = 1.0  # seconds; shorter parts are unreadable flash cues
-
-_DURATION_PREFIX = "DURATION:"
+_MAX_ATTEMPTS = 3
 
 
-# ── Global pass: segment-level grouping ───────────────────
-
-
-def plan_groups(
-    segments: list[Segment], config: PlanConfig, llm: OpenAIClient | None = None
-) -> tuple[list[list[int]] | None, dict | None]:
-    """Plan cue boundaries as groups of consecutive segment indices.
-
-    Returns ``(groups, usage)``; ``groups`` is None when no LLM client is
-    given or the LLM output failed hard validation twice.  Duration
-    warnings are soft — they are fed back but never cause plan rejection
-    (overlong groups are handled by word-level splits downstream).
-    """
-    if llm is None or not segments:
-        return None, None
-    client = llm
-    system = render_prompt("plan_system.j2", max_duration=config.max_duration, min_duration=config.min_duration)
-    payload = {
-        "segments": [
-            {
-                "id": i,
-                "start": round(s.start, 2),
-                "end": round(s.end, 2),
-                "dur": round(s.end - s.start, 1),
-                "speaker": s.speaker or "",
-                "text": s.source_text.strip(),
-            }
-            for i, s in enumerate(segments)
-        ]
-    }
-
-    def _attempt(feedback: str, attempt: int) -> FeedbackAttempt[list[list[int]]]:
-        user = dict(payload)
-        if feedback:
-            user["previous_error"] = feedback
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
-        ]
-        response, usage = client.chat(messages, temperature=config.llm_temperature)
-        groups = _parse_groups(response)
-        if groups is None:
-            logger.warning(f"  Plan attempt {attempt + 1}: unparseable output")
-            return FeedbackAttempt(
-                usage=usage,
-                feedback='Output was not valid JSON of the form {"cues": [[0, 1], [2], ...]}.',
-            )
-        problems = _group_problems(groups, segments, config.max_duration)
-        hard = [p for p in problems if not p.startswith(_DURATION_PREFIX)]
-        if not hard:
-            dur_count = len(problems) - len(hard)
-            if dur_count:
-                logger.warning(
-                    f"  Plan: {dur_count} overlong cue group(s) accepted (word-level splits will handle them)"
-                )
-            return FeedbackAttempt(usage=usage, value=groups)
-        new_feedback = "Invalid plan: " + "; ".join(problems)
-        logger.warning(f"  Plan attempt {attempt + 1} invalid: {new_feedback}")
-        return FeedbackAttempt(usage=usage, feedback=new_feedback)
-
-    return generate_with_feedback(_attempt, max_attempts=_MAX_ATTEMPTS)
-
-
-def _parse_groups(response: str) -> list[list[int]] | None:
-    """Extract ``{"cues": [[int, ...], ...]}`` from an LLM response."""
-    match = extract_json_object(response)
-    try:
-        data = json.loads(match if match is not None else response)
-    except json.JSONDecodeError:
-        return None
-    cues = data.get("cues") if isinstance(data, dict) else None
-    if not isinstance(cues, list):
-        return None
-    groups: list[list[int]] = []
-    for cue in cues:
-        if not isinstance(cue, list) or not cue or not all(isinstance(i, int) and not isinstance(i, bool) for i in cue):
-            return None
-        groups.append(list(cue))
-    return groups or None
-
-
-def _group_problems(groups: list[list[int]], segments: list[Segment], max_duration: float | None = None) -> list[str]:
-    """Hard checks: ordered full coverage, no speaker mixing.  Soft duration
-    warnings (prefixed with ``DURATION:``) are included for LLM feedback but
-    never cause plan rejection."""
-    flat = [i for g in groups for i in g]
-    if flat != list(range(len(segments))):
-        return [f"cues must cover every segment id 0..{len(segments) - 1} exactly once, in ascending order"]
-    problems: list[str] = []
-    for g in groups:
-        speakers = {segments[i].speaker for i in g if segments[i].speaker}
-        if len(speakers) > 1:
-            problems.append(f"cue {g} mixes speakers {sorted(speakers)}; split it at the speaker change")
-    if max_duration is not None:
-        for g in groups:
-            if len(g) < 2:
-                continue
-            dur = segments[g[-1]].end - segments[g[0]].start
-            if dur > max_duration:
-                problems.append(
-                    f"{_DURATION_PREFIX}cue {g} ({dur:.1f}s) exceeds the {max_duration}s cap; "
-                    "split at a fragment boundary"
-                )
-    return problems
-
-
-# ── Focused pass: word-level split of one overlong cue ────
-
-
-def split_span(
-    words: list[Word], config: PlanConfig, client: OpenAIClient | None = None
-) -> tuple[list[tuple[int, int]] | None, dict | None]:
-    """Split one overlong cue's word span into [start, end) word ranges.
-
-    Returns ``(ranges, usage)``; ``ranges`` is None when no LLM client is
-    given or the LLM output failed validation (caller falls back to
-    silence-gap splitting).  Concurrent split calls should share a single
-    *client* so they reuse one connection pool.
-    """
-    if client is None or len(words) < 2:
-        return None, None
+def plan_shard(
+    shard_words: list, cum_times: list[float], markers: set[int], config: PlanConfig, client: OpenAIClient
+) -> tuple[list[int] | None, dict]:
+    """Ask the LLM to place breaks in a shard; returns break indices and usage."""
     system = render_prompt(
-        "plan_split_system.j2",
+        "plan_system.j2",
+        min_duration=config.min_duration,
         max_duration=config.max_duration,
-        soft_max_duration=round(config.max_duration * _SOFT_MAX_RATIO, 2),
     )
-    payload = {
-        "max_duration": config.max_duration,
-        "words": [
-            {"i": i, "start": round(w.start, 2), "end": round(w.end, 2), "text": w.text.strip()}
-            for i, w in enumerate(words)
-        ],
-    }
+    user_text = _render_word_list(shard_words, cum_times, markers)
 
-    def _attempt(feedback: str, attempt: int) -> FeedbackAttempt[list[tuple[int, int]]]:
-        user = dict(payload)
-        if feedback:
-            user["previous_error"] = feedback
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
-        ]
-        response, usage = client.chat(messages, temperature=config.llm_temperature)
-        breaks = _parse_breaks(response)
-        if breaks is None:
-            logger.warning(f"  Split attempt {attempt + 1}: unparseable output")
-            return FeedbackAttempt(
-                usage=usage,
-                feedback='Output was not valid JSON of the form {"breaks": [{"after": 23}, ...]}.',
-            )
-        problems = _break_problems(breaks, words, config.max_duration)
-        if not problems:
-            return FeedbackAttempt(usage=usage, value=_breaks_to_ranges(breaks, len(words)))
-        new_feedback = "Invalid split: " + "; ".join(problems)
-        logger.warning(f"  Split attempt {attempt + 1} invalid: {new_feedback}")
-        return FeedbackAttempt(usage=usage, feedback=new_feedback)
+    total_usage: dict = {}
+    messages: list[dict] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_text},
+    ]
 
-    return generate_with_feedback(_attempt, max_attempts=_MAX_ATTEMPTS)
+    for attempt in range(_MAX_ATTEMPTS):
+        response, usage = client.chat(messages, temperature=config.llm_temperature, thinking=config.llm_thinking)
+        merge_token_usage(total_usage, usage)
+        breaks = _parse_breaks(response, len(shard_words))
+        if breaks is not None:
+            return breaks, total_usage
+        logger.warning(f"  Plan attempt {attempt + 1}: unparseable output — retrying")
+        if attempt < _MAX_ATTEMPTS - 1:
+            messages.append({"role": "user", "content": 'Output must be {"breaks": [int, ...]}. Try again.'})
+
+    return None, total_usage
 
 
-def _parse_breaks(response: str) -> list[int] | None:
-    """Extract break word indices from ``{"breaks": [{"after": int}, ...]}``."""
-    match = extract_json_object(response)
+def _render_word_list(words: list, cum_times: list[float], markers: set[int]) -> str:
+    lines = []
+    for i, w in enumerate(words):
+        text = w.text.strip()
+        suffix = ""
+        if i in markers:
+            suffix = f"  | cum:{cum_times[i]:.1f}"
+        lines.append(f"{i:>4d}  {text}{suffix}")
+    return "\n".join(lines)
+
+
+def _parse_breaks(response: str, n_words: int) -> list[int] | None:
+    fragment = extract_json_object(response)
+    if fragment is None:
+        return None
     try:
-        data = json.loads(match if match is not None else response)
+        data = json.loads(fragment)
     except json.JSONDecodeError:
         return None
     raw = data.get("breaks") if isinstance(data, dict) else None
-    if not isinstance(raw, list):
+    if not isinstance(raw, list) or not raw:
         return None
-    breaks: list[int] = []
-    for item in raw:
-        after = item.get("after") if isinstance(item, dict) else (item if isinstance(item, int) else None)
-        if not isinstance(after, int) or isinstance(after, bool):
+    if not all(isinstance(b, int) and not isinstance(b, bool) for b in raw):
+        return None
+    breaks = [int(b) for b in raw]
+    if breaks != sorted(set(breaks)):
+        return None
+    if breaks[-1] != n_words - 1:
+        return None
+    for b in breaks:
+        if b < 0 or b >= n_words:
             return None
-        breaks.append(after)
     return breaks
 
 
-def _break_problems(breaks: list[int], words: list[Word], max_duration: float) -> list[str]:
-    """Hard checks: strictly increasing in-range breaks; each part fits
-    duration, is big enough to stand on screen, and does not end on a
-    dangling function word (the contract stated in the split prompt)."""
-    n = len(words)
-    if not breaks:
-        return ["no break points returned for an overlong cue"]
-    if any(b < 0 or b > n - 2 for b in breaks):
-        return [f"break indices must be within [0, {n - 2}]"]
-    if breaks != sorted(set(breaks)):
-        return ["break indices must be strictly increasing and unique"]
-    problems = []
-    ranges = _breaks_to_ranges(breaks, n)
-    if n >= 2 * _MIN_PART_WORDS:
-        for s, e in ranges:
-            if e - s < _MIN_PART_WORDS:
-                problems.append(f"part words[{s}:{e}] has only {e - s} words (minimum {_MIN_PART_WORDS})")
-    for s, e in ranges:
-        dur = words[e - 1].end - words[s].start
-        cap = max_duration * _SOFT_MAX_RATIO
-        if dur > cap:
-            problems.append(f"part words[{s}:{e}] is {dur:.2f}s, over the {cap:.2f}s cap")
-        elif dur < _MIN_PART_DURATION and len(ranges) > 1:
-            problems.append(f"part words[{s}:{e}] is {dur:.2f}s, under the {_MIN_PART_DURATION}s minimum")
-    for b in breaks:
-        bad = _dangling_tail(words[b])
-        if bad is not None:
-            problems.append(
-                f'break {{"after": {b}}} cuts right after "{words[b].text.strip()}", stranding it from what it '
-                f"attaches to; move the break before {bad!r} or past the phrase it introduces"
-            )
-    return problems
+def fix_illegal_tails(breaks: list[int], words: list) -> list[int]:
+    """Slide breaks rightward until every left tail is legal."""
+    for idx in range(len(breaks)):
+        b = breaks[idx]
+        while b >= 0 and b < len(words) - 1:
+            w = words[b]
+            text = w.text.strip()
+            if not text:
+                break
+            if any(text.endswith(p) for p in (".", ",", "!", "?", ";", ":", "—", "…")):
+                break
+            core = text.strip(".,!?;:—\"'()[]“”‘’").lower()
+            if core not in FUNC_TAIL:
+                break
+            b += 1
+        breaks[idx] = min(b, len(words) - 1)
+    return sorted(set(breaks))
 
 
-def _breaks_to_ranges(breaks: list[int], n_words: int) -> list[tuple[int, int]]:
-    points = [b + 1 for b in breaks]
-    bounds = [0, *points, n_words]
-    return [(bounds[i], bounds[i + 1]) for i in range(len(bounds) - 1)]
+def compute_duration(cum_times: list[float], prev_end: int, curr_end: int) -> float:
+    """Unit duration from cum times from word prev_end+1 to curr_end."""
+    start_cum = cum_times[prev_end] if prev_end >= 0 else 0.0
+    return cum_times[curr_end] - start_cum

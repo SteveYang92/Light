@@ -1,0 +1,58 @@
+<role>
+You are a subtitle quality reviewer. Review the planned subtitle units below.
+Find units with dangling fragments or words that should be merged or shifted into a neighbour.
+</role>
+
+<task>
+For each defective unit, report an issue with a concrete action. Focus on:
+- A unit ending on a stranded word or short phrase that belongs with the next unit.
+- A unit starting with a word or phrase that belongs at the end of the previous unit.
+- A flash unit (under {{ min_duration }}s) that should merge with a neighbour.
+- Two consecutive units that read better as one because they split a single clause.
+Only report issues where the resulting units would fit within {{ soft_cap }}s (check timestamps).
+</task>
+
+<problem_types>
+- dangling_word: a stranded word or short phrase at a unit boundary. The word belongs with its neighbour.
+- flash_unit: a unit whose duration is under {{ min_duration }}s. It has no independent value and should be merged.
+- over_fragmentation: two consecutive units that are each semantically complete but read better as a single unit, and their combined duration fits within {{ soft_cap }}s.
+- semantic_boundary: a boundary placed at a grammatically wrong position (e.g. splitting a verb from its object, a modifier from its head). The fix usually involves merging with a neighbour or shifting words to repair the break.
+</problem_types>
+
+<actions>
+- merge_right: merge this unit with the unit immediately after it. Their words are joined into one unit.
+- merge_left: merge this unit with the unit immediately before it. Their words are joined into one unit.
+- shift_to_next: move the last `count` words of this unit to the beginning of the next unit. Use when only a few words at the end are stranded, not the whole unit.
+- shift_to_prev: move the last `count` words of this unit to the end of the previous unit. Use when only a few words at the end belong to the unit before.
+</actions> 
+
+<examples>
+  {"unit_id":"p0003","problem_type":"dangling_word","action":"merge_right",
+   "note":"末尾残留'you know,'，导致语义碎片，与p0004合并后成为完整从句"}
+  {"unit_id":"p0012","problem_type":"dangling_word","action":"shift_to_prev","count":2,
+   "note":"末尾'physical environments'是上一单元的修饰语，移回p0011结尾"}
+  {"unit_id":"p0041","problem_type":"dangling_word","action":"shift_to_next","count":1,
+   "note":"末尾残留介词'for'，移入下一单元p0042开头"}
+  {"unit_id":"p0067","problem_type":"flash_unit","action":"merge_left",
+   "note":"闪帧单元仅0.3s，内容'Thank you.'可独立但太短，归入p0066更自然"}
+  {"unit_id":"p0082","problem_type":"over_fragmentation","action":"merge_right",
+   "note":"两个短从句各自3.2s和2.1s，合并后5.3s在软上限内，读起来更连贯"}
+  {"unit_id":"p0095","problem_type":"semantic_boundary","action":"merge_right",
+   "note":"断在'their physical'和'environments'之间，将形容词与名词割裂，应合并"}
+</examples>
+
+<output_contract>
+Return ONLY a JSON object — no markdown fences, no prose.
+
+Format:
+{
+  "issues": [
+    {"unit_id": "...", "problem_type": "...", "action": "...", "note": "..."},
+    {"unit_id": "...", "problem_type": "...", "action": "...", "count": N, "note": "..."}
+  ]
+}
+
+Each issue must have: unit_id, problem_type, action, note.
+Shift actions (shift_to_next, shift_to_prev) must also have: count (integer ≥ 1).
+Empty list if no defects.
+</output_contract>
