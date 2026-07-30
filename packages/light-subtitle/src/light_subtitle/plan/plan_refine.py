@@ -41,7 +41,12 @@ def refine_plan(
         if usage:
             merge_token_usage(total_usage, usage)
         if issues:
-            logger.info(f"  Refine: batch of {len(batch)} units → {len(issues)} issue(s)")
+            type_counts: dict[str, int] = {}
+            for iss in issues:
+                pt = iss.get("problem_type", "?")
+                type_counts[pt] = type_counts.get(pt, 0) + 1
+            counts_str = ", ".join(f"{k}: {v}" for k, v in sorted(type_counts.items()))
+            logger.info(f"  Refine: batch {len(batch)}u → {len(issues)} issues ({counts_str})")
             for iss in issues:
                 a = iss.get("action", "?")
                 c = iss.get("count", "")
@@ -88,12 +93,8 @@ def _build_user_data(batch: list[Segment], source_segments: list[Segment]) -> st
     if not nearby:
         nearby = source_segments[:10]
 
-    source_lines = "\n".join(
-        f"{s.unit_id} | {s.start:.2f}-{s.end:.2f} | {s.source_text}" for s in nearby
-    )
-    unit_lines = "\n".join(
-        f"{u.unit_id} | {u.start:.2f}-{u.end:.2f} | {u.source_text}" for u in batch
-    )
+    source_lines = "\n".join(f"{s.unit_id} | {s.start:.2f}-{s.end:.2f} | {s.source_text}" for s in nearby)
+    unit_lines = "\n".join(f"{u.unit_id} | {u.start:.2f}-{u.end:.2f} | {u.source_text}" for u in batch)
 
     user_data = f"""<source_segments>
 {source_lines}
@@ -143,9 +144,7 @@ def _parse_issues(response: str, batch: list[Segment]) -> list[dict] | None:
     return issues or None
 
 
-def _apply_refinements(
-    units: list[Segment], issues: list[dict], config: PlanConfig
-) -> list[Segment]:
+def _apply_refinements(units: list[Segment], issues: list[dict], config: PlanConfig) -> list[Segment]:
     """Execute concrete actions proposed by the judge, right-to-left to avoid conflicts."""
     from dataclasses import replace
 

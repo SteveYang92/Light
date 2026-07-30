@@ -1,8 +1,0 @@
-kind: control
-name: The_prompting_playbook__u0000-u0022
-params: {}
-range:
-  end_unit: u0022
-  start_unit: u0000
-source: output/The_prompting_playbook
-step: plan

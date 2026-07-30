@@ -13,8 +13,12 @@ def _word(text: str, start: float, end: float, confidence: float = 1.0, speaker:
 
 def _seg(unit_id: str, text: str, words: list[Word], speaker: str = "") -> Segment:
     return Segment(
-        unit_id=unit_id, start=words[0].start, end=words[-1].end,
-        speaker=speaker, source_text=text, words=words,
+        unit_id=unit_id,
+        start=words[0].start,
+        end=words[-1].end,
+        speaker=speaker,
+        source_text=text,
+        words=words,
     )
 
 
@@ -27,6 +31,7 @@ def _config(**kwargs) -> PlanConfig:
 
 def test_normalize_speaker_fill() -> None:
     from light_subtitle.plan.normalize import normalize
+
     words = [_word("Hello", 0.0, 0.3), _word("world.", 0.5, 0.9)]
     nwords = normalize(words)
     assert all(nw.speaker == "UNKNOWN" for nw in nwords)
@@ -34,6 +39,7 @@ def test_normalize_speaker_fill() -> None:
 
 def test_not_sentence_final_for_dr() -> None:
     from light_subtitle.plan.normalize import normalize
+
     words = [_word("Dr.", 0.0, 0.3), _word("Smith", 0.5, 0.8)]
     nwords = normalize(words)
     assert nwords[0].is_sentence_final is False
@@ -44,11 +50,13 @@ def test_not_sentence_final_for_dr() -> None:
 
 def test_parse_breaks_valid() -> None:
     from light_subtitle.plan.planner import _parse_breaks
+
     assert _parse_breaks('{"breaks": [2, 5, 9]}', 10) == [2, 5, 9]
 
 
 def test_parse_breaks_invalid() -> None:
     from light_subtitle.plan.planner import _parse_breaks
+
     assert _parse_breaks("not json", 10) is None
     assert _parse_breaks('{"breaks": [2, 2]}', 10) is None  # duplicates
     assert _parse_breaks('{"breaks": [5]}', 10) is None  # last != n-1
@@ -57,6 +65,7 @@ def test_parse_breaks_invalid() -> None:
 
 def test_fix_illegal_tails() -> None:
     from light_subtitle.plan.planner import fix_illegal_tails
+
     words = [_word("the", 0.0, 0.2), _word("end.", 0.4, 0.8), _word("and", 1.0, 1.2), _word("so", 1.3, 1.5)]
     breaks = fix_illegal_tails([0], words)  # break after "the" → slide to after "end."
     assert breaks == [1]
@@ -67,6 +76,7 @@ def test_fix_illegal_tails() -> None:
 
 def test_gap_split_splits_long() -> None:
     from light_subtitle.plan.gap import gap_split
+
     words = [_word(f"w{i}", float(i) * 0.5, float(i) * 0.5 + 0.45) for i in range(30)]
     ranges = gap_split(words, 3.0)
     assert len(ranges) > 2
@@ -76,6 +86,7 @@ def test_gap_split_splits_long() -> None:
 
 def test_gap_split_stub_merge() -> None:
     from light_subtitle.plan.gap import gap_split
+
     words = [_word(f"w{i}", float(i), float(i) + 0.9) for i in range(10)]
     ranges = gap_split(words, 4.0)
     assert all(e - s >= 3 or len(ranges) == 1 for s, e in ranges)

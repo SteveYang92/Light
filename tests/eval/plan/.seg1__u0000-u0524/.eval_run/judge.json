@@ -1,0 +1,285 @@
+{
+  "problem_types": {
+    "semantic_boundary": {
+      "error_count": 5,
+      "warning_count": 0,
+      "passed": false,
+      "issues": [
+        {
+          "unit_id": "p0002",
+          "problem_type": "semantic_boundary",
+          "note": "断点位于“leading of the younger generation”中间，语义不完整，且后续 p0003 开头“have just junior faculty”语法不通，应调整断点至“generation”后。"
+        },
+        {
+          "unit_id": "p0039",
+          "problem_type": "semantic_boundary",
+          "note": "将“So Judy, please tell us.”与“Okay, wow.”合并为一个单元，但两者分属不同说话人且语气断裂，应拆分为两个独立单元。"
+        },
+        {
+          "unit_id": "p0040",
+          "problem_type": "semantic_boundary",
+          "note": "“Okay, I wasn't...”语义不完整，且与 p0041 的“I wasn't totally prepared for that.”重复开头，应合并 p0040 与 p0041（合并后时长约 4.48s，可行）。"
+        },
+        {
+          "unit_id": "p0163",
+          "problem_type": "semantic_boundary",
+          "note": "断在 'class,' 处，将完整名词短语 'what a certain class, a subclass of pictures represents' 拆开，建议将 'a subclass' 归入 p0163。"
+        },
+        {
+          "unit_id": "p0303",
+          "problem_type": "semantic_boundary",
+          "note": "p0303 将两个语义不连贯的句子“So here, pull, rotate, or push.”和“what you might expect a good mechanistic explanation to make clear.”合并在一起，且中间有较长停顿（1624.78-1626.60），应拆分为两个独立单元。"
+        }
+      ],
+      "evidence": [
+        "p0002",
+        "p0039",
+        "p0040",
+        "p0163",
+        "p0303"
+      ]
+    },
+    "over_fragmentation": {
+      "error_count": 0,
+      "warning_count": 1,
+      "passed": true,
+      "issues": [
+        {
+          "unit_id": "p0290",
+          "problem_type": "over_fragmentation",
+          "note": "p0290 仅含 'conditions, they allocated more strokes'，时长 3.02s，与 p0291 合并后约 3.74s，在软上限内，应合并。"
+        }
+      ],
+      "evidence": [
+        "p0290"
+      ]
+    },
+    "over_long_unit": {
+      "error_count": 0,
+      "warning_count": 5,
+      "passed": true,
+      "issues": [
+        {
+          "unit_id": "p0045",
+          "problem_type": "over_long_unit",
+          "note": "单元时长 6.69s，且包含“I I”重复错误，文本过长，应在“department and community”后拆分。"
+        },
+        {
+          "unit_id": "p0055",
+          "problem_type": "over_long_unit",
+          "note": "该单元包含两个独立子句（'there are no straight lines...' 和 'but that didn't stop us'），且时长约6.7秒，可在 'nature,' 后拆分，语义更清晰。"
+        },
+        {
+          "unit_id": "p0080",
+          "problem_type": "over_long_unit",
+          "note": "该单元包含两个完整句子（'And I think... here.' 和 'And I think... at least'），时长约6.7秒，可在 'here.' 后拆分，语义更合理。"
+        },
+        {
+          "unit_id": "p0144",
+          "problem_type": "over_long_unit",
+          "note": "p0144 时长约 7.85s，包含两个完整句子 \"But today...\" 和 \"So I wanted to...\"，可在 \"you all\" 后拆分，且拆分后两个单元均符合时长约束。"
+        },
+        {
+          "unit_id": "p0201",
+          "problem_type": "over_long_unit",
+          "note": "单元时长 8.0 秒，包含多个完整句子（“We've got...pretty well, okay? I guess we can pack up and go home.”），可在“okay?”后拆分，且拆分后两部分均不超过时长软上限。"
+        }
+      ],
+      "evidence": [
+        "p0045",
+        "p0055",
+        "p0080",
+        "p0144",
+        "p0201"
+      ]
+    },
+    "dangling_word": {
+      "error_count": 24,
+      "warning_count": 0,
+      "passed": false,
+      "issues": [
+        {
+          "unit_id": "p0018",
+          "problem_type": "dangling_word",
+          "note": "末尾“or let's just say”为悬垂短语，语义不完整，应归入 p0019。"
+        },
+        {
+          "unit_id": "p0046",
+          "problem_type": "dangling_word",
+          "note": "末尾“embodied in the work that you”为悬垂短语，语义不完整，应归入 p0047。"
+        },
+        {
+          "unit_id": "p0094",
+          "problem_type": "dangling_word",
+          "note": "单元末尾残留 'to one another' 的 'to'，应归入下一单元或调整断点。"
+        },
+        {
+          "unit_id": "p0099",
+          "problem_type": "dangling_word",
+          "note": "单元末尾残留 'just one'，语义不完整，应归入后续单元或与前一单元合并。"
+        },
+        {
+          "unit_id": "p0100",
+          "problem_type": "dangling_word",
+          "note": "p0100 开头残留单词 \"beat\"，应归入前一个单元 u0131。"
+        },
+        {
+          "unit_id": "p0107",
+          "problem_type": "dangling_word",
+          "note": "p0107 末尾残留 \"So for example,\"，应归入下一个单元 p0108。"
+        },
+        {
+          "unit_id": "p0135",
+          "problem_type": "dangling_word",
+          "note": "p0135 末尾残留 \"discovering\"，应归入下一个单元 p0136。"
+        },
+        {
+          "unit_id": "p0150",
+          "problem_type": "dangling_word",
+          "note": "末尾的 'okay?' 是独立语气词，应归入下一单元或独立成句，此处悬垂于句末。"
+        },
+        {
+          "unit_id": "p0151",
+          "problem_type": "dangling_word",
+          "note": "末尾的 'okay?' 悬垂，应归入下一单元或独立成句。"
+        },
+        {
+          "unit_id": "p0165",
+          "problem_type": "dangling_word",
+          "note": "末尾 'concrete' 悬垂，应归入下一单元 'and familiar instantiation'。"
+        },
+        {
+          "unit_id": "p0166",
+          "problem_type": "dangling_word",
+          "note": "末尾 'creating' 悬垂，应归入下一单元 'a drawing by hand'。"
+        },
+        {
+          "unit_id": "p0196",
+          "problem_type": "dangling_word",
+          "note": "末尾的 'okay?' 悬垂，应归入下一单元或独立成句。"
+        },
+        {
+          "unit_id": "p0231",
+          "problem_type": "dangling_word",
+          "note": "单元末尾残留“and sensitivity to context”，该短语是上一单元“which you operationalize...”的并列成分，应归入 p0230 或 p0232。"
+        },
+        {
+          "unit_id": "p0345",
+          "problem_type": "dangling_word",
+          "note": "p0345 末尾残留“we We began”，其中“we”为重复词，应归入 p0346 或修正。"
+        },
+        {
+          "unit_id": "p0347",
+          "problem_type": "dangling_word",
+          "note": "p0347 末尾残留“build”，单独成句不完整，应归入 p0348。"
+        },
+        {
+          "unit_id": "p0349",
+          "problem_type": "dangling_word",
+          "note": "p0349 末尾残留“yet”，单独成句不完整，应归入下一单元。"
+        },
+        {
+          "unit_id": "p0350",
+          "problem_type": "dangling_word",
+          "note": "末尾残留连词“because”，应归入下一单元 p0351。"
+        },
+        {
+          "unit_id": "p0353",
+          "problem_type": "dangling_word",
+          "note": "末尾残留“ambiguity”，语义不完整，应归入下一单元 p0354。"
+        },
+        {
+          "unit_id": "p0361",
+          "problem_type": "dangling_word",
+          "note": "末尾残留“people”，应归入下一单元 p0362。"
+        },
+        {
+          "unit_id": "p0372",
+          "problem_type": "dangling_word",
+          "note": "末尾残留“born”，语义不完整，应归入下一单元 p0373。"
+        },
+        {
+          "unit_id": "p0380",
+          "problem_type": "dangling_word",
+          "note": "末尾残留“make”，应归入下一单元 p0381。"
+        },
+        {
+          "unit_id": "p0384",
+          "problem_type": "dangling_word",
+          "note": "末尾残留“one”，应归入下一单元 p0385。"
+        },
+        {
+          "unit_id": "p0389",
+          "problem_type": "dangling_word",
+          "note": "末尾残留“performance”，应归入下一单元 p0390。"
+        },
+        {
+          "unit_id": "p0393",
+          "problem_type": "dangling_word",
+          "note": "末尾残留“begin”，语义不完整，应归入下一单元（但下一单元未提供，此处仅标记问题）。"
+        }
+      ],
+      "evidence": [
+        "p0018",
+        "p0046",
+        "p0094",
+        "p0099",
+        "p0100",
+        "p0107",
+        "p0135",
+        "p0150",
+        "p0151",
+        "p0165",
+        "p0166",
+        "p0196",
+        "p0231",
+        "p0345",
+        "p0347",
+        "p0349",
+        "p0350",
+        "p0353",
+        "p0361",
+        "p0372",
+        "p0380",
+        "p0384",
+        "p0389",
+        "p0393"
+      ]
+    },
+    "empty_unit": {
+      "error_count": 0,
+      "warning_count": 0,
+      "passed": true,
+      "issues": [],
+      "evidence": []
+    },
+    "flash_unit": {
+      "error_count": 3,
+      "warning_count": 0,
+      "passed": false,
+      "issues": [
+        {
+          "unit_id": "p0200",
+          "problem_type": "flash_unit",
+          "note": "单元时长仅 3.54 秒，且内容仅为“Okay, so that's great, okay?”，语义上可并入前后单元，属于闪帧单元。"
+        },
+        {
+          "unit_id": "p0216",
+          "problem_type": "flash_unit",
+          "note": "单元时长仅 2.48 秒，内容为“Using this really simple manipulation,”，语义上可并入前后单元，属于闪帧单元。"
+        },
+        {
+          "unit_id": "p0233",
+          "problem_type": "flash_unit",
+          "note": "单元时长仅 1.3 秒，内容为“Okay, and then in more recent work,”，语义上可并入 p0234，属于闪帧单元。"
+        }
+      ],
+      "evidence": [
+        "p0200",
+        "p0216",
+        "p0233"
+      ]
+    }
+  },
+  "suggested_overall": "fail"
+}

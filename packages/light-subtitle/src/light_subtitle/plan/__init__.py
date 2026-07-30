@@ -159,6 +159,7 @@ def _plan_one(
 def _fix_unit_tails(units: list[tuple[int, int, str]], words: list[Word]) -> list[tuple[int, int, str]]:
     """Slide right boundaries of units that end on a bare function word."""
     from .lexicon import FUNC_TAIL
+
     for i in range(len(units) - 1):
         s, e, sp = units[i]
         while e < len(words):
@@ -264,9 +265,7 @@ def _compute_cum(words: list[Word]) -> list[float]:
 # ── Assembly ──────────────────────────────────────────────────
 
 
-def _assemble(
-    ranges: list[tuple[int, int, str]], words: list[Word]
-) -> tuple[list[Segment], list[dict]]:
+def _assemble(ranges: list[tuple[int, int, str]], words: list[Word]) -> tuple[list[Segment], list[dict]]:
     units: list[Segment] = []
     meta: list[dict] = []
     for i, (ws, we, speaker) in enumerate(ranges):

@@ -1,0 +1,3542 @@
+{
+  "version": 4,
+  "units": [
+    {
+      "unit_id": "p0000",
+      "start": 4.798,
+      "end": 9.142,
+      "speaker": "",
+      "text": "It's my great pleasure to introduce Judy Pham, who's our colloquium speaker.",
+      "word_start": 0,
+      "word_end": 12
+    },
+    {
+      "unit_id": "p0001",
+      "start": 9.562,
+      "end": 12.725,
+      "speaker": "",
+      "text": "Judy is one of my favorite cognitive scientists, really, of any age.",
+      "word_start": 12,
+      "word_end": 24
+    },
+    {
+      "unit_id": "p0002",
+      "start": 13.005,
+      "end": 19.891,
+      "speaker": "",
+      "text": "I think she's definitely one of the leading, by any objective standard, leading of the younger generation, people who are,",
+      "word_start": 24,
+      "word_end": 44
+    },
+    {
+      "unit_id": "p0003",
+      "start": 20.231,
+      "end": 26.416,
+      "speaker": "",
+      "text": "you know, have just junior faculty, or I don't even know how junior you are, but she's",
+      "word_start": 44,
+      "word_end": 61
+    },
+    {
+      "unit_id": "p0004",
+      "start": 26.516,
+      "end": 29.058,
+      "speaker": "",
+      "text": "been assistant professor at Stanford for a couple of years.",
+      "word_start": 61,
+      "word_end": 71
+    },
+    {
+      "unit_id": "p0005",
+      "start": 29.158,
+      "end": 30.459,
+      "speaker": "",
+      "text": "I think that's a good estimate, right?",
+      "word_start": 71,
+      "word_end": 78
+    },
+    {
+      "unit_id": "p0006",
+      "start": 31.28,
+      "end": 37.419,
+      "speaker": "",
+      "text": "And she's by any means one of the, like, rising or glowing superstars of our field.",
+      "word_start": 78,
+      "word_end": 94
+    },
+    {
+      "unit_id": "p0007",
+      "start": 37.459,
+      "end": 44.002,
+      "speaker": "",
+      "text": "She's won a number of awards, the Glasgow Dissertation Prize, the NSF Career Award.",
+      "word_start": 94,
+      "word_end": 108
+    },
+    {
+      "unit_id": "p0008",
+      "start": 44.022,
+      "end": 44.962,
+      "speaker": "",
+      "text": "I think you won that, right?",
+      "word_start": 108,
+      "word_end": 114
+    },
+    {
+      "unit_id": "p0009",
+      "start": 47.283,
+      "end": 49.344,
+      "speaker": "",
+      "text": "Real-time talking tonight.",
+      "word_start": 114,
+      "word_end": 117
+    },
+    {
+      "unit_id": "p0010",
+      "start": 50.845,
+      "end": 54.086,
+      "speaker": "",
+      "text": "But none of that really is, that's not the reason that we invited her.",
+      "word_start": 117,
+      "word_end": 131
+    },
+    {
+      "unit_id": "p0011",
+      "start": 55.967,
+      "end": 62.31,
+      "speaker": "",
+      "text": "I think of Judy as one of the most creative researchers I know of any stage at any field, and I really mean that deeply.",
+      "word_start": 131,
+      "word_end": 156
+    },
+    {
+      "unit_id": "p0012",
+      "start": 63.802,
+      "end": 67.125,
+      "speaker": "",
+      "text": "She has a background coming out of neuroscience,",
+      "word_start": 156,
+      "word_end": 164
+    },
+    {
+      "unit_id": "p0013",
+      "start": 67.925,
+      "end": 74.211,
+      "speaker": "",
+      "text": "and in many ways is very much at home talking to all the sorts of people who inhabit this building,",
+      "word_start": 164,
+      "word_end": 184
+    },
+    {
+      "unit_id": "p0014",
+      "start": 74.651,
+      "end": 78.314,
+      "speaker": "",
+      "text": "who record signals from brains and try to make sense of them computationally.",
+      "word_start": 184,
+      "word_end": 197
+    },
+    {
+      "unit_id": "p0015",
+      "start": 78.354,
+      "end": 79.195,
+      "speaker": "",
+      "text": "She's done a lot of that.",
+      "word_start": 197,
+      "word_end": 203
+    },
+    {
+      "unit_id": "p0016",
+      "start": 79.635,
+      "end": 84.439,
+      "speaker": "",
+      "text": "She's worked with colleagues of ours whose work we know well, like Dan Yamins was one of her mentors,",
+      "word_start": 203,
+      "word_end": 222
+    },
+    {
+      "unit_id": "p0017",
+      "start": 85.24,
+      "end": 87.902,
+      "speaker": "",
+      "text": "and she has studied vision.",
+      "word_start": 222,
+      "word_end": 227
+    },
+    {
+      "unit_id": "p0018",
+      "start": 88.122,
+      "end": 92.806,
+      "speaker": "",
+      "text": "A lot of her background is in visual psychophysics and visual neuroscience and computational neuroscience.",
+      "word_start": 227,
+      "word_end": 242
+    },
+    {
+      "unit_id": "p0019",
+      "start": 93.686,
+      "end": 97.63,
+      "speaker": "",
+      "text": "But if you look at her research, some of which you'll see today and a lot of which you won't even see today,",
+      "word_start": 242,
+      "word_end": 265
+    },
+    {
+      "unit_id": "p0020",
+      "start": 98.691,
+      "end": 102.394,
+      "speaker": "",
+      "text": "she's gone in many other directions,",
+      "word_start": 265,
+      "word_end": 271
+    },
+    {
+      "unit_id": "p0021",
+      "start": 102.934,
+      "end": 110.641,
+      "speaker": "",
+      "text": "or let's just say one key direction, which is from some of the most basic processes of perception",
+      "word_start": 271,
+      "word_end": 289
+    },
+    {
+      "unit_id": "p0022",
+      "start": 110.741,
+      "end": 115.265,
+      "speaker": "",
+      "text": "and the things that you can describe with nice, elegant computational models",
+      "word_start": 289,
+      "word_end": 301
+    },
+    {
+      "unit_id": "p0023",
+      "start": 115.846,
+      "end": 122.291,
+      "speaker": "",
+      "text": "to aspects of cognition that really are what make us human, biologically and also culturally.",
+      "word_start": 301,
+      "word_end": 316
+    },
+    {
+      "unit_id": "p0024",
+      "start": 122.351,
+      "end": 123.893,
+      "speaker": "",
+      "text": "And you're definitely going to see some of that here.",
+      "word_start": 316,
+      "word_end": 326
+    },
+    {
+      "unit_id": "p0025",
+      "start": 124.493,
+      "end": 130.438,
+      "speaker": "",
+      "text": "And so that means she studied things like artistic expression or creative expression in visual and other media.",
+      "word_start": 326,
+      "word_end": 344
+    },
+    {
+      "unit_id": "p0026",
+      "start": 131.439,
+      "end": 133.581,
+      "speaker": "",
+      "text": "She's very interested in narrative expression.",
+      "word_start": 344,
+      "word_end": 350
+    },
+    {
+      "unit_id": "p0027",
+      "start": 134.542,
+      "end": 142.049,
+      "speaker": "",
+      "text": "She's really interested in education, learning and teaching, and how we make sense of the world symbolically and through data and explanation.",
+      "word_start": 350,
+      "word_end": 372
+    },
+    {
+      "unit_id": "p0028",
+      "start": 142.709,
+      "end": 149.535,
+      "speaker": "",
+      "text": "And so she's really moved towards these much more complex cognitive processes that are really distinctively human,",
+      "word_start": 372,
+      "word_end": 389
+    },
+    {
+      "unit_id": "p0029",
+      "start": 149.855,
+      "end": 156.261,
+      "speaker": "",
+      "text": "both biologically and culturally, and increasingly really of great import in our current era.",
+      "word_start": 389,
+      "word_end": 403
+    },
+    {
+      "unit_id": "p0030",
+      "start": 157.221,
+      "end": 160.724,
+      "speaker": "",
+      "text": "But she hasn't given up any of the rigor, or I would say her taste for rigor.",
+      "word_start": 403,
+      "word_end": 420
+    },
+    {
+      "unit_id": "p0031",
+      "start": 161.185,
+      "end": 163.507,
+      "speaker": "",
+      "text": "And I know from a lot of interactions with Judy",
+      "word_start": 420,
+      "word_end": 430
+    },
+    {
+      "unit_id": "p0032",
+      "start": 163.967,
+      "end": 170.913,
+      "speaker": "",
+      "text": "that what keeps her up at night is the struggle and the challenge of how do you get at these really important hard things",
+      "word_start": 430,
+      "word_end": 454
+    },
+    {
+      "unit_id": "p0033",
+      "start": 171.473,
+      "end": 173.575,
+      "speaker": "",
+      "text": "with the kind of rigor and precision",
+      "word_start": 454,
+      "word_end": 461
+    },
+    {
+      "unit_id": "p0034",
+      "start": 174.115,
+      "end": 180.644,
+      "speaker": "",
+      "text": "that many of us grew up valuing and being inspired by, in, for example, visual neuroscience and computational neuroscience.",
+      "word_start": 461,
+      "word_end": 480
+    },
+    {
+      "unit_id": "p0035",
+      "start": 181.164,
+      "end": 183.105,
+      "speaker": "",
+      "text": "And I can't say she's completely solved that problem.",
+      "word_start": 480,
+      "word_end": 489
+    },
+    {
+      "unit_id": "p0036",
+      "start": 183.226,
+      "end": 185.067,
+      "speaker": "",
+      "text": "It might take a while.",
+      "word_start": 489,
+      "word_end": 494
+    },
+    {
+      "unit_id": "p0037",
+      "start": 185.507,
+      "end": 187.428,
+      "speaker": "",
+      "text": "But it's a really great challenge.",
+      "word_start": 494,
+      "word_end": 500
+    },
+    {
+      "unit_id": "p0038",
+      "start": 187.488,
+      "end": 189.529,
+      "speaker": "",
+      "text": "It's one that inspires me, the way she works on it.",
+      "word_start": 500,
+      "word_end": 511
+    },
+    {
+      "unit_id": "p0039",
+      "start": 190.25,
+      "end": 196.233,
+      "speaker": "",
+      "text": "And I hope that it's one that we can all learn from and be inspired by, and to see where she is and where she's going with this.",
+      "word_start": 511,
+      "word_end": 539
+    },
+    {
+      "unit_id": "p0040",
+      "start": 196.293,
+      "end": 199.115,
+      "speaker": "",
+      "text": "So Judy, please tell us. Okay, wow.",
+      "word_start": 539,
+      "word_end": 546
+    },
+    {
+      "unit_id": "p0041",
+      "start": 200.996,
+      "end": 205.903,
+      "speaker": "",
+      "text": "Okay, I wasn't... I wasn't totally prepared for that.",
+      "word_start": 546,
+      "word_end": 555
+    },
+    {
+      "unit_id": "p0042",
+      "start": 205.923,
+      "end": 211.006,
+      "speaker": "",
+      "text": "That was incredibly kind, Josh. Thank you. And thank you all for being here.",
+      "word_start": 555,
+      "word_end": 569
+    },
+    {
+      "unit_id": "p0043",
+      "start": 211.166,
+      "end": 217.131,
+      "speaker": "",
+      "text": "I can't actually express how wonderful today has been so far.",
+      "word_start": 569,
+      "word_end": 580
+    },
+    {
+      "unit_id": "p0044",
+      "start": 217.151,
+      "end": 219.672,
+      "speaker": "",
+      "text": "I I have a lot of affection",
+      "word_start": 580,
+      "word_end": 587
+    },
+    {
+      "unit_id": "p0045",
+      "start": 219.972,
+      "end": 226.057,
+      "speaker": "",
+      "text": "and respect for this department and community and the kind of values, scientific and otherwise, embodied in the work that you",
+      "word_start": 587,
+      "word_end": 608
+    },
+    {
+      "unit_id": "p0046",
+      "start": 226.657,
+      "end": 232.181,
+      "speaker": "",
+      "text": "all do here. And so it really is a treat to spend a few minutes telling you about some of the work that we've been doing.",
+      "word_start": 608,
+      "word_end": 634
+    },
+    {
+      "unit_id": "p0047",
+      "start": 234.102,
+      "end": 235.343,
+      "speaker": "",
+      "text": "We study cognitive tools.",
+      "word_start": 634,
+      "word_end": 638
+    },
+    {
+      "unit_id": "p0048",
+      "start": 237.144,
+      "end": 242.447,
+      "speaker": "",
+      "text": "What are those, okay? Let's start with something as familiar and simple as the number line.",
+      "word_start": 638,
+      "word_end": 654
+    },
+    {
+      "unit_id": "p0049",
+      "start": 242.787,
+      "end": 245.289,
+      "speaker": "",
+      "text": "I've been told not to move around as much because we're using this mic.",
+      "word_start": 654,
+      "word_end": 668
+    },
+    {
+      "unit_id": "p0050",
+      "start": 245.969,
+      "end": 247.09,
+      "speaker": "",
+      "text": "Okay, I'm gonna try to do that.",
+      "word_start": 668,
+      "word_end": 675
+    },
+    {
+      "unit_id": "p0051",
+      "start": 248.611,
+      "end": 250.152,
+      "speaker": "",
+      "text": "Nature didn't give us the number line.",
+      "word_start": 675,
+      "word_end": 682
+    },
+    {
+      "unit_id": "p0052",
+      "start": 251.173,
+      "end": 257.877,
+      "speaker": "",
+      "text": "We invented it, okay? So as the Spanish architect Antoni Gaudi once put it, there are no straight lines or sharp corners in nature,",
+      "word_start": 682,
+      "word_end": 706
+    },
+    {
+      "unit_id": "p0053",
+      "start": 258.357,
+      "end": 259.718,
+      "speaker": "",
+      "text": "but that didn't stop us.",
+      "word_start": 706,
+      "word_end": 711
+    },
+    {
+      "unit_id": "p0054",
+      "start": 260.138,
+      "end": 264.744,
+      "speaker": "",
+      "text": "Okay, we created them anyway, and we extended the number line, of course, a few hundred years",
+      "word_start": 711,
+      "word_end": 728
+    },
+    {
+      "unit_id": "p0055",
+      "start": 264.784,
+      "end": 269.31,
+      "speaker": "",
+      "text": "ago to create rectangular coordinates, which turned out to be super useful.",
+      "word_start": 728,
+      "word_end": 740
+    },
+    {
+      "unit_id": "p0056",
+      "start": 270.131,
+      "end": 276.761,
+      "speaker": "",
+      "text": "They were genuinely cutting-edge tools for thought, for driving new mathematical discoveries",
+      "word_start": 740,
+      "word_end": 752
+    },
+    {
+      "unit_id": "p0057",
+      "start": 277.322,
+      "end": 281.085,
+      "speaker": "",
+      "text": "when Rene Descartes and his contemporaries realized that you could link up algebraic",
+      "word_start": 752,
+      "word_end": 765
+    },
+    {
+      "unit_id": "p0058",
+      "start": 281.405,
+      "end": 286.69,
+      "speaker": "",
+      "text": "expressions with geometric curves in order to solve all kinds of mathematical puzzles,",
+      "word_start": 765,
+      "word_end": 778
+    },
+    {
+      "unit_id": "p0059",
+      "start": 287.07,
+      "end": 289.472,
+      "speaker": "",
+      "text": "including this one that has stumped the world for millennia.",
+      "word_start": 778,
+      "word_end": 788
+    },
+    {
+      "unit_id": "p0060",
+      "start": 289.933,
+      "end": 294.216,
+      "speaker": "",
+      "text": "How many are familiar with this particular, the Delian problem, this riddle of the Oracle of Delos?",
+      "word_start": 788,
+      "word_end": 805
+    },
+    {
+      "unit_id": "p0061",
+      "start": 294.737,
+      "end": 298.605,
+      "speaker": "",
+      "text": "It's the problem of how do you double the volume of a perfect cube.",
+      "word_start": 805,
+      "word_end": 819
+    },
+    {
+      "unit_id": "p0062",
+      "start": 298.605,
+      "end": 303.248,
+      "speaker": "",
+      "text": "It's really, really difficult to do using the mathematical methods of that community at the time.",
+      "word_start": 819,
+      "word_end": 835
+    },
+    {
+      "unit_id": "p0063",
+      "start": 304.829,
+      "end": 306.831,
+      "speaker": "",
+      "text": "And here's the solution for that.",
+      "word_start": 835,
+      "word_end": 841
+    },
+    {
+      "unit_id": "p0064",
+      "start": 307.171,
+      "end": 313.857,
+      "speaker": "",
+      "text": "And it'd be really hard to overstate the impact of this invention over the last four centuries.",
+      "word_start": 841,
+      "word_end": 858
+    },
+    {
+      "unit_id": "p0065",
+      "start": 314.858,
+      "end": 321.603,
+      "speaker": "",
+      "text": "That technology converted all kinds of problems like these, where you might want to find the set of values that satisfies",
+      "word_start": 858,
+      "word_end": 879
+    },
+    {
+      "unit_id": "p0066",
+      "start": 322.344,
+      "end": 329.409,
+      "speaker": "",
+      "text": "two equations, into essentially problems that relied on locating points of intersection between two curves.",
+      "word_start": 879,
+      "word_end": 894
+    },
+    {
+      "unit_id": "p0067",
+      "start": 330.67,
+      "end": 334.252,
+      "speaker": "",
+      "text": "Now imagine what happened next to that revolutionary tool.",
+      "word_start": 894,
+      "word_end": 903
+    },
+    {
+      "unit_id": "p0068",
+      "start": 336.213,
+      "end": 338.575,
+      "speaker": "",
+      "text": "It became something that we could take for granted.",
+      "word_start": 903,
+      "word_end": 912
+    },
+    {
+      "unit_id": "p0069",
+      "start": 339.396,
+      "end": 345.74,
+      "speaker": "",
+      "text": "It became so useful that it's become basically indispensable to the way every generation is educated.",
+      "word_start": 912,
+      "word_end": 928
+    },
+    {
+      "unit_id": "p0070",
+      "start": 346.04,
+      "end": 351.003,
+      "speaker": "",
+      "text": "Virtually every mathematics curriculum on the planet introduces a combination of symbolic",
+      "word_start": 928,
+      "word_end": 940
+    },
+    {
+      "unit_id": "p0071",
+      "start": 351.103,
+      "end": 354.804,
+      "speaker": "",
+      "text": "and graphical notation for representing and manipulating mathematical objects.",
+      "word_start": 940,
+      "word_end": 949
+    },
+    {
+      "unit_id": "p0072",
+      "start": 355.825,
+      "end": 359.766,
+      "speaker": "",
+      "text": "And the question that we wrestle with is how did we get here",
+      "word_start": 949,
+      "word_end": 962
+    },
+    {
+      "unit_id": "p0073",
+      "start": 360.047,
+      "end": 365.729,
+      "speaker": "",
+      "text": "and what is it about the human mind that makes that kind of continual innovation possible?",
+      "word_start": 962,
+      "word_end": 978
+    },
+    {
+      "unit_id": "p0074",
+      "start": 368.07,
+      "end": 373.232,
+      "speaker": "",
+      "text": "There are lots of ways of approaching that question from many different disciplinary perspectives,",
+      "word_start": 978,
+      "word_end": 992
+    },
+    {
+      "unit_id": "p0075",
+      "start": 373.993,
+      "end": 376.614,
+      "speaker": "",
+      "text": "including history, anthropology, economics.",
+      "word_start": 992,
+      "word_end": 996
+    },
+    {
+      "unit_id": "p0076",
+      "start": 377.594,
+      "end": 381.937,
+      "speaker": "",
+      "text": "And I think that cognitive science also has a really important contribution to make here.",
+      "word_start": 996,
+      "word_end": 1011
+    },
+    {
+      "unit_id": "p0077",
+      "start": 382.618,
+      "end": 386.541,
+      "speaker": "",
+      "text": "And I think the story begins at least 30 to 80,000 years ago",
+      "word_start": 1011,
+      "word_end": 1024
+    },
+    {
+      "unit_id": "p0078",
+      "start": 387.261,
+      "end": 394.146,
+      "speaker": "",
+      "text": "when anatomically modern humans began to mark up their physical environments.",
+      "word_start": 1024,
+      "word_end": 1035
+    },
+    {
+      "unit_id": "p0079",
+      "start": 394.767,
+      "end": 397.308,
+      "speaker": "",
+      "text": "Essentially, you know, including these cave walls here,",
+      "word_start": 1035,
+      "word_end": 1043
+    },
+    {
+      "unit_id": "p0080",
+      "start": 397.769,
+      "end": 404.974,
+      "speaker": "",
+      "text": "iconically, repurposing objects and surfaces in their surroundings into carriers of meaning.",
+      "word_start": 1043,
+      "word_end": 1055
+    },
+    {
+      "unit_id": "p0081",
+      "start": 407.21,
+      "end": 409.452,
+      "speaker": "",
+      "text": "We obviously didn't stop at cave walls.",
+      "word_start": 1055,
+      "word_end": 1062
+    },
+    {
+      "unit_id": "p0082",
+      "start": 409.992,
+      "end": 417.258,
+      "speaker": "",
+      "text": "The story of human learning and discovery is deeply intertwined with the story of technologies for making the invisible visible.",
+      "word_start": 1062,
+      "word_end": 1082
+    },
+    {
+      "unit_id": "p0083",
+      "start": 417.878,
+      "end": 420.881,
+      "speaker": "",
+      "text": "So here are just a few examples from the history of science, which I love.",
+      "word_start": 1082,
+      "word_end": 1097
+    },
+    {
+      "unit_id": "p0084",
+      "start": 421.781,
+      "end": 427.105,
+      "speaker": "",
+      "text": "We've got Darwin's Finches and these illustrations produced by John Gould,",
+      "word_start": 1097,
+      "word_end": 1108
+    },
+    {
+      "unit_id": "p0085",
+      "start": 427.125,
+      "end": 429.167,
+      "speaker": "",
+      "text": "the ornithologist that Darwin worked very closely with.",
+      "word_start": 1108,
+      "word_end": 1116
+    },
+    {
+      "unit_id": "p0086",
+      "start": 429.988,
+      "end": 436.735,
+      "speaker": "",
+      "text": "Only when you see these cases side by side does the kind of morphological variation begin to really become salient and pop out.",
+      "word_start": 1116,
+      "word_end": 1139
+    },
+    {
+      "unit_id": "p0087",
+      "start": 437.555,
+      "end": 443.137,
+      "speaker": "",
+      "text": "We have the telescope that Galileo used to observe the movement of the moons around Jupiter,",
+      "word_start": 1139,
+      "word_end": 1155
+    },
+    {
+      "unit_id": "p0088",
+      "start": 443.777,
+      "end": 449.619,
+      "speaker": "",
+      "text": "the kind of resolution that he needed in order to question the orthodoxy",
+      "word_start": 1155,
+      "word_end": 1168
+    },
+    {
+      "unit_id": "p0089",
+      "start": 449.639,
+      "end": 451.499,
+      "speaker": "",
+      "text": "when it came to how the solar system was organized.",
+      "word_start": 1168,
+      "word_end": 1178
+    },
+    {
+      "unit_id": "p0090",
+      "start": 452.399,
+      "end": 459.001,
+      "speaker": "",
+      "text": "We have Ramon y Cajal's much celebrated drawings of the retina as seen under the microscope,",
+      "word_start": 1178,
+      "word_end": 1194
+    },
+    {
+      "unit_id": "p0091",
+      "start": 459.981,
+      "end": 466.22,
+      "speaker": "",
+      "text": "showing us what different parts of that part of the nervous system were like",
+      "word_start": 1194,
+      "word_end": 1208
+    },
+    {
+      "unit_id": "p0092",
+      "start": 466.26,
+      "end": 472.223,
+      "speaker": "",
+      "text": "and how they were hooked up to one another. And in the 20th century, we have Feynman diagrams,",
+      "word_start": 1208,
+      "word_end": 1226
+    },
+    {
+      "unit_id": "p0093",
+      "start": 473.263,
+      "end": 476.364,
+      "speaker": "",
+      "text": "named after, of course, the physicist Richard Feynman,",
+      "word_start": 1226,
+      "word_end": 1234
+    },
+    {
+      "unit_id": "p0094",
+      "start": 476.805,
+      "end": 482.307,
+      "speaker": "",
+      "text": "showing us subatomic particles winking in and out of existence,",
+      "word_start": 1234,
+      "word_end": 1244
+    },
+    {
+      "unit_id": "p0095",
+      "start": 483.048,
+      "end": 488.25,
+      "speaker": "",
+      "text": "events that we literally could not and will never be able to observe directly with the naked eye.",
+      "word_start": 1244,
+      "word_end": 1262
+    },
+    {
+      "unit_id": "p0096",
+      "start": 489.47,
+      "end": 495.813,
+      "speaker": "",
+      "text": "And more than any other species, we leverage this understanding, this expanding understanding of the world",
+      "word_start": 1262,
+      "word_end": 1278
+    },
+    {
+      "unit_id": "p0097",
+      "start": 497.694,
+      "end": 502.976,
+      "speaker": "",
+      "text": "in order to, well, maybe to go back just one beat,",
+      "word_start": 1278,
+      "word_end": 1289
+    },
+    {
+      "unit_id": "p0098",
+      "start": 503.296,
+      "end": 508.238,
+      "speaker": "",
+      "text": "is that I want to draw your attention to the variation on this slide.",
+      "word_start": 1289,
+      "word_end": 1303
+    },
+    {
+      "unit_id": "p0099",
+      "start": 508.298,
+      "end": 516.181,
+      "speaker": "",
+      "text": "So notice that some of these images are quite detailed and faithful, if you will, to the way the visual world looks to us when we open our eyes.",
+      "word_start": 1303,
+      "word_end": 1332
+    },
+    {
+      "unit_id": "p0100",
+      "start": 517.634,
+      "end": 519.455,
+      "speaker": "",
+      "text": "Let's take Darwin's finches at the top left, for example.",
+      "word_start": 1332,
+      "word_end": 1342
+    },
+    {
+      "unit_id": "p0101",
+      "start": 520.096,
+      "end": 521.337,
+      "speaker": "",
+      "text": "Others are much more schematic.",
+      "word_start": 1342,
+      "word_end": 1347
+    },
+    {
+      "unit_id": "p0102",
+      "start": 522.117,
+      "end": 527.962,
+      "speaker": "",
+      "text": "But what all of these examples share in common is they leverage what I've been calling visual abstraction to communicate",
+      "word_start": 1347,
+      "word_end": 1367
+    },
+    {
+      "unit_id": "p0103",
+      "start": 528.702,
+      "end": 534.446,
+      "speaker": "",
+      "text": "what we see and know about the world in a format that highlights what is relevant to notice.",
+      "word_start": 1367,
+      "word_end": 1385
+    },
+    {
+      "unit_id": "p0104",
+      "start": 535.247,
+      "end": 541.232,
+      "speaker": "",
+      "text": "And then building on that, we leverage that expanding understanding of the natural world",
+      "word_start": 1385,
+      "word_end": 1399
+    },
+    {
+      "unit_id": "p0105",
+      "start": 541.632,
+      "end": 547.967,
+      "speaker": "",
+      "text": "through the use of those tools for learning in order to create new things. So for example,",
+      "word_start": 1399,
+      "word_end": 1416
+    },
+    {
+      "unit_id": "p0106",
+      "start": 548.027,
+      "end": 554.669,
+      "speaker": "",
+      "text": "our detailed understanding of physical mechanics allowed us to design and then build high precision timekeeping devices.",
+      "word_start": 1416,
+      "word_end": 1433
+    },
+    {
+      "unit_id": "p0107",
+      "start": 555.369,
+      "end": 560.511,
+      "speaker": "",
+      "text": "And a lot of this technological progress has been driven by our ability to continually reformulate",
+      "word_start": 1433,
+      "word_end": 1449
+    },
+    {
+      "unit_id": "p0108",
+      "start": 560.931,
+      "end": 566.292,
+      "speaker": "",
+      "text": "our understanding of the world in terms of those useful abstractions that make it possible to re-engineer",
+      "word_start": 1449,
+      "word_end": 1466
+    },
+    {
+      "unit_id": "p0109",
+      "start": 566.593,
+      "end": 568.393,
+      "speaker": "",
+      "text": "the physical world according to our design.",
+      "word_start": 1466,
+      "word_end": 1473
+    },
+    {
+      "unit_id": "p0110",
+      "start": 568.793,
+      "end": 571.214,
+      "speaker": "",
+      "text": "So translating biological insights into bioengineering",
+      "word_start": 1473,
+      "word_end": 1479
+    },
+    {
+      "unit_id": "p0111",
+      "start": 572.022,
+      "end": 577.106,
+      "speaker": "",
+      "text": "physical theory into advanced physical instrumentation, neuroscience into medical devices,",
+      "word_start": 1479,
+      "word_end": 1489
+    },
+    {
+      "unit_id": "p0112",
+      "start": 577.767,
+      "end": 580.95,
+      "speaker": "",
+      "text": "and quantum mechanics into modern electronics, okay?",
+      "word_start": 1489,
+      "word_end": 1496
+    },
+    {
+      "unit_id": "p0113",
+      "start": 581.05,
+      "end": 585.554,
+      "speaker": "",
+      "text": "So this is, you know, sampling the kind of phenomena that I take a lot of inspiration from.",
+      "word_start": 1496,
+      "word_end": 1514
+    },
+    {
+      "unit_id": "p0114",
+      "start": 586.014,
+      "end": 589.858,
+      "speaker": "",
+      "text": "And, you know, the question we continue to wrestle with is like, what about us makes all that possible?",
+      "word_start": 1514,
+      "word_end": 1533
+    },
+    {
+      "unit_id": "p0115",
+      "start": 591.222,
+      "end": 596.764,
+      "speaker": "",
+      "text": "This is a schematic that I've been using over the last few years to help me think about the key behavioral phenomena",
+      "word_start": 1533,
+      "word_end": 1555
+    },
+    {
+      "unit_id": "p0116",
+      "start": 597.324,
+      "end": 602.906,
+      "speaker": "",
+      "text": "in play, and that will also serve as a framework for embedding the different lines of work that I'll be sharing with you.",
+      "word_start": 1555,
+      "word_end": 1578
+    },
+    {
+      "unit_id": "p0117",
+      "start": 603.626,
+      "end": 609.088,
+      "speaker": "",
+      "text": "So this is one way of illustrating the traditional mode in cognitive psychology, my home discipline,",
+      "word_start": 1578,
+      "word_end": 1594
+    },
+    {
+      "unit_id": "p0118",
+      "start": 609.389,
+      "end": 613.23,
+      "speaker": "",
+      "text": "which focuses on how people process information supplied by the external world.",
+      "word_start": 1594,
+      "word_end": 1606
+    },
+    {
+      "unit_id": "p0119",
+      "start": 614.41,
+      "end": 617.512,
+      "speaker": "",
+      "text": "Here's how that picture is enriched by the study of social cognition,",
+      "word_start": 1606,
+      "word_end": 1618
+    },
+    {
+      "unit_id": "p0120",
+      "start": 617.892,
+      "end": 621.614,
+      "speaker": "",
+      "text": "which considers the behavior of multiple individuals at once and how they interact with each other.",
+      "word_start": 1618,
+      "word_end": 1634
+    },
+    {
+      "unit_id": "p0121",
+      "start": 622.695,
+      "end": 627.417,
+      "speaker": "",
+      "text": "When those activities are used in the service of learning about the world and sharing that knowledge with others,",
+      "word_start": 1634,
+      "word_end": 1653
+    },
+    {
+      "unit_id": "p0122",
+      "start": 627.677,
+      "end": 633.1,
+      "speaker": "",
+      "text": "they've been argued to share important similarities with formal science, even when pursued by non-experts in everyday contexts.",
+      "word_start": 1653,
+      "word_end": 1671
+    },
+    {
+      "unit_id": "p0123",
+      "start": 633.641,
+      "end": 637.739,
+      "speaker": "",
+      "text": "So building on that tradition and with the goal of understanding",
+      "word_start": 1671,
+      "word_end": 1682
+    },
+    {
+      "unit_id": "p0124",
+      "start": 637.859,
+      "end": 641.922,
+      "speaker": "",
+      "text": "how humans made all those remarkable discoveries and inventions that I shared with you just a minute ago,",
+      "word_start": 1682,
+      "word_end": 1700
+    },
+    {
+      "unit_id": "p0125",
+      "start": 642.243,
+      "end": 645.786,
+      "speaker": "",
+      "text": "I'd like to argue that there's still two critical ingredients missing from this picture.",
+      "word_start": 1700,
+      "word_end": 1714
+    },
+    {
+      "unit_id": "p0126",
+      "start": 646.846,
+      "end": 650.924,
+      "speaker": "",
+      "text": "First, There is an account of cognitive tools or technologies,",
+      "word_start": 1714,
+      "word_end": 1724
+    },
+    {
+      "unit_id": "p0127",
+      "start": 650.924,
+      "end": 658.776,
+      "speaker": "",
+      "text": "material objects that encode information intended to have an impact on our minds, how and what we think.",
+      "word_start": 1724,
+      "word_end": 1742
+    },
+    {
+      "unit_id": "p0128",
+      "start": 660.477,
+      "end": 666.583,
+      "speaker": "",
+      "text": "Second, I like to argue that the time has come to embrace science's natural complement, engineering,",
+      "word_start": 1742,
+      "word_end": 1758
+    },
+    {
+      "unit_id": "p0129",
+      "start": 667.384,
+      "end": 675.126,
+      "speaker": "",
+      "text": "how people leverage their understanding of the world, whether it's through direct experience or is socially mediated, to create new and useful things.",
+      "word_start": 1758,
+      "word_end": 1781
+    },
+    {
+      "unit_id": "p0130",
+      "start": 675.946,
+      "end": 679.347,
+      "speaker": "",
+      "text": "Because without a serious consideration, the engineering half of this picture,",
+      "word_start": 1781,
+      "word_end": 1792
+    },
+    {
+      "unit_id": "p0131",
+      "start": 679.847,
+      "end": 686.529,
+      "speaker": "",
+      "text": "I would venture to say that we'll never be able to explain how and why the world as we know it came to be.",
+      "word_start": 1792,
+      "word_end": 1816
+    },
+    {
+      "unit_id": "p0132",
+      "start": 688.11,
+      "end": 691.547,
+      "speaker": "",
+      "text": "So at its core, if I had to state it really bluntly,",
+      "word_start": 1816,
+      "word_end": 1828
+    },
+    {
+      "unit_id": "p0133",
+      "start": 692.327,
+      "end": 697.97,
+      "speaker": "",
+      "text": "research in my group aims to close this loop, okay, to develop psychological theories that explain how we go about discovering",
+      "word_start": 1828,
+      "word_end": 1849
+    },
+    {
+      "unit_id": "p0134",
+      "start": 698.69,
+      "end": 703.952,
+      "speaker": "",
+      "text": "useful abstractions that explain how the world works jointly with theories",
+      "word_start": 1849,
+      "word_end": 1860
+    },
+    {
+      "unit_id": "p0135",
+      "start": 703.992,
+      "end": 707.514,
+      "speaker": "",
+      "text": "that explain how we then apply those abstractions to go make new things.",
+      "word_start": 1860,
+      "word_end": 1873
+    },
+    {
+      "unit_id": "p0136",
+      "start": 709.058,
+      "end": 712.821,
+      "speaker": "",
+      "text": "And my plan today is to tell you about some of the work that we've done so far along two lines.",
+      "word_start": 1873,
+      "word_end": 1894
+    },
+    {
+      "unit_id": "p0137",
+      "start": 713.482,
+      "end": 718.887,
+      "speaker": "",
+      "text": "In the first part, I'm going to share with you what I think we figured out about how people leverage visual abstraction",
+      "word_start": 1894,
+      "word_end": 1916
+    },
+    {
+      "unit_id": "p0138",
+      "start": 719.347,
+      "end": 725.033,
+      "speaker": "",
+      "text": "to communicate semantic knowledge using freehand drawing as a central case study there.",
+      "word_start": 1916,
+      "word_end": 1929
+    },
+    {
+      "unit_id": "p0139",
+      "start": 726.314,
+      "end": 733.6,
+      "speaker": "",
+      "text": "Ordinarily, in the second part, I would then have told you about our work investigating how people learn",
+      "word_start": 1929,
+      "word_end": 1947
+    },
+    {
+      "unit_id": "p0140",
+      "start": 733.62,
+      "end": 741.263,
+      "speaker": "",
+      "text": "and coordinate on procedural abstractions when building physical things aligned with the engineering segment.",
+      "word_start": 1947,
+      "word_end": 1961
+    },
+    {
+      "unit_id": "p0141",
+      "start": 741.703,
+      "end": 744.565,
+      "speaker": "",
+      "text": "But today, I I wanted to try something new with you all.",
+      "word_start": 1961,
+      "word_end": 1973
+    },
+    {
+      "unit_id": "p0142",
+      "start": 745.006,
+      "end": 749.549,
+      "speaker": "",
+      "text": "So I wanted to instead share with you some of our emerging work.",
+      "word_start": 1973,
+      "word_end": 1986
+    },
+    {
+      "unit_id": "p0143",
+      "start": 749.79,
+      "end": 751.751,
+      "speaker": "",
+      "text": "So I'm really curious to hear what you think.",
+      "word_start": 1986,
+      "word_end": 1995
+    },
+    {
+      "unit_id": "p0144",
+      "start": 751.991,
+      "end": 755.094,
+      "speaker": "",
+      "text": "Exploring the cognitive foundations of data visualization,",
+      "word_start": 1995,
+      "word_end": 2002
+    },
+    {
+      "unit_id": "p0145",
+      "start": 756.135,
+      "end": 759.457,
+      "speaker": "",
+      "text": "OK, in which people harness multiple information modalities,",
+      "word_start": 2002,
+      "word_end": 2010
+    },
+    {
+      "unit_id": "p0146",
+      "start": 759.798,
+      "end": 765.042,
+      "speaker": "",
+      "text": "graphical elements, words, and numbers to engage in statistical reasoning.",
+      "word_start": 2010,
+      "word_end": 2020
+    },
+    {
+      "unit_id": "p0147",
+      "start": 765.43,
+      "end": 769.512,
+      "speaker": "",
+      "text": "In other words, to learn from finite amounts of evidence about aspects of the world",
+      "word_start": 2020,
+      "word_end": 2035
+    },
+    {
+      "unit_id": "p0148",
+      "start": 769.572,
+      "end": 774.555,
+      "speaker": "",
+      "text": "that might be difficult or impossible to learn through direct observation by a single individual,",
+      "word_start": 2035,
+      "word_end": 2050
+    },
+    {
+      "unit_id": "p0149",
+      "start": 775.115,
+      "end": 781.278,
+      "speaker": "",
+      "text": "okay? And I'm still happy to chat with folks about our work on physical assembly and physical reasoning, probably at the reception, okay?",
+      "word_start": 2050,
+      "word_end": 2073
+    },
+    {
+      "unit_id": "p0150",
+      "start": 781.759,
+      "end": 789.203,
+      "speaker": "",
+      "text": "So to dive into part one, how do we begin to think about how people use visual abstraction to communicate what they know and what they see?",
+      "word_start": 2073,
+      "word_end": 2100
+    },
+    {
+      "unit_id": "p0151",
+      "start": 789.883,
+      "end": 795.146,
+      "speaker": "",
+      "text": "Here, I think it's useful to think about three behaviors that build successively on one another.",
+      "word_start": 2100,
+      "word_end": 2116
+    },
+    {
+      "unit_id": "p0152",
+      "start": 795.882,
+      "end": 797.944,
+      "speaker": "",
+      "text": "So first, of course, visual perception,",
+      "word_start": 2116,
+      "word_end": 2122
+    },
+    {
+      "unit_id": "p0153",
+      "start": 798.304,
+      "end": 804.448,
+      "speaker": "",
+      "text": "the problem of how we transform raw sensory inputs into semantically meaningful perceptual experiences",
+      "word_start": 2122,
+      "word_end": 2136
+    },
+    {
+      "unit_id": "p0154",
+      "start": 805.049,
+      "end": 809.612,
+      "speaker": "",
+      "text": "that in turn makes it possible to even contemplate visual production,",
+      "word_start": 2136,
+      "word_end": 2147
+    },
+    {
+      "unit_id": "p0155",
+      "start": 810.233,
+      "end": 816.077,
+      "speaker": "",
+      "text": "that ability to generate a set of markings that leave a meaningful and visible trace in the physical environment.",
+      "word_start": 2147,
+      "word_end": 2166
+    },
+    {
+      "unit_id": "p0156",
+      "start": 816.958,
+      "end": 820.16,
+      "speaker": "",
+      "text": "And those come together during visual communication,",
+      "word_start": 2166,
+      "word_end": 2173
+    },
+    {
+      "unit_id": "p0157",
+      "start": 820.701,
+      "end": 825.607,
+      "speaker": "",
+      "text": "how we decide just how to arrange those graphical elements",
+      "word_start": 2173,
+      "word_end": 2183
+    },
+    {
+      "unit_id": "p0158",
+      "start": 825.647,
+      "end": 829.128,
+      "speaker": "",
+      "text": "and in what order in order to have a particular kind of impact on other minds,",
+      "word_start": 2183,
+      "word_end": 2199
+    },
+    {
+      "unit_id": "p0159",
+      "start": 829.428,
+      "end": 835.07,
+      "speaker": "",
+      "text": "whether it is to inform or teach, persuade, collaborate, or any other purpose that we can put those marks to.",
+      "word_start": 2199,
+      "word_end": 2219
+    },
+    {
+      "unit_id": "p0160",
+      "start": 836.05,
+      "end": 842.232,
+      "speaker": "",
+      "text": "Okay, so this is going to be an overview of three studies that I'll be walking through.",
+      "word_start": 2219,
+      "word_end": 2236
+    },
+    {
+      "unit_id": "p0161",
+      "start": 843.993,
+      "end": 850.907,
+      "speaker": "",
+      "text": "First, we'll begin with the question of what is the perceptual basis for understanding what a certain class,",
+      "word_start": 2236,
+      "word_end": 2254
+    },
+    {
+      "unit_id": "p0162",
+      "start": 850.927,
+      "end": 853.608,
+      "speaker": "",
+      "text": "a subclass of pictures represents.",
+      "word_start": 2254,
+      "word_end": 2259
+    },
+    {
+      "unit_id": "p0163",
+      "start": 854.488,
+      "end": 862.45,
+      "speaker": "",
+      "text": "So to get off the ground, we started by considering maybe the most concrete and familiar instantiation of visual abstraction,",
+      "word_start": 2259,
+      "word_end": 2279
+    },
+    {
+      "unit_id": "p0164",
+      "start": 863.65,
+      "end": 871.132,
+      "speaker": "",
+      "text": "creating a drawing by hand that looks like something in the world.",
+      "word_start": 2279,
+      "word_end": 2291
+    },
+    {
+      "unit_id": "p0165",
+      "start": 872.613,
+      "end": 880.547,
+      "speaker": "",
+      "text": "What makes it so easy to tell that the drawing on the left of this slide is meant to correspond to the realistic bird rendering on the right.",
+      "word_start": 2291,
+      "word_end": 2319
+    },
+    {
+      "unit_id": "p0166",
+      "start": 882.427,
+      "end": 886.969,
+      "speaker": "",
+      "text": "There have been a lot of different ways of responding to that question.",
+      "word_start": 2319,
+      "word_end": 2332
+    },
+    {
+      "unit_id": "p0167",
+      "start": 889.269,
+      "end": 891.97,
+      "speaker": "",
+      "text": "The two have been really dominant.",
+      "word_start": 2332,
+      "word_end": 2338
+    },
+    {
+      "unit_id": "p0168",
+      "start": 892.87,
+      "end": 896.371,
+      "speaker": "",
+      "text": "So the first view is that we essentially see drawings",
+      "word_start": 2338,
+      "word_end": 2348
+    },
+    {
+      "unit_id": "p0169",
+      "start": 896.631,
+      "end": 903.093,
+      "speaker": "",
+      "text": "as meaningful and representing things because drawings simply resemble objects in the world.",
+      "word_start": 2348,
+      "word_end": 2361
+    },
+    {
+      "unit_id": "p0170",
+      "start": 904.453,
+      "end": 906.974,
+      "speaker": "",
+      "text": "Like this drawing literally looks like the bird, and that's how we know.",
+      "word_start": 2361,
+      "word_end": 2374
+    },
+    {
+      "unit_id": "p0171",
+      "start": 908.342,
+      "end": 913.667,
+      "speaker": "",
+      "text": "The second response is that drawings denote objects primarily as a matter of convention.",
+      "word_start": 2374,
+      "word_end": 2388
+    },
+    {
+      "unit_id": "p0172",
+      "start": 914.268,
+      "end": 919.813,
+      "speaker": "",
+      "text": "And we only learn which drawings go with which objects and meanings from other people.",
+      "word_start": 2388,
+      "word_end": 2403
+    },
+    {
+      "unit_id": "p0173",
+      "start": 920.013,
+      "end": 922.555,
+      "speaker": "",
+      "text": "So if you take this Chinese character, for example.",
+      "word_start": 2403,
+      "word_end": 2412
+    },
+    {
+      "unit_id": "p0174",
+      "start": 923.456,
+      "end": 929.962,
+      "speaker": "",
+      "text": "So in an earlier line of work, my collaborators, close collaborators, Dan Yamins, and my PhD advisor, Nick Turk-Browne,",
+      "word_start": 2412,
+      "word_end": 2431
+    },
+    {
+      "unit_id": "p0175",
+      "start": 930.122,
+      "end": 934.066,
+      "speaker": "",
+      "text": "and I discovered that general purpose vision algorithms, so in this case,",
+      "word_start": 2431,
+      "word_end": 2443
+    },
+    {
+      "unit_id": "p0176",
+      "start": 934.847,
+      "end": 941.614,
+      "speaker": "",
+      "text": "neural networks that compose multiple layers of learnable spatial convolutions, trained on natural photographs,",
+      "word_start": 2443,
+      "word_end": 2457
+    },
+    {
+      "unit_id": "p0177",
+      "start": 942.174,
+      "end": 950.002,
+      "speaker": "",
+      "text": "were capable of generalizing fairly strongly to even quite sparse sketches that didn't look photorealistic, per se.",
+      "word_start": 2457,
+      "word_end": 2474
+    },
+    {
+      "unit_id": "p0178",
+      "start": 950.582,
+      "end": 955.405,
+      "speaker": "",
+      "text": "suggesting that the problem of pictorial meaning and resemblance might be resolved",
+      "word_start": 2474,
+      "word_end": 2486
+    },
+    {
+      "unit_id": "p0179",
+      "start": 955.865,
+      "end": 958.087,
+      "speaker": "",
+      "text": "simply by building better models",
+      "word_start": 2486,
+      "word_end": 2491
+    },
+    {
+      "unit_id": "p0180",
+      "start": 958.507,
+      "end": 965.692,
+      "speaker": "",
+      "text": "of the ventral stream of visual processing, especially ones that accurately capture those operations performed in those brain regions.",
+      "word_start": 2491,
+      "word_end": 2510
+    },
+    {
+      "unit_id": "p0181",
+      "start": 966.892,
+      "end": 969.214,
+      "speaker": "",
+      "text": "We were not the only ones to discover this.",
+      "word_start": 2510,
+      "word_end": 2519
+    },
+    {
+      "unit_id": "p0182",
+      "start": 969.854,
+      "end": 977.291,
+      "speaker": "",
+      "text": "There are easily thousands of computer vision papers indexed by Google Scholar that use some kind of or other",
+      "word_start": 2519,
+      "word_end": 2538
+    },
+    {
+      "unit_id": "p0183",
+      "start": 977.451,
+      "end": 982.416,
+      "speaker": "",
+      "text": "neural network-based backbone to encode sketches and natural images for a variety of applications.",
+      "word_start": 2538,
+      "word_end": 2552
+    },
+    {
+      "unit_id": "p0184",
+      "start": 983.297,
+      "end": 989.944,
+      "speaker": "",
+      "text": "All of those results you can kind of think of as vindicating an updated modern resemblance-based account.",
+      "word_start": 2552,
+      "word_end": 2569
+    },
+    {
+      "unit_id": "p0185",
+      "start": 991.165,
+      "end": 996.05,
+      "speaker": "",
+      "text": "It was also really useful insight for us locally with other practical consequences.",
+      "word_start": 2569,
+      "word_end": 2582
+    },
+    {
+      "unit_id": "p0186",
+      "start": 996.11,
+      "end": 1000.254,
+      "speaker": "",
+      "text": "So in some more recent work led by Charles Liu, a former master's student in the lab,",
+      "word_start": 2582,
+      "word_end": 2599
+    },
+    {
+      "unit_id": "p0187",
+      "start": 1000.81,
+      "end": 1007.654,
+      "speaker": "",
+      "text": "And in collaboration with Xiaolong Wang at UCSD, we built on top of those early findings to further stress test that resemblance account,",
+      "word_start": 2599,
+      "word_end": 2622
+    },
+    {
+      "unit_id": "p0188",
+      "start": 1008.295,
+      "end": 1016.119,
+      "speaker": "",
+      "text": "basically taking a ConvNet backbone and then training a decoder on top that could map local elements in a sketch",
+      "word_start": 2622,
+      "word_end": 2642
+    },
+    {
+      "unit_id": "p0189",
+      "start": 1016.539,
+      "end": 1019.721,
+      "speaker": "",
+      "text": "to corresponding elements in a photograph",
+      "word_start": 2642,
+      "word_end": 2648
+    },
+    {
+      "unit_id": "p0190",
+      "start": 1020.102,
+      "end": 1026.505,
+      "speaker": "",
+      "text": "under the constraint that you could warp or rumple the sketch, but not tear any holes in it,",
+      "word_start": 2648,
+      "word_end": 2666
+    },
+    {
+      "unit_id": "p0191",
+      "start": 1026.826,
+      "end": 1031.831,
+      "speaker": "",
+      "text": "okay? And the success of that approach, I'm just demoing here, it's not really a result, it's like a demo.",
+      "word_start": 2666,
+      "word_end": 2686
+    },
+    {
+      "unit_id": "p0192",
+      "start": 1032.071,
+      "end": 1035.932,
+      "speaker": "",
+      "text": "The success of that approach suggests that fairly strong spatial constraints",
+      "word_start": 2686,
+      "word_end": 2697
+    },
+    {
+      "unit_id": "p0193",
+      "start": 1036.513,
+      "end": 1042.754,
+      "speaker": "",
+      "text": "govern how the parts of sketches correspond to the parts of real objects that they're meant to represent.",
+      "word_start": 2697,
+      "word_end": 2715
+    },
+    {
+      "unit_id": "p0194",
+      "start": 1043.515,
+      "end": 1047.056,
+      "speaker": "",
+      "text": "Okay, so that's great, okay?",
+      "word_start": 2715,
+      "word_end": 2720
+    },
+    {
+      "unit_id": "p0195",
+      "start": 1047.356,
+      "end": 1052.877,
+      "speaker": "",
+      "text": "We've got good enough trainable models of sketch understanding to build downstream applications that work pretty well,",
+      "word_start": 2720,
+      "word_end": 2737
+    },
+    {
+      "unit_id": "p0196",
+      "start": 1053.197,
+      "end": 1055.358,
+      "speaker": "",
+      "text": "okay? I guess we can pack up and go home.",
+      "word_start": 2737,
+      "word_end": 2747
+    },
+    {
+      "unit_id": "p0197",
+      "start": 1058.163,
+      "end": 1060.264,
+      "speaker": "",
+      "text": "But of course, that's not the whole story, okay?",
+      "word_start": 2747,
+      "word_end": 2756
+    },
+    {
+      "unit_id": "p0198",
+      "start": 1060.805,
+      "end": 1065.328,
+      "speaker": "",
+      "text": "A static, deterministic account of visual processing falls short of explaining",
+      "word_start": 2756,
+      "word_end": 2767
+    },
+    {
+      "unit_id": "p0199",
+      "start": 1066.208,
+      "end": 1072.873,
+      "speaker": "",
+      "text": "how we generate and make sense of drawings like these, which you might find all around this building.",
+      "word_start": 2767,
+      "word_end": 2785
+    },
+    {
+      "unit_id": "p0200",
+      "start": 1073.553,
+      "end": 1079.057,
+      "speaker": "",
+      "text": "What these blobs and boxes, squiggles and arrows mean depends on what we're talking about.",
+      "word_start": 2785,
+      "word_end": 2800
+    },
+    {
+      "unit_id": "p0201",
+      "start": 1080.558,
+      "end": 1085.341,
+      "speaker": "",
+      "text": "So our next goal was to figure out how to incorporate that information about context",
+      "word_start": 2800,
+      "word_end": 2815
+    },
+    {
+      "unit_id": "p0202",
+      "start": 1085.762,
+      "end": 1092.34,
+      "speaker": "",
+      "text": "to begin to account for a greater variety of graphical representations that we, in fact, use to communicate,",
+      "word_start": 2815,
+      "word_end": 2833
+    },
+    {
+      "unit_id": "p0203",
+      "start": 1092.88,
+      "end": 1098.361,
+      "speaker": "",
+      "text": "ranging from more faithful pictures like those on the left here to the more obvious symbolic tokens on the right.",
+      "word_start": 2833,
+      "word_end": 2853
+    },
+    {
+      "unit_id": "p0204",
+      "start": 1099.842,
+      "end": 1106.484,
+      "speaker": "",
+      "text": "Our first paper tackling that issue asked how people knew when they needed to produce a more faithful drawing",
+      "word_start": 2853,
+      "word_end": 2872
+    },
+    {
+      "unit_id": "p0205",
+      "start": 1106.924,
+      "end": 1109.805,
+      "speaker": "",
+      "text": "and when they could get away with something more schematic or abstract.",
+      "word_start": 2872,
+      "word_end": 2884
+    },
+    {
+      "unit_id": "p0206",
+      "start": 1110.325,
+      "end": 1114.526,
+      "speaker": "",
+      "text": "So in that study, we paired two people up to play a drawing game",
+      "word_start": 2884,
+      "word_end": 2898
+    },
+    {
+      "unit_id": "p0207",
+      "start": 1115.274,
+      "end": 1122.038,
+      "speaker": "",
+      "text": "The sketcher saw a display that looked something like this, where their goal was to draw the highlighted target object, the third one here.",
+      "word_start": 2898,
+      "word_end": 2922
+    },
+    {
+      "unit_id": "p0208",
+      "start": 1122.679,
+      "end": 1125.24,
+      "speaker": "",
+      "text": "And we varied what the other objects in the display were.",
+      "word_start": 2922,
+      "word_end": 2933
+    },
+    {
+      "unit_id": "p0209",
+      "start": 1126.681,
+      "end": 1130.264,
+      "speaker": "",
+      "text": "On close trials, the distractors all belonged to the same basic level category,",
+      "word_start": 2933,
+      "word_end": 2946
+    },
+    {
+      "unit_id": "p0210",
+      "start": 1130.884,
+      "end": 1134.826,
+      "speaker": "",
+      "text": "whereas on far trials, the distractors were from different categories.",
+      "word_start": 2946,
+      "word_end": 2956
+    },
+    {
+      "unit_id": "p0211",
+      "start": 1136.127,
+      "end": 1138.609,
+      "speaker": "",
+      "text": "Using this really simple manipulation,",
+      "word_start": 2956,
+      "word_end": 2961
+    },
+    {
+      "unit_id": "p0212",
+      "start": 1139.009,
+      "end": 1145.164,
+      "speaker": "",
+      "text": "we discovered how readily ordinary folks can adjust the way they use depiction to communicate,",
+      "word_start": 2961,
+      "word_end": 2976
+    },
+    {
+      "unit_id": "p0213",
+      "start": 1145.944,
+      "end": 1152.167,
+      "speaker": "",
+      "text": "making more detailed and faithful drawings on those close trials when they needed their drawing to uniquely identify a particular exemplar,",
+      "word_start": 2976,
+      "word_end": 2997
+    },
+    {
+      "unit_id": "p0214",
+      "start": 1152.587,
+      "end": 1157.289,
+      "speaker": "",
+      "text": "but then sparser drawings on the far trials when they could get away with these category-level abstractions.",
+      "word_start": 2997,
+      "word_end": 3014
+    },
+    {
+      "unit_id": "p0215",
+      "start": 1157.649,
+      "end": 1160.991,
+      "speaker": "",
+      "text": "So here are some examples of actual drawings that we collected in that study.",
+      "word_start": 3014,
+      "word_end": 3028
+    },
+    {
+      "unit_id": "p0216",
+      "start": 1162.491,
+      "end": 1167.053,
+      "speaker": "",
+      "text": "And we found that sketchers used fewer strokes on far trials,",
+      "word_start": 3028,
+      "word_end": 3039
+    },
+    {
+      "unit_id": "p0217",
+      "start": 1167.694,
+      "end": 1171.139,
+      "speaker": "",
+      "text": "less ink, less time to produce those drawings,",
+      "word_start": 3039,
+      "word_end": 3047
+    },
+    {
+      "unit_id": "p0218",
+      "start": 1171.4,
+      "end": 1176.222,
+      "speaker": "",
+      "text": "while still achieving ceiling accuracy on the fundamental task of communicating the identity",
+      "word_start": 3047,
+      "word_end": 3060
+    },
+    {
+      "unit_id": "p0219",
+      "start": 1176.603,
+      "end": 1179.444,
+      "speaker": "",
+      "text": "of the target visual concept to the viewer,",
+      "word_start": 3060,
+      "word_end": 3068
+    },
+    {
+      "unit_id": "p0220",
+      "start": 1180.085,
+      "end": 1183.967,
+      "speaker": "",
+      "text": "who themselves took less time on those trials to make their decisions.",
+      "word_start": 3068,
+      "word_end": 3080
+    },
+    {
+      "unit_id": "p0221",
+      "start": 1185.848,
+      "end": 1192.952,
+      "speaker": "",
+      "text": "Then to capture that behavioral pattern, we proposed a computational model of the sketcher that consisted of two parts, okay?",
+      "word_start": 3080,
+      "word_end": 3100
+    },
+    {
+      "unit_id": "p0222",
+      "start": 1193.232,
+      "end": 1198.951,
+      "speaker": "",
+      "text": "So a convnet to encode visual inputs into a generically abstract feature space,",
+      "word_start": 3100,
+      "word_end": 3113
+    },
+    {
+      "unit_id": "p0223",
+      "start": 1199.431,
+      "end": 1205.714,
+      "speaker": "",
+      "text": "and then a second probabilistic decision-making module that inferred what kind of drawing to make depending on the context.",
+      "word_start": 3113,
+      "word_end": 3132
+    },
+    {
+      "unit_id": "p0224",
+      "start": 1207.235,
+      "end": 1211.797,
+      "speaker": "",
+      "text": "I'm just gonna give you the take home from that study, because I'm really excited to get to other work in this talk.",
+      "word_start": 3132,
+      "word_end": 3155
+    },
+    {
+      "unit_id": "p0225",
+      "start": 1212.017,
+      "end": 1217.639,
+      "speaker": "",
+      "text": "So the take home from our model ablation experiments was that both the capacity for visual abstraction,",
+      "word_start": 3155,
+      "word_end": 3172
+    },
+    {
+      "unit_id": "p0226",
+      "start": 1217.919,
+      "end": 1222.341,
+      "speaker": "",
+      "text": "which you operationalize as the network layer in the visual encoder module,",
+      "word_start": 3172,
+      "word_end": 3184
+    },
+    {
+      "unit_id": "p0227",
+      "start": 1222.801,
+      "end": 1224.502,
+      "speaker": "",
+      "text": "and sensitivity to context,",
+      "word_start": 3184,
+      "word_end": 3188
+    },
+    {
+      "unit_id": "p0228",
+      "start": 1224.906,
+      "end": 1232.089,
+      "speaker": "",
+      "text": "were critical for capturing how people managed to communicate about these objects at the appropriate level of abstraction.",
+      "word_start": 3188,
+      "word_end": 3206
+    },
+    {
+      "unit_id": "p0229",
+      "start": 1233.97,
+      "end": 1235.27,
+      "speaker": "",
+      "text": "Okay, and then in more recent work,",
+      "word_start": 3206,
+      "word_end": 3213
+    },
+    {
+      "unit_id": "p0230",
+      "start": 1235.591,
+      "end": 1242.213,
+      "speaker": "",
+      "text": "we pushed that idea even further to understand not only the impact of the current referential context on how people communicate,",
+      "word_start": 3213,
+      "word_end": 3234
+    },
+    {
+      "unit_id": "p0231",
+      "start": 1242.594,
+      "end": 1246.315,
+      "speaker": "",
+      "text": "but also the conditions under which new graphical conventions might emerge.",
+      "word_start": 3234,
+      "word_end": 3245
+    },
+    {
+      "unit_id": "p0232",
+      "start": 1246.995,
+      "end": 1252.878,
+      "speaker": "",
+      "text": "When memory for previous interactions with the same person leads people to produce even more abstract",
+      "word_start": 3245,
+      "word_end": 3261
+    },
+    {
+      "unit_id": "p0233",
+      "start": 1253.642,
+      "end": 1259.645,
+      "speaker": "",
+      "text": "maybe even proto-symbolic tokens over time, whose meaning depends even more strongly on that shared history.",
+      "word_start": 3261,
+      "word_end": 3277
+    },
+    {
+      "unit_id": "p0234",
+      "start": 1261.486,
+      "end": 1266.709,
+      "speaker": "",
+      "text": "Okay, so all of that was really exciting progress to me, but of course,",
+      "word_start": 3277,
+      "word_end": 3291
+    },
+    {
+      "unit_id": "p0235",
+      "start": 1267.309,
+      "end": 1273.453,
+      "speaker": "",
+      "text": "people possess much richer knowledge about the world than just what things are called or what they look like.",
+      "word_start": 3291,
+      "word_end": 3310
+    },
+    {
+      "unit_id": "p0236",
+      "start": 1274.033,
+      "end": 1277.335,
+      "speaker": "",
+      "text": "And a particularly important way that we use visual abstraction,",
+      "word_start": 3310,
+      "word_end": 3320
+    },
+    {
+      "unit_id": "p0237",
+      "start": 1277.415,
+      "end": 1283.57,
+      "speaker": "",
+      "text": "especially in science, is to transmit mechanistic knowledge about how things work.",
+      "word_start": 3320,
+      "word_end": 3332
+    },
+    {
+      "unit_id": "p0238",
+      "start": 1284.81,
+      "end": 1287.531,
+      "speaker": "",
+      "text": "So what is going on in people's minds when they make that move?",
+      "word_start": 3332,
+      "word_end": 3345
+    },
+    {
+      "unit_id": "p0239",
+      "start": 1288.131,
+      "end": 1295.914,
+      "speaker": "",
+      "text": "Going beyond what is visually salient, let's say about a specific bird, to highlight underlying physical mechanisms.",
+      "word_start": 3345,
+      "word_end": 3362
+    },
+    {
+      "unit_id": "p0240",
+      "start": 1296.514,
+      "end": 1298.655,
+      "speaker": "",
+      "text": "For example, how birds achieve flight in general.",
+      "word_start": 3362,
+      "word_end": 3370
+    },
+    {
+      "unit_id": "p0241",
+      "start": 1300.175,
+      "end": 1306.157,
+      "speaker": "",
+      "text": "So imagine my excitement when Holly Huey, a wonderful former PhD student in the lab who's now at Adobe Research,",
+      "word_start": 3370,
+      "word_end": 3390
+    },
+    {
+      "unit_id": "p0242",
+      "start": 1306.857,
+      "end": 1308.738,
+      "speaker": "",
+      "text": "was also fascinated by this question",
+      "word_start": 3390,
+      "word_end": 3396
+    },
+    {
+      "unit_id": "p0243",
+      "start": 1309.898,
+      "end": 1317.698,
+      "speaker": "",
+      "text": "and while we knew from very cool work by Frank Kyle and colleagues that people privilege mechanistic explanations when learning from others,",
+      "word_start": 3396,
+      "word_end": 3418
+    },
+    {
+      "unit_id": "p0244",
+      "start": 1317.758,
+      "end": 1323.941,
+      "speaker": "",
+      "text": "and from work by Barbara Traversky, Mickey Chi, Tanya Lombroso, and others that people can learn by producing explanations,",
+      "word_start": 3418,
+      "word_end": 3437
+    },
+    {
+      "unit_id": "p0245",
+      "start": 1324.261,
+      "end": 1326.483,
+      "speaker": "",
+      "text": "we realized there was a lot that we didn't know",
+      "word_start": 3437,
+      "word_end": 3447
+    },
+    {
+      "unit_id": "p0246",
+      "start": 1326.923,
+      "end": 1330.625,
+      "speaker": "",
+      "text": "about how people thought about visual explanations.",
+      "word_start": 3447,
+      "word_end": 3454
+    },
+    {
+      "unit_id": "p0247",
+      "start": 1331.145,
+      "end": 1336.828,
+      "speaker": "",
+      "text": "Like, what do people think is supposed to go into a diagram that illustrates how something works,",
+      "word_start": 3454,
+      "word_end": 3471
+    },
+    {
+      "unit_id": "p0248",
+      "start": 1337.208,
+      "end": 1343.407,
+      "speaker": "",
+      "text": "and what makes those different from an ordinary illustration that is just intended to look like something.",
+      "word_start": 3471,
+      "word_end": 3488
+    },
+    {
+      "unit_id": "p0249",
+      "start": 1345.188,
+      "end": 1348.83,
+      "speaker": "",
+      "text": "One possibility that I'll sketch, which I'll call the cumulative hypothesis,",
+      "word_start": 3488,
+      "word_end": 3499
+    },
+    {
+      "unit_id": "p0250",
+      "start": 1349.15,
+      "end": 1356.894,
+      "speaker": "",
+      "text": "is that people basically think of visual explanations as being like extended, augmented versions of ordinary depictions.",
+      "word_start": 3499,
+      "word_end": 3516
+    },
+    {
+      "unit_id": "p0251",
+      "start": 1357.694,
+      "end": 1361.936,
+      "speaker": "",
+      "text": "So in this table, explanations would have all the things that depictions have to communicate",
+      "word_start": 3516,
+      "word_end": 3531
+    },
+    {
+      "unit_id": "p0252",
+      "start": 1362.336,
+      "end": 1365.678,
+      "speaker": "",
+      "text": "visual appearance and then tack on information about physical mechanism.",
+      "word_start": 3531,
+      "word_end": 3541
+    },
+    {
+      "unit_id": "p0253",
+      "start": 1367.65,
+      "end": 1371.756,
+      "speaker": "",
+      "text": "An alternative possibility, which I'll call the dissociable hypothesis.",
+      "word_start": 3541,
+      "word_end": 3550
+    },
+    {
+      "unit_id": "p0254",
+      "start": 1372.417,
+      "end": 1374.52,
+      "speaker": "",
+      "text": "So people think of explanations as being images",
+      "word_start": 3550,
+      "word_end": 3558
+    },
+    {
+      "unit_id": "p0255",
+      "start": 1374.56,
+      "end": 1380.788,
+      "speaker": "",
+      "text": "that pick out mechanistic abstractions while greatly de-emphasizing visual appearance.",
+      "word_start": 3558,
+      "word_end": 3568
+    },
+    {
+      "unit_id": "p0256",
+      "start": 1381.049,
+      "end": 1382.351,
+      "speaker": "",
+      "text": "Okay, there's a kind of selectivity there.",
+      "word_start": 3568,
+      "word_end": 3575
+    },
+    {
+      "unit_id": "p0257",
+      "start": 1383.132,
+      "end": 1388.611,
+      "speaker": "",
+      "text": "So tease apart those possibilities Holly designed a study to probe this question in two ways.",
+      "word_start": 3575,
+      "word_end": 3591
+    },
+    {
+      "unit_id": "p0258",
+      "start": 1389.331,
+      "end": 1395.353,
+      "speaker": "",
+      "text": "First, by characterizing the content of visual explanations in detail and comparing them to visual depictions.",
+      "word_start": 3591,
+      "word_end": 3607
+    },
+    {
+      "unit_id": "p0259",
+      "start": 1395.853,
+      "end": 1402.315,
+      "speaker": "",
+      "text": "And second, to measure how well either of those kinds of images actually help downstream viewers",
+      "word_start": 3607,
+      "word_end": 3623
+    },
+    {
+      "unit_id": "p0260",
+      "start": 1402.735,
+      "end": 1409.056,
+      "speaker": "",
+      "text": "extract information that they really needed, whether it's about appearance or about mechanism.",
+      "word_start": 3623,
+      "word_end": 3636
+    },
+    {
+      "unit_id": "p0261",
+      "start": 1410.197,
+      "end": 1414.618,
+      "speaker": "",
+      "text": "So rather than a lesson on bird flight, which is fascinating but complicated,",
+      "word_start": 3636,
+      "word_end": 3649
+    },
+    {
+      "unit_id": "p0262",
+      "start": 1415.414,
+      "end": 1423.02,
+      "speaker": "",
+      "text": "Holly constructed six novel contraptions with a clearly observable mechanism for closing a circuit and turning on a light, okay?",
+      "word_start": 3649,
+      "word_end": 3669
+    },
+    {
+      "unit_id": "p0263",
+      "start": 1423.28,
+      "end": 1429.424,
+      "speaker": "",
+      "text": "So here's an example of one of those machines and the instructional video that participants watched. Okay.",
+      "word_start": 3669,
+      "word_end": 3686
+    },
+    {
+      "unit_id": "p0264",
+      "start": 1438.971,
+      "end": 1442.553,
+      "speaker": "",
+      "text": "All right, participants in the study actually saw that twice, those two demonstrations twice, but there you go.",
+      "word_start": 3686,
+      "word_end": 3704
+    },
+    {
+      "unit_id": "p0265",
+      "start": 1443.638,
+      "end": 1448.121,
+      "speaker": "",
+      "text": "So notice that this machine consists of three different kinds of parts.",
+      "word_start": 3704,
+      "word_end": 3716
+    },
+    {
+      "unit_id": "p0266",
+      "start": 1448.381,
+      "end": 1451.843,
+      "speaker": "",
+      "text": "There are causal parts that need to rotate to turn the light on.",
+      "word_start": 3716,
+      "word_end": 3729
+    },
+    {
+      "unit_id": "p0267",
+      "start": 1452.264,
+      "end": 1456.967,
+      "speaker": "",
+      "text": "There are non-causal parts that look very similar, but don't actually cause the light to turn on.",
+      "word_start": 3729,
+      "word_end": 3746
+    },
+    {
+      "unit_id": "p0268",
+      "start": 1457.427,
+      "end": 1463.431,
+      "speaker": "",
+      "text": "And then background structural elements that are colorful and hoist up the other parts are really important,",
+      "word_start": 3746,
+      "word_end": 3763
+    },
+    {
+      "unit_id": "p0269",
+      "start": 1463.711,
+      "end": 1466.353,
+      "speaker": "",
+      "text": "but don't directly participate in the light activation circuit.",
+      "word_start": 3763,
+      "word_end": 3772
+    },
+    {
+      "unit_id": "p0270",
+      "start": 1468.154,
+      "end": 1473.398,
+      "speaker": "",
+      "text": "Every participant produced explanations of some machines and depictions of other ones.",
+      "word_start": 3772,
+      "word_end": 3784
+    },
+    {
+      "unit_id": "p0271",
+      "start": 1473.95,
+      "end": 1480.512,
+      "speaker": "",
+      "text": "On explanation trials, they were asked to imagine that their drawing would be used by someone else to understand how the object worked.",
+      "word_start": 3784,
+      "word_end": 3807
+    },
+    {
+      "unit_id": "p0272",
+      "start": 1481.552,
+      "end": 1482.872,
+      "speaker": "",
+      "text": "And then on the depiction trials,",
+      "word_start": 3807,
+      "word_end": 3813
+    },
+    {
+      "unit_id": "p0273",
+      "start": 1483.153,
+      "end": 1489.934,
+      "speaker": "",
+      "text": "they were asked to imagine that their drawing would be used by someone else to identify which object it was out of a lineup of similar looking objects.",
+      "word_start": 3813,
+      "word_end": 3841
+    },
+    {
+      "unit_id": "p0274",
+      "start": 1490.595,
+      "end": 1492.315,
+      "speaker": "",
+      "text": "Okay, that's the manipulation, really simple.",
+      "word_start": 3841,
+      "word_end": 3847
+    },
+    {
+      "unit_id": "p0275",
+      "start": 1493.475,
+      "end": 1499.457,
+      "speaker": "",
+      "text": "Using that procedure, we collected a large number of depictions and explanations of each of these six machines.",
+      "word_start": 3847,
+      "word_end": 3865
+    },
+    {
+      "unit_id": "p0276",
+      "start": 1500.777,
+      "end": 1508.482,
+      "speaker": "",
+      "text": "Eyeballing them, the drawings seem to look different okay for example maybe there's a little bit more background in the depictions",
+      "word_start": 3865,
+      "word_end": 3886
+    },
+    {
+      "unit_id": "p0277",
+      "start": 1509.082,
+      "end": 1511.824,
+      "speaker": "",
+      "text": "maybe there's some more arrows in the explanations",
+      "word_start": 3886,
+      "word_end": 3894
+    },
+    {
+      "unit_id": "p0278",
+      "start": 1513.225,
+      "end": 1516.407,
+      "speaker": "",
+      "text": "but Holly wanted to be really systematic about this so",
+      "word_start": 3894,
+      "word_end": 3904
+    },
+    {
+      "unit_id": "p0279",
+      "start": 1516.447,
+      "end": 1524.413,
+      "speaker": "",
+      "text": "she crowdsourced tags assigning every single stroke um in every drawing to one of four categories okay",
+      "word_start": 3904,
+      "word_end": 3921
+    },
+    {
+      "unit_id": "p0280",
+      "start": 1524.453,
+      "end": 1530.417,
+      "speaker": "",
+      "text": "so one for each of the three kinds of physical parts background causal and non-causal and then a fourth category",
+      "word_start": 3921,
+      "word_end": 3941
+    },
+    {
+      "unit_id": "p0281",
+      "start": 1530.737,
+      "end": 1537.638,
+      "speaker": "",
+      "text": "that was a catch-all for um so in this particular context, we're talking about arrows and motion lines.",
+      "word_start": 3941,
+      "word_end": 3959
+    },
+    {
+      "unit_id": "p0282",
+      "start": 1538.638,
+      "end": 1545.203,
+      "speaker": "",
+      "text": "And then used those tags to compare what kind, what balance of semantic information people emphasize in these two conditions.",
+      "word_start": 3959,
+      "word_end": 3979
+    },
+    {
+      "unit_id": "p0283",
+      "start": 1546.624,
+      "end": 1550.867,
+      "speaker": "",
+      "text": "What she found was that while people drew causal and non-causal parts in both",
+      "word_start": 3979,
+      "word_end": 3993
+    },
+    {
+      "unit_id": "p0284",
+      "start": 1551.728,
+      "end": 1559.113,
+      "speaker": "",
+      "text": "conditions, they allocated more strokes to the causal part in explanations than the non-causal ones.",
+      "word_start": 3993,
+      "word_end": 4008
+    },
+    {
+      "unit_id": "p0285",
+      "start": 1561.482,
+      "end": 1567.884,
+      "speaker": "",
+      "text": "They also emphasized the background a bit more in depictions than explanations, and as we suspected,",
+      "word_start": 4008,
+      "word_end": 4024
+    },
+    {
+      "unit_id": "p0286",
+      "start": 1568.344,
+      "end": 1576.106,
+      "speaker": "",
+      "text": "spent more of their ink on symbolic displays of motion and parts interacting in explanations than depictions.",
+      "word_start": 4024,
+      "word_end": 4041
+    },
+    {
+      "unit_id": "p0287",
+      "start": 1576.866,
+      "end": 1582.928,
+      "speaker": "",
+      "text": "Okay, so already these results are incompatible with a strong version of the cumulative hypothesis,",
+      "word_start": 4041,
+      "word_end": 4056
+    },
+    {
+      "unit_id": "p0288",
+      "start": 1583.268,
+      "end": 1586.809,
+      "speaker": "",
+      "text": "which would have predicted the relative emphasis on background causal",
+      "word_start": 4056,
+      "word_end": 4066
+    },
+    {
+      "unit_id": "p0289",
+      "start": 1586.829,
+      "end": 1591.234,
+      "speaker": "",
+      "text": "and non-causal parts would be maintained even in the presence of arrows.",
+      "word_start": 4066,
+      "word_end": 4078
+    },
+    {
+      "unit_id": "p0290",
+      "start": 1593.015,
+      "end": 1597.018,
+      "speaker": "",
+      "text": "But however reliable, those differences might just amount to stylistic variation",
+      "word_start": 4078,
+      "word_end": 4089
+    },
+    {
+      "unit_id": "p0291",
+      "start": 1597.038,
+      "end": 1602.022,
+      "speaker": "",
+      "text": "that doesn't have any impact on how useful they are for the tasks that they are intended to support.",
+      "word_start": 4089,
+      "word_end": 4108
+    },
+    {
+      "unit_id": "p0292",
+      "start": 1602.502,
+      "end": 1606.265,
+      "speaker": "",
+      "text": "So to measure those functional consequences of those decisions,",
+      "word_start": 4108,
+      "word_end": 4117
+    },
+    {
+      "unit_id": "p0293",
+      "start": 1606.865,
+      "end": 1609.707,
+      "speaker": "",
+      "text": "Holly designed three different inference tasks.",
+      "word_start": 4117,
+      "word_end": 4123
+    },
+    {
+      "unit_id": "p0294",
+      "start": 1610.648,
+      "end": 1617.792,
+      "speaker": "",
+      "text": "The first asked how easily you could tell what kind of action would be needed to operate the machine.",
+      "word_start": 4123,
+      "word_end": 4142
+    },
+    {
+      "unit_id": "p0295",
+      "start": 1617.832,
+      "end": 1624.778,
+      "speaker": "",
+      "text": "So here, pull, rotate, or push. what you might expect a good mechanistic explanation to make clear.",
+      "word_start": 4142,
+      "word_end": 4159
+    },
+    {
+      "unit_id": "p0296",
+      "start": 1626.599,
+      "end": 1631.663,
+      "speaker": "",
+      "text": "The second was to measure how well each drawing could be used for object identification,",
+      "word_start": 4159,
+      "word_end": 4174
+    },
+    {
+      "unit_id": "p0297",
+      "start": 1631.983,
+      "end": 1634.445,
+      "speaker": "",
+      "text": "exactly what depictions are supposed to do.",
+      "word_start": 4174,
+      "word_end": 4181
+    },
+    {
+      "unit_id": "p0298",
+      "start": 1635.767,
+      "end": 1639.43,
+      "speaker": "",
+      "text": "And then the third was a more challenging visual discrimination task",
+      "word_start": 4181,
+      "word_end": 4192
+    },
+    {
+      "unit_id": "p0299",
+      "start": 1639.73,
+      "end": 1644.734,
+      "speaker": "",
+      "text": "where you had to determine which of two highlighted parts was the causal one.",
+      "word_start": 4192,
+      "word_end": 4206
+    },
+    {
+      "unit_id": "p0300",
+      "start": 1645.795,
+      "end": 1652.299,
+      "speaker": "",
+      "text": "requiring you to establish a detailed mapping between the parts of the drawing to parts of the actual machine,",
+      "word_start": 4206,
+      "word_end": 4225
+    },
+    {
+      "unit_id": "p0301",
+      "start": 1652.299,
+      "end": 1655.764,
+      "speaker": "",
+      "text": "something that you really only expect from a mechanistic explanation",
+      "word_start": 4225,
+      "word_end": 4235
+    },
+    {
+      "unit_id": "p0302",
+      "start": 1655.764,
+      "end": 1661.745,
+      "speaker": "",
+      "text": "that also preserves enough information about the overall appearance and organization of the parts of the machine.",
+      "word_start": 4235,
+      "word_end": 4252
+    },
+    {
+      "unit_id": "p0303",
+      "start": 1663.126,
+      "end": 1665.748,
+      "speaker": "",
+      "text": "So under the cumulative hypothesis,",
+      "word_start": 4252,
+      "word_end": 4257
+    },
+    {
+      "unit_id": "p0304",
+      "start": 1666.148,
+      "end": 1671.031,
+      "speaker": "",
+      "text": "what we should see is that explanations are at least as good as depictions for all tasks,",
+      "word_start": 4257,
+      "word_end": 4274
+    },
+    {
+      "unit_id": "p0305",
+      "start": 1671.831,
+      "end": 1677.574,
+      "speaker": "",
+      "text": "but under the dissociable hypothesis that they might be better for the action task, but worse for the object task.",
+      "word_start": 4274,
+      "word_end": 4294
+    },
+    {
+      "unit_id": "p0306",
+      "start": 1679.074,
+      "end": 1682.436,
+      "speaker": "",
+      "text": "And what Holly found was more consistent with the dissociable account,",
+      "word_start": 4294,
+      "word_end": 4305
+    },
+    {
+      "unit_id": "p0307",
+      "start": 1682.756,
+      "end": 1685.737,
+      "speaker": "",
+      "text": "where explanations better communicated how the mechanism worked,",
+      "word_start": 4305,
+      "word_end": 4313
+    },
+    {
+      "unit_id": "p0308",
+      "start": 1686.057,
+      "end": 1689.298,
+      "speaker": "",
+      "text": "but depictions were better for communicating object identity.",
+      "word_start": 4313,
+      "word_end": 4321
+    },
+    {
+      "unit_id": "p0309",
+      "start": 1690.119,
+      "end": 1694.501,
+      "speaker": "",
+      "text": "Interestingly, explanations were not better in this sample for conveying",
+      "word_start": 4321,
+      "word_end": 4331
+    },
+    {
+      "unit_id": "p0310",
+      "start": 1694.541,
+      "end": 1697.282,
+      "speaker": "",
+      "text": "the identity of the causal part in that challenging third task.",
+      "word_start": 4331,
+      "word_end": 4342
+    },
+    {
+      "unit_id": "p0311",
+      "start": 1698.102,
+      "end": 1703.998,
+      "speaker": "",
+      "text": "consistent with the idea that by leaving out a lot of the background details in some of those explanations,",
+      "word_start": 4342,
+      "word_end": 4361
+    },
+    {
+      "unit_id": "p0312",
+      "start": 1703.998,
+      "end": 1707.47,
+      "speaker": "",
+      "text": "they may have abstracted away the very information that would make",
+      "word_start": 4361,
+      "word_end": 4372
+    },
+    {
+      "unit_id": "p0313",
+      "start": 1707.99,
+      "end": 1711.793,
+      "speaker": "",
+      "text": "it easier to link up specific parts of the drawing with parts of the machine.",
+      "word_start": 4372,
+      "word_end": 4387
+    },
+    {
+      "unit_id": "p0314",
+      "start": 1713.535,
+      "end": 1716.717,
+      "speaker": "",
+      "text": "And the bottom line from those studies is that people",
+      "word_start": 4387,
+      "word_end": 4397
+    },
+    {
+      "unit_id": "p0315",
+      "start": 1717.198,
+      "end": 1721.821,
+      "speaker": "",
+      "text": "share intuitions about what is supposed to go into a visual explanation,",
+      "word_start": 4397,
+      "word_end": 4409
+    },
+    {
+      "unit_id": "p0316",
+      "start": 1722.162,
+      "end": 1724.283,
+      "speaker": "",
+      "text": "even if this is the first time they've been asked to generate one.",
+      "word_start": 4409,
+      "word_end": 4422
+    },
+    {
+      "unit_id": "p0317",
+      "start": 1724.884,
+      "end": 1731.004,
+      "speaker": "",
+      "text": "And it can mean sacrificing visual fidelity to emphasize more abstract mechanistic information.",
+      "word_start": 4422,
+      "word_end": 4435
+    },
+    {
+      "unit_id": "p0318",
+      "start": 1732.284,
+      "end": 1735.806,
+      "speaker": "",
+      "text": "And more generally, this work shows how important communicative context",
+      "word_start": 4435,
+      "word_end": 4445
+    },
+    {
+      "unit_id": "p0319",
+      "start": 1736.067,
+      "end": 1741.329,
+      "speaker": "",
+      "text": "and goals are for understanding why people draw the way they do, why depictions look the way they do,",
+      "word_start": 4445,
+      "word_end": 4464
+    },
+    {
+      "unit_id": "p0320",
+      "start": 1741.81,
+      "end": 1747.793,
+      "speaker": "",
+      "text": "and provides some experimental and analytic tools for characterizing the strategies people use to communicate",
+      "word_start": 4464,
+      "word_end": 4479
+    },
+    {
+      "unit_id": "p0321",
+      "start": 1748.193,
+      "end": 1751.415,
+      "speaker": "",
+      "text": "visual information that is goal and context relevant.",
+      "word_start": 4479,
+      "word_end": 4487
+    },
+    {
+      "unit_id": "p0322",
+      "start": 1752.976,
+      "end": 1755.357,
+      "speaker": "",
+      "text": "Okay, and then in this next section,",
+      "word_start": 4487,
+      "word_end": 4494
+    },
+    {
+      "unit_id": "p0323",
+      "start": 1755.718,
+      "end": 1760.659,
+      "speaker": "",
+      "text": "we'll be asking what would it take to develop artificial systems",
+      "word_start": 4494,
+      "word_end": 4505
+    },
+    {
+      "unit_id": "p0324",
+      "start": 1760.939,
+      "end": 1765.68,
+      "speaker": "",
+      "text": "that are capable of human-like visual abstraction? And here's why.",
+      "word_start": 4505,
+      "word_end": 4515
+    },
+    {
+      "unit_id": "p0325",
+      "start": 1767.501,
+      "end": 1771.809,
+      "speaker": "",
+      "text": "We fundamentally want useful scientific models of visual communication,",
+      "word_start": 4515,
+      "word_end": 4524
+    },
+    {
+      "unit_id": "p0326",
+      "start": 1771.809,
+      "end": 1776.323,
+      "speaker": "",
+      "text": "and the work I've presented so far is representative of where we've prioritized making investments,",
+      "word_start": 4524,
+      "word_end": 4539
+    },
+    {
+      "unit_id": "p0327",
+      "start": 1776.924,
+      "end": 1780.364,
+      "speaker": "",
+      "text": "namely development of experimental paradigms and data sets to measure",
+      "word_start": 4539,
+      "word_end": 4549
+    },
+    {
+      "unit_id": "p0328",
+      "start": 1780.465,
+      "end": 1785.266,
+      "speaker": "",
+      "text": "and characterize those behaviors in fuller ways across a broader range of settings.",
+      "word_start": 4549,
+      "word_end": 4562
+    },
+    {
+      "unit_id": "p0329",
+      "start": 1785.918,
+      "end": 1789.521,
+      "speaker": "",
+      "text": "Meanwhile, we've also been investing considerable energy in evaluating",
+      "word_start": 4562,
+      "word_end": 4571
+    },
+    {
+      "unit_id": "p0330",
+      "start": 1789.681,
+      "end": 1796.183,
+      "speaker": "",
+      "text": "how well any member of the steadily advancing cohort of machine learning systems might continue to be relevant",
+      "word_start": 4571,
+      "word_end": 4589
+    },
+    {
+      "unit_id": "p0331",
+      "start": 1796.183,
+      "end": 1802.952,
+      "speaker": "",
+      "text": "and promising candidates for capturing more detailed patterns of human behavior in these high-dimensional tasks,",
+      "word_start": 4589,
+      "word_end": 4604
+    },
+    {
+      "unit_id": "p0332",
+      "start": 1804.313,
+      "end": 1810.038,
+      "speaker": "",
+      "text": "specifically as models of human image understanding, as well as models of image creation.",
+      "word_start": 4604,
+      "word_end": 4618
+    },
+    {
+      "unit_id": "p0333",
+      "start": 1810.882,
+      "end": 1817.125,
+      "speaker": "",
+      "text": "Okay, so the task setting that we consider takes inspiration from this famous series of drawings",
+      "word_start": 4618,
+      "word_end": 4634
+    },
+    {
+      "unit_id": "p0334",
+      "start": 1817.205,
+      "end": 1818.325,
+      "speaker": "",
+      "text": "by Pablo Picasso.",
+      "word_start": 4634,
+      "word_end": 4637
+    },
+    {
+      "unit_id": "p0335",
+      "start": 1819.185,
+      "end": 1820.506,
+      "speaker": "",
+      "text": "Some of these are very detailed.",
+      "word_start": 4637,
+      "word_end": 4643
+    },
+    {
+      "unit_id": "p0336",
+      "start": 1820.966,
+      "end": 1823.627,
+      "speaker": "",
+      "text": "The last few are very, very abstract,",
+      "word_start": 4643,
+      "word_end": 4650
+    },
+    {
+      "unit_id": "p0337",
+      "start": 1824.408,
+      "end": 1826.608,
+      "speaker": "",
+      "text": "yet all unmistakably bulls.",
+      "word_start": 4650,
+      "word_end": 4654
+    },
+    {
+      "unit_id": "p0338",
+      "start": 1828.069,
+      "end": 1831.811,
+      "speaker": "",
+      "text": "Any scientific model of human visual abstraction worth its salt",
+      "word_start": 4654,
+      "word_end": 4664
+    },
+    {
+      "unit_id": "p0339",
+      "start": 1832.291,
+      "end": 1837.913,
+      "speaker": "",
+      "text": "ought to be able to represent the ways in which these bulls are all different from one another,",
+      "word_start": 4664,
+      "word_end": 4682
+    },
+    {
+      "unit_id": "p0340",
+      "start": 1838.633,
+      "end": 1842.719,
+      "speaker": "",
+      "text": "and somehow at the same time, bullish to their core, right?",
+      "word_start": 4682,
+      "word_end": 4693
+    },
+    {
+      "unit_id": "p0341",
+      "start": 1843.119,
+      "end": 1846.9,
+      "speaker": "",
+      "text": "Or rather as bullish as they actually look to real human observers.",
+      "word_start": 4693,
+      "word_end": 4705
+    },
+    {
+      "unit_id": "p0342",
+      "start": 1847.74,
+      "end": 1850.161,
+      "speaker": "",
+      "text": "So in this work that was a huge team effort",
+      "word_start": 4705,
+      "word_end": 4715
+    },
+    {
+      "unit_id": "p0343",
+      "start": 1850.601,
+      "end": 1855.703,
+      "speaker": "",
+      "text": "led by Kushan Mukherjee, who is defending this Friday before joining the lab as a postdoc,",
+      "word_start": 4715,
+      "word_end": 4731
+    },
+    {
+      "unit_id": "p0344",
+      "start": 1856.403,
+      "end": 1862.905,
+      "speaker": "",
+      "text": "with contributions again from Holly, as well as Charles Liu, Yael Vinker, who's here actually, and Ryo Aginakeng,",
+      "word_start": 4731,
+      "word_end": 4749
+    },
+    {
+      "unit_id": "p0345",
+      "start": 1862.925,
+      "end": 1869.98,
+      "speaker": "",
+      "text": "we We began from the premise that like a strong test of whether we're on the right track",
+      "word_start": 4749,
+      "word_end": 4767
+    },
+    {
+      "unit_id": "p0346",
+      "start": 1870.821,
+      "end": 1876.864,
+      "speaker": "",
+      "text": "towards those scientific models is that we'll be able to build",
+      "word_start": 4767,
+      "word_end": 4778
+    },
+    {
+      "unit_id": "p0347",
+      "start": 1876.964,
+      "end": 1881.267,
+      "speaker": "",
+      "text": "algorithms that can generate and understand abstract images the way that people do.",
+      "word_start": 4778,
+      "word_end": 4791
+    },
+    {
+      "unit_id": "p0348",
+      "start": 1882.447,
+      "end": 1884.789,
+      "speaker": "",
+      "text": "Sketch understanding is one",
+      "word_start": 4791,
+      "word_end": 4795
+    },
+    {
+      "unit_id": "p0349",
+      "start": 1884.829,
+      "end": 1891.729,
+      "speaker": "",
+      "text": "of these deceptively simple yet poses a fundamental challenge for general-purpose vision algorithms",
+      "word_start": 4795,
+      "word_end": 4808
+    },
+    {
+      "unit_id": "p0350",
+      "start": 1892.21,
+      "end": 1897.674,
+      "speaker": "",
+      "text": "because, for one, it requires robustness to variation in sparsity, okay,",
+      "word_start": 4808,
+      "word_end": 4819
+    },
+    {
+      "unit_id": "p0351",
+      "start": 1897.734,
+      "end": 1902.158,
+      "speaker": "",
+      "text": "like some sketches are more detailed than others, you could say.",
+      "word_start": 4819,
+      "word_end": 4830
+    },
+    {
+      "unit_id": "p0352",
+      "start": 1903.119,
+      "end": 1907.463,
+      "speaker": "",
+      "text": "And two, because sketches demand tolerance for semantic ambiguity",
+      "word_start": 4830,
+      "word_end": 4839
+    },
+    {
+      "unit_id": "p0353",
+      "start": 1907.923,
+      "end": 1911.847,
+      "speaker": "",
+      "text": "because sketches can reliably evoke multiple meanings.",
+      "word_start": 4839,
+      "word_end": 4846
+    },
+    {
+      "unit_id": "p0354",
+      "start": 1913.328,
+      "end": 1918.644,
+      "speaker": "",
+      "text": "So we created a benchmark, which we call SEVA, to pose those challenges explicitly.",
+      "word_start": 4846,
+      "word_end": 4860
+    },
+    {
+      "unit_id": "p0355",
+      "start": 1919.285,
+      "end": 1923.909,
+      "speaker": "",
+      "text": "So we collected 90,000 hand-drawn sketches made by about 5,500",
+      "word_start": 4860,
+      "word_end": 4870
+    },
+    {
+      "unit_id": "p0356",
+      "start": 1924.87,
+      "end": 1930.175,
+      "speaker": "",
+      "text": "people of 128 visual concepts under varying production budgets.",
+      "word_start": 4870,
+      "word_end": 4879
+    },
+    {
+      "unit_id": "p0357",
+      "start": 1931.016,
+      "end": 1935.861,
+      "speaker": "",
+      "text": "So here are some examples of what it looks like when people had to create sketches cued by a photo.",
+      "word_start": 4879,
+      "word_end": 4899
+    },
+    {
+      "unit_id": "p0358",
+      "start": 1935.861,
+      "end": 1941.345,
+      "speaker": "",
+      "text": "These are photos taken from the Things dataset, if you're familiar with that, in less and less time.",
+      "word_start": 4899,
+      "word_end": 4917
+    },
+    {
+      "unit_id": "p0359",
+      "start": 1943.138,
+      "end": 1947.48,
+      "speaker": "",
+      "text": "By the time we get to the four seconds, they're real, real sketchy.",
+      "word_start": 4917,
+      "word_end": 4930
+    },
+    {
+      "unit_id": "p0360",
+      "start": 1947.58,
+      "end": 1950.794,
+      "speaker": "",
+      "text": "We then took those drawings and then showed them to both people",
+      "word_start": 4930,
+      "word_end": 4942
+    },
+    {
+      "unit_id": "p0361",
+      "start": 1950.794,
+      "end": 1958.646,
+      "speaker": "",
+      "text": "and 17 different state-of-the-art vision algorithms representing a broad array of different kinds of architectural commitments and strategies and training protocols.",
+      "word_start": 4942,
+      "word_end": 4963
+    },
+    {
+      "unit_id": "p0362",
+      "start": 1960.887,
+      "end": 1967.351,
+      "speaker": "",
+      "text": "Yes? Quick question of clarification. Do people get to think about it before you start the timer or do they see it and then they have four seconds?",
+      "word_start": 4963,
+      "word_end": 4991
+    },
+    {
+      "unit_id": "p0363",
+      "start": 1967.931,
+      "end": 1969.732,
+      "speaker": "",
+      "text": "That's something that's been haunting me for two years.",
+      "word_start": 4991,
+      "word_end": 5000
+    },
+    {
+      "unit_id": "p0364",
+      "start": 1970.813,
+      "end": 1972.954,
+      "speaker": "",
+      "text": "Not enough. I think they should, no, no.",
+      "word_start": 5000,
+      "word_end": 5008
+    },
+    {
+      "unit_id": "p0365",
+      "start": 1973.73,
+      "end": 1979.915,
+      "speaker": "",
+      "text": "And I think so what we're studying thinking and drawing. So they see the image and then they have to go.",
+      "word_start": 5008,
+      "word_end": 5029
+    },
+    {
+      "unit_id": "p0366",
+      "start": 1979.935,
+      "end": 1982.397,
+      "speaker": "",
+      "text": "Okay. So this is, so we don't know exactly",
+      "word_start": 5029,
+      "word_end": 5038
+    },
+    {
+      "unit_id": "p0367",
+      "start": 1982.977,
+      "end": 1988.021,
+      "speaker": "",
+      "text": "how we, we, there is this restriction on the overall trial duration.",
+      "word_start": 5038,
+      "word_end": 5050
+    },
+    {
+      "unit_id": "p0368",
+      "start": 1988.782,
+      "end": 1995.427,
+      "speaker": "",
+      "text": "I think that to really get at the bull phenomenon, we will, I would want to give them unlimited planning time and then just limited execution time.",
+      "word_start": 5050,
+      "word_end": 5077
+    },
+    {
+      "unit_id": "p0369",
+      "start": 1995.447,
+      "end": 1996.548,
+      "speaker": "",
+      "text": "And that would have been the way to do it.",
+      "word_start": 5077,
+      "word_end": 5087
+    },
+    {
+      "unit_id": "p0370",
+      "start": 1996.889,
+      "end": 1997.809,
+      "speaker": "",
+      "text": "This is not that.",
+      "word_start": 5087,
+      "word_end": 5091
+    },
+    {
+      "unit_id": "p0371",
+      "start": 1998.15,
+      "end": 2003.494,
+      "speaker": "",
+      "text": "Okay. So there's like another data set that has yet to be born that isolates that more directly.",
+      "word_start": 5091,
+      "word_end": 5109
+    },
+    {
+      "unit_id": "p0372",
+      "start": 2003.958,
+      "end": 2008.742,
+      "speaker": "",
+      "text": "Okay, yes. So the four-second drawings are like quite derpy.",
+      "word_start": 5109,
+      "word_end": 5119
+    },
+    {
+      "unit_id": "p0373",
+      "start": 2009.603,
+      "end": 2011.244,
+      "speaker": "",
+      "text": "Okay, that's like the technical term of art for that.",
+      "word_start": 5119,
+      "word_end": 5129
+    },
+    {
+      "unit_id": "p0374",
+      "start": 2011.484,
+      "end": 2016.789,
+      "speaker": "",
+      "text": "But they are like what people did in those settings, okay?",
+      "word_start": 5129,
+      "word_end": 5140
+    },
+    {
+      "unit_id": "p0375",
+      "start": 2017.269,
+      "end": 2019.391,
+      "speaker": "",
+      "text": "So we had all of these different sketches.",
+      "word_start": 5140,
+      "word_end": 5148
+    },
+    {
+      "unit_id": "p0376",
+      "start": 2019.571,
+      "end": 2021.513,
+      "speaker": "",
+      "text": "They look the way they look under those conditions.",
+      "word_start": 5148,
+      "word_end": 5157
+    },
+    {
+      "unit_id": "p0377",
+      "start": 2022.133,
+      "end": 2027.197,
+      "speaker": "",
+      "text": "Then both people and those vision algorithms performed the same sketch categorization task,",
+      "word_start": 5157,
+      "word_end": 5170
+    },
+    {
+      "unit_id": "p0378",
+      "start": 2027.297,
+      "end": 2032.522,
+      "speaker": "",
+      "text": "allowing us to measure the full distribution of labels evoked by every individual sketch.",
+      "word_start": 5170,
+      "word_end": 5184
+    },
+    {
+      "unit_id": "p0379",
+      "start": 2034.742,
+      "end": 2041.226,
+      "speaker": "",
+      "text": "The first thing we established was that as you give people more time to think about how to make",
+      "word_start": 5184,
+      "word_end": 5203
+    },
+    {
+      "unit_id": "p0380",
+      "start": 2041.286,
+      "end": 2043.267,
+      "speaker": "",
+      "text": "and then go and make a detailed sketch,",
+      "word_start": 5203,
+      "word_end": 5211
+    },
+    {
+      "unit_id": "p0381",
+      "start": 2043.787,
+      "end": 2047.209,
+      "speaker": "",
+      "text": "those sketches get more recognizable to models and people.",
+      "word_start": 5211,
+      "word_end": 5220
+    },
+    {
+      "unit_id": "p0382",
+      "start": 2048.009,
+      "end": 2051.831,
+      "speaker": "",
+      "text": "They're less ambiguous as measured by the entropy of the label distribution.",
+      "word_start": 5220,
+      "word_end": 5232
+    },
+    {
+      "unit_id": "p0383",
+      "start": 2052.632,
+      "end": 2054.093,
+      "speaker": "",
+      "text": "And even when the guess is wrong,",
+      "word_start": 5232,
+      "word_end": 5239
+    },
+    {
+      "unit_id": "p0384",
+      "start": 2054.553,
+      "end": 2061.417,
+      "speaker": "",
+      "text": "not the top one, it's more likely to at least be in the right semantic neighborhood estimated by language embeddings.",
+      "word_start": 5239,
+      "word_end": 5259
+    },
+    {
+      "unit_id": "p0385",
+      "start": 2062.297,
+      "end": 2063.678,
+      "speaker": "",
+      "text": "So that's reassuring.",
+      "word_start": 5259,
+      "word_end": 5262
+    },
+    {
+      "unit_id": "p0386",
+      "start": 2064.29,
+      "end": 2071.754,
+      "speaker": "",
+      "text": "But then we dug in a little bit deeper and then found that while some models do, honest to goodness, perform better recognition tasks in other models,",
+      "word_start": 5262,
+      "word_end": 5289
+    },
+    {
+      "unit_id": "p0387",
+      "start": 2072.675,
+      "end": 2078.698,
+      "speaker": "",
+      "text": "the variation across models in terms of performance is totally dwarfed by the gap between models and people.",
+      "word_start": 5289,
+      "word_end": 5307
+    },
+    {
+      "unit_id": "p0388",
+      "start": 2079.359,
+      "end": 2083.201,
+      "speaker": "",
+      "text": "The reliable signal in human recognition in terms of both performance,",
+      "word_start": 5307,
+      "word_end": 5318
+    },
+    {
+      "unit_id": "p0389",
+      "start": 2083.221,
+      "end": 2089.164,
+      "speaker": "",
+      "text": "which I'm showing on the left, and also relative uncertainty about the meaning of a sketch.",
+      "word_start": 5318,
+      "word_end": 5334
+    },
+    {
+      "unit_id": "p0390",
+      "start": 2090.085,
+      "end": 2097.538,
+      "speaker": "",
+      "text": "So that suggests there's still a sizable human model gap in alignment to close here in terms of, for sketch understanding.",
+      "word_start": 5334,
+      "word_end": 5355
+    },
+    {
+      "unit_id": "p0391",
+      "start": 2099.44,
+      "end": 2106.45,
+      "speaker": "",
+      "text": "Nevertheless, okay, at the time we conducted this benchmark, we noticed that the CLIP trained models were outperforming",
+      "word_start": 5355,
+      "word_end": 5373
+    },
+    {
+      "unit_id": "p0392",
+      "start": 2106.49,
+      "end": 2109.394,
+      "speaker": "",
+      "text": "the others, making it a reasonable candidate to begin",
+      "word_start": 5373,
+      "word_end": 5382
+    }
+  ]
+}
